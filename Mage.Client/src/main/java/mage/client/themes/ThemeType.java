@@ -13,6 +13,30 @@ import java.awt.*;
  */
 public enum ThemeType {
     // https://docs.oracle.com/javase/tutorial/uiswing/lookandfeel/_nimbusDefaults.html
+    ARCANE("Arcane",                       // name
+            "",                            // path (reuse default backgrounds)
+            true,                          // hasBackground
+            false,                         // hasLoginBackground
+            true,                          // hasBattleBackground
+            true,                          // hasSkipButtons
+            true,                          // hasPhaseIcons
+            true,                          // hasWinLossImages
+            true,                          // shortcutsVisibleForSkipButtons
+            new Color(58, 51, 80),         // nimbusBlueGrey  -> borders/buttons  #3A3350
+            new Color(26, 22, 38),         // control         -> window bg        #1A1626 (dark => FlatDarkLaf)
+            new Color(44, 36, 64),         // nimbusLightBackground -> inputs/rows #2C2440
+            new Color(34, 28, 51),         // info            -> tooltips         #221C33
+            new Color(61, 214, 196),       // nimbusBase      -> accent (teal)    #3DD6C4
+            null,                          // mageToolbar
+            new Color(34, 28, 51, 200),    // playerPanel_inactiveBackgroundColor
+            new Color(46, 92, 85, 200),    // playerPanel_activeBackgroundColor (teal-tinted)
+            new Color(58, 36, 51, 200),    // playerPanel_deadBackgroundColor
+            new Color(34, 28, 51, 150),    // deckEditorToolbarBackgroundColor
+            new Color(58, 51, 80),         // cardIconsFillColor   #3A3350
+            Color.black,                   // cardIconsStrokeColor
+            new Color(61, 214, 196),       // cardIconsTextColor   accent teal
+            new Color(236, 232, 245)       // textColor            off-white #ECE8F5
+    ),
     DEFAULT("Default",                     // name
             "",                            // path
             true,                          // hasBackground
