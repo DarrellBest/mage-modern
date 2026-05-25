@@ -36,7 +36,7 @@ public class PlayersChatPanel extends javax.swing.JPanel {
     private final UserTableModel userTableModel;
     private static final TableInfo tableInfo = new TableInfo()
             .addColumn(0, 20, Icon.class, "Flag", null)
-            .addColumn(1, 100, String.class, "Players",
+            .addColumn(1, 180, String.class, "Players",
                     "<b>User name</b>"
                             + "<br>(the number behind the header text is the number of users online)")
             .addColumn(2, 40, Integer.class, "Constructed Rating", null)
