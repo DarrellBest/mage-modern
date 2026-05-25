@@ -15,6 +15,9 @@ import org.jdesktop.swingx.JXPanel;
 import org.mage.card.arcane.ManaSymbols;
 import org.mage.card.arcane.UI;
 import org.mage.plugins.card.utils.CardImageUtils;
+import mage.client.themes.ThemeType;
+import com.formdev.flatlaf.FlatDarkLaf;
+import com.formdev.flatlaf.FlatLightLaf;
 
 import javax.swing.*;
 import java.awt.*;
@@ -487,29 +490,39 @@ public final class GuiDisplayUtil {
      * Existing hidden components can miss new settings (will render with old colors), so only app restart can help.
      */
     public static void refreshThemeSettings() {
-        // apply Nimbus's look and fill
-        // possible settings:
-        // https://docs.oracle.com/en/java/javase/23/docs/api/java.desktop/javax/swing/plaf/nimbus/doc-files/properties.html
-
-        // enable nimbus
+        // apply FlatLaf, choosing dark/light base from the current theme
+        ThemeType theme = PreferencesDialog.getCurrentTheme();
         try {
-            UIManager.setLookAndFeel("javax.swing.plaf.nimbus.NimbusLookAndFeel");
-        } catch (ClassNotFoundException
-                 | InstantiationException
-                 | IllegalAccessException
-                 | UnsupportedLookAndFeelException e) {
-            logger.error("Can't apply current theme: " + PreferencesDialog.getCurrentTheme() + " - " + e, e);
+            if (isThemeDark(theme.getControl())) {
+                UIManager.setLookAndFeel(new FlatDarkLaf());
+            } else {
+                UIManager.setLookAndFeel(new FlatLightLaf());
+            }
+        } catch (UnsupportedLookAndFeelException e) {
+            logger.error("Can't apply current theme: " + theme + " - " + e, e);
         }
 
-        // enable new style from current theme
-        //UIManager.put("desktop", new Color(0, 0, 0, 0));
-        UIManager.put("nimbusBlueGrey", PreferencesDialog.getCurrentTheme().getNimbusBlueGrey()); // buttons, scrollbar background, disabled inputs
-        UIManager.put("control", PreferencesDialog.getCurrentTheme().getControl()); // window bg
-        UIManager.put("nimbusLightBackground", PreferencesDialog.getCurrentTheme().getNimbusLightBackground()); // inputs, table rows
-        UIManager.put("info", PreferencesDialog.getCurrentTheme().getInfo()); // tooltips
-        UIManager.put("nimbusBase", PreferencesDialog.getCurrentTheme().getNimbusBase()); // title bars, scrollbar foreground
+        // map theme palette onto FlatLaf semantic keys
+        UIManager.put("Component.accentColor", theme.getNimbusBase());   // selection/accent
+        UIManager.put("Component.focusColor", theme.getNimbusBase());    // focus ring
+        UIManager.put("Panel.background", theme.getControl());           // window/panel bg
+        UIManager.put("TextField.background", theme.getNimbusLightBackground());
+        UIManager.put("Table.background", theme.getNimbusLightBackground());
+        UIManager.put("List.background", theme.getNimbusLightBackground());
+        UIManager.put("ToolTip.background", theme.getInfo());
+        UIManager.put("text", theme.getTextColor());
 
-	    UIManager.put("text", PreferencesDialog.getCurrentTheme().getTextColor()); // Default text color
+        // modern flat styling shared by all themes
+        UIManager.put("Component.arc", 8);
+        UIManager.put("Button.arc", 8);
+        UIManager.put("ProgressBar.arc", 8);
+        UIManager.put("TextComponent.arc", 6);
+        UIManager.put("ScrollBar.thumbArc", 999);
+        UIManager.put("ScrollBar.thumbInsets", new Insets(2, 2, 2, 2));
+        UIManager.put("ScrollBar.width", 12);
+        UIManager.put("Component.focusWidth", 1);
+        UIManager.put("TabbedPane.tabSeparatorsFullHeight", false);
+        UIManager.put("TitlePane.unifiedBackground", true);
 
         //UIManager.put("nimbusDisabledText", Color.green); // TODO: improve disabled color
         //UIManager.put("Table.rowHeight", GUISizeHelper.tableRowHeight);
