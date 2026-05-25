@@ -64,7 +64,7 @@ import static mage.client.dialog.PreferencesDialog.*;
 public class TablesPanel extends javax.swing.JPanel {
 
     private static final Logger LOGGER = Logger.getLogger(TablesPanel.class);
-    private static final int[] DEFAULT_COLUMNS_WIDTH = {35, 150, 100, 50, 120, 180, 80, 120, 80, 60, 40, 40, 60};
+    private static final int[] DEFAULT_COLUMNS_WIDTH = {35, 170, 190, 55, 210, 200, 100, 180, 80, 75, 45, 50, 65};
 
     // ping timeout (warning, must be less than UserManagerImpl.USER_CONNECTION_TIMEOUTS_CHECK_SECS)
     public static final int PING_SERVER_SECS = 20;
