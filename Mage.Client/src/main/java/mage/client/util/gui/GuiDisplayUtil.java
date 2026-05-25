@@ -465,6 +465,21 @@ public final class GuiDisplayUtil {
     }
 
     /**
+     * Decide whether a theme should use the dark or light FlatLaf base,
+     * based on the perceived luminance of its window background color.
+     */
+    private static boolean isThemeDark(java.awt.Color background) {
+        if (background == null) {
+            return true;
+        }
+        // Rec. 601 luma; < 128 is a dark surface
+        double luma = 0.299 * background.getRed()
+                + 0.587 * background.getGreen()
+                + 0.114 * background.getBlue();
+        return luma < 128.0;
+    }
+
+    /**
      * Fast refresh of GUI settings after theme change.
      * Warning, use it for:
      * - startup (before any components create)
