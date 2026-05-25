@@ -18,6 +18,7 @@ import org.mage.plugins.card.utils.CardImageUtils;
 import mage.client.themes.ThemeType;
 import com.formdev.flatlaf.FlatDarkLaf;
 import com.formdev.flatlaf.FlatLightLaf;
+import com.formdev.flatlaf.intellijthemes.FlatDraculaIJTheme;
 import com.formdev.flatlaf.FlatLaf;
 import com.formdev.flatlaf.fonts.inter.FlatInterFont;
 
@@ -496,10 +497,15 @@ public final class GuiDisplayUtil {
         FlatInterFont.installLazy();
         FlatLaf.setPreferredFontFamily(FlatInterFont.FAMILY);
 
-        // apply FlatLaf, choosing dark/light base from the current theme
+        // apply FlatLaf. The Arcane theme is built on the professionally-designed
+        // Dracula palette for a cohesive modern look; other themes keep the
+        // Nimbus-era color mapping onto a flat dark/light base.
         ThemeType theme = PreferencesDialog.getCurrentTheme();
+        boolean arcane = theme == ThemeType.ARCANE;
         try {
-            if (isThemeDark(theme.getControl())) {
+            if (arcane) {
+                UIManager.setLookAndFeel(new FlatDraculaIJTheme());
+            } else if (isThemeDark(theme.getControl())) {
                 UIManager.setLookAndFeel(new FlatDarkLaf());
             } else {
                 UIManager.setLookAndFeel(new FlatLightLaf());
@@ -508,15 +514,19 @@ public final class GuiDisplayUtil {
             logger.error("Can't apply current theme: " + theme + " - " + e, e);
         }
 
-        // map theme palette onto FlatLaf semantic keys
-        UIManager.put("Component.accentColor", theme.getNimbusBase());   // selection/accent
-        UIManager.put("Component.focusColor", theme.getNimbusBase());    // focus ring
-        UIManager.put("Panel.background", theme.getControl());           // window/panel bg
-        UIManager.put("TextField.background", theme.getNimbusLightBackground());
-        UIManager.put("Table.background", theme.getNimbusLightBackground());
-        UIManager.put("List.background", theme.getNimbusLightBackground());
-        UIManager.put("ToolTip.background", theme.getInfo());
-        UIManager.put("text", theme.getTextColor());
+        // For non-Arcane themes, map the legacy palette onto FlatLaf keys so they
+        // still reflect their ThemeType colors. Arcane relies on the cohesive
+        // Dracula defaults, so it skips these overrides.
+        if (!arcane) {
+            UIManager.put("Component.accentColor", theme.getNimbusBase());   // selection/accent
+            UIManager.put("Component.focusColor", theme.getNimbusBase());    // focus ring
+            UIManager.put("Panel.background", theme.getControl());           // window/panel bg
+            UIManager.put("TextField.background", theme.getNimbusLightBackground());
+            UIManager.put("Table.background", theme.getNimbusLightBackground());
+            UIManager.put("List.background", theme.getNimbusLightBackground());
+            UIManager.put("ToolTip.background", theme.getInfo());
+            UIManager.put("text", theme.getTextColor());
+        }
 
         // modern flat styling shared by all themes
         UIManager.put("Component.arc", 8);

@@ -13,29 +13,32 @@ import java.awt.*;
  */
 public enum ThemeType {
     // https://docs.oracle.com/javase/tutorial/uiswing/lookandfeel/_nimbusDefaults.html
+    // Built on the FlatLaf Dracula theme (see GuiDisplayUtil.refreshThemeSettings);
+    // these colors harmonize the directly-painted components (player panels, card
+    // icons, text) with the Dracula palette.
     ARCANE("Arcane",                       // name
-            "",                            // path (reuse default backgrounds)
-            true,                          // hasBackground
-            false,                         // hasLoginBackground
-            true,                          // hasBattleBackground
-            true,                          // hasSkipButtons
-            true,                          // hasPhaseIcons
-            true,                          // hasWinLossImages
+            "arcane-theme/",               // path (own dark background, default buttons/icons)
+            true,                          // hasBackground (arcane-theme/background.png)
+            false,                         // hasLoginBackground (reuse background.png)
+            false,                         // hasBattleBackground (reuse background.png)
+            false,                         // hasSkipButtons (reuse default art)
+            false,                         // hasPhaseIcons (reuse default art)
+            false,                         // hasWinLossImages (reuse default art)
             true,                          // shortcutsVisibleForSkipButtons
-            new Color(58, 51, 80),         // nimbusBlueGrey  -> borders/buttons  #3A3350
-            new Color(26, 22, 38),         // control         -> window bg        #1A1626 (dark => FlatDarkLaf)
-            new Color(44, 36, 64),         // nimbusLightBackground -> inputs/rows #2C2440
-            new Color(34, 28, 51),         // info            -> tooltips         #221C33
-            new Color(61, 214, 196),       // nimbusBase      -> accent (teal)    #3DD6C4
+            new Color(68, 71, 90),         // nimbusBlueGrey  -> borders/buttons  #44475A (Dracula current-line)
+            new Color(40, 42, 54),         // control         -> window/base bg   #282A36 (Dracula bg)
+            new Color(68, 71, 90),         // nimbusLightBackground -> inputs/rows #44475A
+            new Color(40, 42, 54),         // info            -> tooltips         #282A36
+            new Color(189, 147, 249),      // nimbusBase      -> accent (violet)  #BD93F9 (Dracula purple)
             null,                          // mageToolbar
-            new Color(34, 28, 51, 200),    // playerPanel_inactiveBackgroundColor
-            new Color(46, 92, 85, 200),    // playerPanel_activeBackgroundColor (teal-tinted)
-            new Color(58, 36, 51, 200),    // playerPanel_deadBackgroundColor
-            new Color(34, 28, 51, 150),    // deckEditorToolbarBackgroundColor
-            new Color(58, 51, 80),         // cardIconsFillColor   #3A3350
+            new Color(40, 42, 54, 205),    // playerPanel_inactiveBackgroundColor
+            new Color(98, 114, 164, 210),  // playerPanel_activeBackgroundColor (Dracula selection)
+            new Color(110, 52, 66, 210),   // playerPanel_deadBackgroundColor (muted red)
+            new Color(40, 42, 54, 160),    // deckEditorToolbarBackgroundColor
+            new Color(68, 71, 90),         // cardIconsFillColor   #44475A
             Color.black,                   // cardIconsStrokeColor
-            new Color(61, 214, 196),       // cardIconsTextColor   accent teal
-            new Color(236, 232, 245)       // textColor            off-white #ECE8F5
+            new Color(189, 147, 249),      // cardIconsTextColor   accent violet
+            new Color(248, 248, 242)       // textColor            Dracula foreground #F8F8F2
     ),
     DEFAULT("Default",                     // name
             "",                            // path
