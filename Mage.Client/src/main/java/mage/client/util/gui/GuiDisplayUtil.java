@@ -18,6 +18,8 @@ import org.mage.plugins.card.utils.CardImageUtils;
 import mage.client.themes.ThemeType;
 import com.formdev.flatlaf.FlatDarkLaf;
 import com.formdev.flatlaf.FlatLightLaf;
+import com.formdev.flatlaf.FlatLaf;
+import com.formdev.flatlaf.fonts.inter.FlatInterFont;
 
 import javax.swing.*;
 import java.awt.*;
@@ -490,6 +492,10 @@ public final class GuiDisplayUtil {
      * Existing hidden components can miss new settings (will render with old colors), so only app restart can help.
      */
     public static void refreshThemeSettings() {
+        // modern UI font (Inter) — set before the look-and-feel is applied
+        FlatInterFont.installLazy();
+        FlatLaf.setPreferredFontFamily(FlatInterFont.FAMILY);
+
         // apply FlatLaf, choosing dark/light base from the current theme
         ThemeType theme = PreferencesDialog.getCurrentTheme();
         try {
