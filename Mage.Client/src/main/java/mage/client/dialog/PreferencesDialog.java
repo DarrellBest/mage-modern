@@ -627,7 +627,7 @@ public class PreferencesDialog extends javax.swing.JDialog {
     }
 
     private static void loadTheme() {
-        currentTheme = ThemeType.valueByName(getCachedValue(KEY_THEME, "Default"));
+        currentTheme = ThemeType.valueByName(getCachedValue(KEY_THEME, "Arcane"));
         logger.info("Using GUI theme: " + currentTheme.getName());
         currentTheme.reload();
     }
