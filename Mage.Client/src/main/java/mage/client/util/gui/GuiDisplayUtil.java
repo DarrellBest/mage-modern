@@ -514,6 +514,14 @@ public final class GuiDisplayUtil {
             logger.error("Can't apply current theme: " + theme + " - " + e, e);
         }
 
+        // Some IntelliJ themes (incl. Dracula) set a larger base font than the
+        // fixed NetBeans dialog layouts (e.g. the connect dialog) were sized for,
+        // which makes labels overflow/overlap. Pin the default font to 12pt so
+        // those legacy layouts render cleanly.
+        java.awt.Font baseFont = UIManager.getFont("defaultFont");
+        String fontFamily = baseFont != null ? baseFont.getFamily() : FlatInterFont.FAMILY;
+        UIManager.put("defaultFont", new javax.swing.plaf.FontUIResource(fontFamily, java.awt.Font.PLAIN, 12));
+
         // For non-Arcane themes, map the legacy palette onto FlatLaf keys so they
         // still reflect their ThemeType colors. Arcane relies on the cohesive
         // Dracula defaults, so it skips these overrides.
