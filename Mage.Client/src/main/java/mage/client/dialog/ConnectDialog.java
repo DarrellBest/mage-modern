@@ -91,7 +91,25 @@ public class ConnectDialog extends MageDialog {
         // Close on "ESC"
         registerKeyboardAction(e -> onCancel(), KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
 
+        // This fixed NetBeans layout was sized for a small (~11pt) default font;
+        // FlatLaf's larger default makes the labels overflow/overlap the fields.
+        // Cap the dialog's fonts and re-pack so the layout fits the smaller text.
+        capComponentFonts(this, 12f);
+        this.pack();
+
         this.setVisible(true);
+    }
+
+    private static void capComponentFonts(java.awt.Component comp, float maxSize) {
+        java.awt.Font font = comp.getFont();
+        if (font != null && font.getSize() > maxSize) {
+            comp.setFont(font.deriveFont(maxSize));
+        }
+        if (comp instanceof java.awt.Container) {
+            for (java.awt.Component child : ((java.awt.Container) comp).getComponents()) {
+                capComponentFonts(child, maxSize);
+            }
+        }
     }
 
     private void onCancel() {

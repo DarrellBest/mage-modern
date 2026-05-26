@@ -20,7 +20,6 @@ import com.formdev.flatlaf.FlatDarkLaf;
 import com.formdev.flatlaf.FlatLightLaf;
 import com.formdev.flatlaf.intellijthemes.FlatDraculaIJTheme;
 import com.formdev.flatlaf.FlatLaf;
-import com.formdev.flatlaf.fonts.inter.FlatInterFont;
 
 import javax.swing.*;
 import java.awt.*;
@@ -493,15 +492,6 @@ public final class GuiDisplayUtil {
      * Existing hidden components can miss new settings (will render with old colors), so only app restart can help.
      */
     public static void refreshThemeSettings() {
-        // Render at nominal (1x) sizes like Nimbus did. Some IntelliJ themes
-        // (incl. Dracula) otherwise apply their own UI scaling that enlarges every
-        // font, overflowing XMage's fixed NetBeans dialog layouts (the "blown out"
-        // connect dialog). Must be set before any FlatLaf look-and-feel is created.
-        System.setProperty("flatlaf.uiScale", "1");
-
-        // modern UI font (Inter) — set before the look-and-feel is applied
-        FlatInterFont.installLazy();
-        FlatLaf.setPreferredFontFamily(FlatInterFont.FAMILY);
 
         // apply FlatLaf. The Arcane theme is built on the professionally-designed
         // Dracula palette for a cohesive modern look; other themes keep the
@@ -518,6 +508,26 @@ public final class GuiDisplayUtil {
             }
         } catch (UnsupportedLookAndFeelException e) {
             logger.error("Can't apply current theme: " + theme + " - " + e, e);
+        }
+
+        // FlatLaf derives a 15pt default font from this system; XMage's fixed
+        // NetBeans dialog layouts (e.g. the connect dialog) were built for ~12pt,
+        // so 15pt labels overflow/overlap ("blown out"). Cap the static component
+        // fonts to 12pt. Dynamic UI (tables/chat/feedback) is sized separately by
+        // GUISizeHelper, which sets its own fonts on those components.
+        final float FONT_CAP = 12f;
+        for (String fontKey : new String[]{
+                "defaultFont", "Label.font", "Button.font", "ToggleButton.font",
+                "RadioButton.font", "CheckBox.font", "ComboBox.font", "TextField.font",
+                "PasswordField.font", "FormattedTextField.font", "TextArea.font",
+                "TextPane.font", "EditorPane.font", "List.font", "Spinner.font",
+                "TitledBorder.font", "ToolTip.font", "Menu.font", "MenuItem.font",
+                "CheckBoxMenuItem.font", "RadioButtonMenuItem.font", "PopupMenu.font",
+                "Panel.font", "OptionPane.font", "TabbedPane.font"}) {
+            java.awt.Font themeFont = UIManager.getFont(fontKey);
+            if (themeFont != null && themeFont.getSize() > FONT_CAP) {
+                UIManager.put(fontKey, new javax.swing.plaf.FontUIResource(themeFont.deriveFont(FONT_CAP)));
+            }
         }
 
         // For non-Arcane themes, map the legacy palette onto FlatLaf keys so they
