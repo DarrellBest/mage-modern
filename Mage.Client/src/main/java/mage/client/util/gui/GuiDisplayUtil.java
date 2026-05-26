@@ -493,6 +493,12 @@ public final class GuiDisplayUtil {
      * Existing hidden components can miss new settings (will render with old colors), so only app restart can help.
      */
     public static void refreshThemeSettings() {
+        // Render at nominal (1x) sizes like Nimbus did. Some IntelliJ themes
+        // (incl. Dracula) otherwise apply their own UI scaling that enlarges every
+        // font, overflowing XMage's fixed NetBeans dialog layouts (the "blown out"
+        // connect dialog). Must be set before any FlatLaf look-and-feel is created.
+        System.setProperty("flatlaf.uiScale", "1");
+
         // modern UI font (Inter) — set before the look-and-feel is applied
         FlatInterFont.installLazy();
         FlatLaf.setPreferredFontFamily(FlatInterFont.FAMILY);
@@ -513,14 +519,6 @@ public final class GuiDisplayUtil {
         } catch (UnsupportedLookAndFeelException e) {
             logger.error("Can't apply current theme: " + theme + " - " + e, e);
         }
-
-        // Some IntelliJ themes (incl. Dracula) set a larger base font than the
-        // fixed NetBeans dialog layouts (e.g. the connect dialog) were sized for,
-        // which makes labels overflow/overlap. Pin the default font to 12pt so
-        // those legacy layouts render cleanly.
-        java.awt.Font baseFont = UIManager.getFont("defaultFont");
-        String fontFamily = baseFont != null ? baseFont.getFamily() : FlatInterFont.FAMILY;
-        UIManager.put("defaultFont", new javax.swing.plaf.FontUIResource(fontFamily, java.awt.Font.PLAIN, 12));
 
         // For non-Arcane themes, map the legacy palette onto FlatLaf keys so they
         // still reflect their ThemeType colors. Arcane relies on the cohesive
