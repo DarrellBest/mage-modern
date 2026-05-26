@@ -544,16 +544,38 @@ public final class GuiDisplayUtil {
             UIManager.put("text", theme.getTextColor());
         }
 
-        // modern flat styling shared by all themes
-        UIManager.put("Component.arc", 8);
-        UIManager.put("Button.arc", 8);
-        UIManager.put("ProgressBar.arc", 8);
-        UIManager.put("TextComponent.arc", 6);
+        // modern, smooth styling shared by all themes
+        // rounded corners
+        UIManager.put("Component.arc", 12);
+        UIManager.put("Button.arc", 14);
+        UIManager.put("CheckBox.arc", 6);
+        UIManager.put("ProgressBar.arc", 999);
+        UIManager.put("TextComponent.arc", 10);
+        UIManager.put("Component.arrowType", "chevron");
+        // soft focus ring
+        UIManager.put("Component.focusWidth", 1);
+        UIManager.put("Component.innerFocusWidth", 1);
+        // minimal rounded scrollbars + smooth scrolling
         UIManager.put("ScrollBar.thumbArc", 999);
         UIManager.put("ScrollBar.thumbInsets", new Insets(2, 2, 2, 2));
         UIManager.put("ScrollBar.width", 12);
-        UIManager.put("Component.focusWidth", 1);
+        UIManager.put("ScrollBar.showButtons", false);
+        UIManager.put("ScrollPane.smoothScrolling", true);
+        // rounded selections in lists/tables/trees
+        UIManager.put("List.selectionArc", 8);
+        UIManager.put("Table.selectionArc", 8);
+        UIManager.put("Tree.selectionArc", 8);
+        UIManager.put("List.selectionInsets", new Insets(0, 2, 0, 2));
+        UIManager.put("Tree.selectionInsets", new Insets(0, 2, 0, 2));
+        // soft depth + rounding on menus/popups
+        UIManager.put("Popup.dropShadowPainted", true);
+        UIManager.put("PopupMenu.borderInsets", new Insets(4, 2, 4, 2));
+        UIManager.put("MenuItem.selectionArc", 8);
+        UIManager.put("MenuItem.selectionInsets", new Insets(1, 4, 1, 4));
+        // rounded, separator-free tabs
+        UIManager.put("TabbedPane.tabArc", 10);
         UIManager.put("TabbedPane.tabSeparatorsFullHeight", false);
+        UIManager.put("TabbedPane.showTabSeparators", false);
         UIManager.put("TitlePane.unifiedBackground", true);
 
         //UIManager.put("nimbusDisabledText", Color.green); // TODO: improve disabled color
