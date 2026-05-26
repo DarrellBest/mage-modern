@@ -95,6 +95,7 @@ public class PreferencesDialog extends javax.swing.JDialog {
     public static final String KEY_BACKGROUND_IMAGE = "backgroundImage";
     public static final String KEY_BATTLEFIELD_IMAGE = "battlefieldImage";
     public static final String KEY_BACKGROUND_IMAGE_DEFAULT = "backgroundImagedDefault";
+    public static final String KEY_ANIMATED_BACKGROUND = "animatedBackground";
     public static final String KEY_BATTLEFIELD_IMAGE_RANDOM = "battlefieldImagerandom";
     public static final String KEY_BATTLEFIELD_IMAGE_DEFAULT = "battlefieldImageDefault";
 
