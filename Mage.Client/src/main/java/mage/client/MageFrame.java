@@ -352,6 +352,9 @@ public class MageFrame extends javax.swing.JFrame implements MageClient {
 
                 if (title != null) {
                     title.setBounds((int) (width - titleRectangle.getWidth()) / 2, (int) (height - titleRectangle.getHeight()) / 2, titleRectangle.width, titleRectangle.height);
+                    if (backgroundPane instanceof AnimatedBackgroundPanel) {
+                        ((AnimatedBackgroundPanel) backgroundPane).setGlowRect(title.getBounds());
+                    }
                 }
             }
         });
@@ -548,7 +551,12 @@ public class MageFrame extends javax.swing.JFrame implements MageClient {
             } else {
                 InputStream is = this.getClass().getResourceAsStream(PreferencesDialog.getCurrentTheme().getLoginBackgroundPath());
                 BufferedImage background = ImageIO.read(is);
-                backgroundPane = new ImagePanel(background, ImagePanelStyle.SCALED);
+                if ("true".equals(PreferencesDialog.getCachedValue(PreferencesDialog.KEY_ANIMATED_BACKGROUND, "true"))) {
+                    backgroundPane = new AnimatedBackgroundPanel(background, ImagePanelStyle.SCALED,
+                            AnimatedBackgroundPanel.AtmospherePreset.LOBBY);
+                } else {
+                    backgroundPane = new ImagePanel(background, ImagePanelStyle.SCALED);
+                }
             }
             backgroundPane.setSize(1024, 768);
             desktopPane.add(backgroundPane, JLayeredPane.DEFAULT_LAYER);
