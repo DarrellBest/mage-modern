@@ -395,8 +395,9 @@ public class TablesPanel extends javax.swing.JPanel {
             component.setOpaque(false);
         }
 
-        jScrollPaneTablesActive.getViewport().setBackground(new Color(255, 255, 255, 50));
-        jScrollPaneTablesFinished.getViewport().setBackground(new Color(255, 255, 255, 50));
+        // dark "smoked glass" over the arcane background (was a white wash from the old light theme)
+        jScrollPaneTablesActive.getViewport().setBackground(new Color(12, 9, 28, 150));
+        jScrollPaneTablesFinished.getViewport().setBackground(new Color(12, 9, 28, 150));
 
         restoreFilters();
         setGUISize();

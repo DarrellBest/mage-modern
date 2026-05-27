@@ -74,6 +74,7 @@ public class AnimatedBackgroundPanel extends ImagePanel {
     private final Timer timer;
     private Rectangle glowRect;
     private long lastTickNanos;
+    private int seededW = -1, seededH = -1;
 
     // cached static layers + mote sprites
     private BufferedImage bgCache;
@@ -133,6 +134,8 @@ public class AnimatedBackgroundPanel extends ImagePanel {
     private void ensureParticles() {
         int w = getWidth() > 0 ? getWidth() : 1024;
         int h = getHeight() > 0 ? getHeight() : 768;
+        seededW = w;
+        seededH = h;
         particles.clear();
         for (int i = 0; i < preset.count; i++) {
             Particle p = new Particle();
@@ -158,8 +161,8 @@ public class AnimatedBackgroundPanel extends ImagePanel {
         if (w <= 0 || h <= 0) {
             return;
         }
-        if (particles.isEmpty()) {
-            ensureParticles();
+        if (particles.isEmpty() || w != seededW || h != seededH) {
+            ensureParticles(); // (re)distribute across the full current size, incl. after maximize
         }
         long now = System.nanoTime();
         float dt = (now - lastTickNanos) / 1_000_000_000f;
