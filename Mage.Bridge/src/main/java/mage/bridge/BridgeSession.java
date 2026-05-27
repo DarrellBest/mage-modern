@@ -1,23 +1,38 @@
 package mage.bridge;
 
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import mage.cards.decks.DeckCardLists;
+import mage.cards.decks.importer.DeckImporter;
+import mage.constants.MatchBufferTime;
+import mage.constants.MatchTimeLimit;
+import mage.constants.MultiplayerAttackOption;
+import mage.constants.PlayerAction;
+import mage.constants.RangeOfInfluence;
+import mage.constants.SkillLevel;
+import mage.game.match.MatchOptions;
+import mage.players.PlayerType;
+import mage.interfaces.callback.ClientCallback;
+import mage.interfaces.callback.ClientCallbackMethod;
 import mage.players.net.UserData;
 import mage.remote.Connection;
 import mage.remote.SessionImpl;
+import mage.view.TableClientMessage;
 import mage.view.TableView;
 import org.java_websocket.WebSocket;
 
-import java.util.Collection;
+import java.io.File;
+import java.io.FileWriter;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
  * One bridge session = one Electron connection. Owns a real {@link SessionImpl}
- * (the XMage network/session layer) + a {@link HeadlessClient}, and translates
- * JSON commands from Electron into Session calls, while forwarding server-pushed
- * callbacks back to Electron as JSON. No game logic lives here — it is pure
- * protocol translation.
+ * (the XMage network/session layer) + a {@link HeadlessClient}. Translates JSON
+ * commands from Electron into Session calls and forwards server-pushed callbacks
+ * back to Electron as JSON. No game logic lives here — pure protocol translation.
  */
 public class BridgeSession {
 
@@ -29,6 +44,8 @@ public class BridgeSession {
         t.setDaemon(true);
         return t;
     });
+    private volatile UUID mainRoomId;
+    private volatile UUID mainChatId;
 
     public BridgeSession(WebSocket socket) {
         this.socket = socket;
@@ -36,7 +53,7 @@ public class BridgeSession {
         client.setConnectionSink(this::forwardConnectionEvent);
     }
 
-    // ---- outbound (bridge -> Electron) ----
+    // ---------- outbound (bridge -> Electron) ----------
 
     private void send(JsonObject msg) {
         if (socket.isOpen()) {
@@ -47,6 +64,24 @@ public class BridgeSession {
     private void event(String type) {
         JsonObject o = new JsonObject();
         o.addProperty("type", type);
+        send(o);
+    }
+
+    private void reply(String id, String cmd, boolean ok, Object data, String error) {
+        JsonObject o = new JsonObject();
+        o.addProperty("type", "reply");
+        if (id != null) o.addProperty("id", id);
+        o.addProperty("cmd", cmd);
+        o.addProperty("ok", ok);
+        if (error != null) o.addProperty("error", error);
+        if (data != null) {
+            String json = Json.tryToJson(data);
+            if (json != null) {
+                o.add("data", JsonParser.parseString(json));
+            } else {
+                o.addProperty("dataError", true);
+            }
+        }
         send(o);
     }
 
@@ -66,56 +101,86 @@ public class BridgeSession {
         send(o);
     }
 
-    private void forwardCallback(mage.interfaces.callback.ClientCallback cb) {
-        JsonObject o = new JsonObject();
-        o.addProperty("type", "callback");
-        o.addProperty("method", cb.getMethod().name());
-        o.addProperty("messageId", cb.getMessageId());
-        if (cb.getObjectId() != null) {
-            o.addProperty("objectId", cb.getObjectId().toString());
+    private void forwardCallback(ClientCallback cb) {
+        try {
+            cb.decompressData(); // callback payloads arrive gzip-compressed; must decompress before getData()
+            // Act on lifecycle callbacks the UI can't (subscribe to a started game so updates flow).
+            if (cb.getMethod() == ClientCallbackMethod.START_GAME && cb.getData() instanceof TableClientMessage) {
+                UUID gameId = ((TableClientMessage) cb.getData()).getGameId();
+                if (gameId != null) {
+                    session.joinGame(gameId);
+                    session.getGameChatId(gameId).ifPresent(session::joinChat);
+                }
+            }
+
+            JsonObject o = new JsonObject();
+            o.addProperty("type", "callback");
+            o.addProperty("method", cb.getMethod().name());
+            o.addProperty("messageId", cb.getMessageId());
+            if (cb.getObjectId() != null) {
+                o.addProperty("objectId", cb.getObjectId().toString());
+            }
+            Object payload = cb.getData();
+            String data = Json.tryToJson(payload);
+            if (data != null) {
+                o.add("data", JsonParser.parseString(data));
+            } else {
+                o.addProperty("dataError", true);
+            }
+            send(o);
+        } catch (Throwable t) {
+            System.err.println("[bridge] forwardCallback FAILED for " + cb.getMethod() + ": " + t);
+            t.printStackTrace();
         }
-        String data = Json.tryToJson(cb.getData());
-        if (data != null) {
-            o.add("data", com.google.gson.JsonParser.parseString(data));
-        } else {
-            o.addProperty("dataError", true);
-        }
-        send(o);
     }
 
-    // ---- inbound (Electron -> bridge) ----
+    // ---------- inbound (Electron -> bridge) ----------
 
-    /** Dispatch one JSON command from Electron. Never throws. */
+    /** Dispatch one JSON command. Never throws. */
     public void handle(JsonObject cmd) {
-        String c = cmd.has("cmd") ? cmd.get("cmd").getAsString() : "";
+        final String c = cmd.has("cmd") ? cmd.get("cmd").getAsString() : "";
+        final String id = cmd.has("id") ? cmd.get("id").getAsString() : null;
         try {
             switch (c) {
-                case "connect":
-                    doConnect(cmd);
-                    break;
-                case "getTables":
-                    doGetTables();
-                    break;
-                case "sendPlayerBoolean":
-                    session.sendPlayerBoolean(uuid(cmd, "gameId"), cmd.get("value").getAsBoolean());
-                    break;
-                case "sendPlayerInteger":
-                    session.sendPlayerInteger(uuid(cmd, "gameId"), cmd.get("value").getAsInt());
-                    break;
-                case "sendPlayerString":
-                    session.sendPlayerString(uuid(cmd, "gameId"), cmd.get("value").getAsString());
-                    break;
-                case "sendPlayerUUID":
-                    session.sendPlayerUUID(uuid(cmd, "gameId"), uuid(cmd, "value"));
-                    break;
-                case "disconnect":
-                    doDisconnect();
-                    break;
-                default:
-                    error(c, "unknown command");
+                case "connect":            doConnect(cmd); break;
+                case "disconnect":         doDisconnect(); reply(id, c, true, null, null); break;
+
+                // lobby reads
+                case "getTables":          reply(id, c, true, session.getTables(mainRoomId), null); break;
+                case "getGameTypes":       reply(id, c, true, session.getGameTypes(), null); break;
+                case "getDeckTypes":       reply(id, c, true, session.getDeckTypes(), null); break;
+                case "getRoomUsers":       reply(id, c, true, session.getRoomUsers(mainRoomId), null); break;
+                case "getServerMessages":  reply(id, c, true, session.getServerMessages(), null); break;
+
+                // chat
+                case "chat":               doChat(cmd, id); break;
+                case "joinChat":           reply(id, c, session.joinChat(uuid(cmd, "chatId")), null, null); break;
+                case "leaveChat":          reply(id, c, session.leaveChat(uuid(cmd, "chatId")), null, null); break;
+
+                // tables / matches
+                case "quickGame":          doQuickGame(cmd, id); break;
+                case "joinTable":          doJoinTable(cmd, id); break;
+                case "leaveTable":         reply(id, c, session.leaveTable(mainRoomId, uuid(cmd, "tableId")), null, null); break;
+                case "removeTable":        reply(id, c, session.removeTable(mainRoomId, uuid(cmd, "tableId")), null, null); break;
+                case "startMatch":         reply(id, c, session.startMatch(mainRoomId, uuid(cmd, "tableId")), null, null); break;
+                case "watchTable":         reply(id, c, session.watchTable(mainRoomId, uuid(cmd, "tableId")), null, null); break;
+                case "watchGame":          reply(id, c, session.watchGame(uuid(cmd, "gameId")), null, null); break;
+                case "joinGame":           reply(id, c, session.joinGame(uuid(cmd, "gameId")), null, null); break;
+
+                // in-game player responses
+                case "sendPlayerBoolean":  reply(id, c, session.sendPlayerBoolean(uuid(cmd, "gameId"), cmd.get("value").getAsBoolean()), null, null); break;
+                case "sendPlayerInteger":  reply(id, c, session.sendPlayerInteger(uuid(cmd, "gameId"), cmd.get("value").getAsInt()), null, null); break;
+                case "sendPlayerString":   reply(id, c, session.sendPlayerString(uuid(cmd, "gameId"), cmd.get("value").getAsString()), null, null); break;
+                case "sendPlayerUUID":     reply(id, c, session.sendPlayerUUID(uuid(cmd, "gameId"), uuid(cmd, "value")), null, null); break;
+                case "sendPlayerAction":   doPlayerAction(cmd, id); break;
+                case "concede":            reply(id, c, session.sendPlayerAction(PlayerAction.CLIENT_CONCEDE_GAME, uuid(cmd, "gameId"), null), null, null); break;
+                case "quitMatch":          reply(id, c, session.quitMatch(uuid(cmd, "gameId")), null, null); break;
+
+                default:                   error(c, "unknown command");
             }
         } catch (Throwable t) {
-            error(c, String.valueOf(t.getMessage()));
+            if (id != null) reply(id, c, false, null, String.valueOf(t.getMessage()));
+            else error(c, String.valueOf(t.getMessage()));
         }
     }
 
@@ -134,10 +199,16 @@ public class BridgeSession {
                 conn.setProxyType(Connection.ProxyType.NONE);
                 conn.setUserIdStr("bridge:" + user);
                 conn.setUserData(UserData.getDefaultUserDataView());
-                boolean ok = session.connectStart(conn);
-                if (ok) {
+                if (session.connectStart(conn)) {
+                    mainRoomId = session.getMainRoomId();
+                    Optional<UUID> chat = session.getRoomChatId(mainRoomId);
+                    chat.ifPresent(cid -> { mainChatId = cid; session.joinChat(cid); });
                     event("connected");
-                    doGetTables();
+                    JsonObject o = new JsonObject();
+                    o.addProperty("type", "tables");
+                    String json = Json.tryToJson(session.getTables(mainRoomId));
+                    if (json != null) o.add("data", JsonParser.parseString(json));
+                    send(o);
                 } else {
                     error("connect", session.getLastError());
                 }
@@ -147,26 +218,78 @@ public class BridgeSession {
         });
     }
 
-    private void doGetTables() {
-        try {
-            UUID room = session.getMainRoomId();
-            if (room == null) {
-                return;
+    private void doChat(JsonObject cmd, String id) {
+        UUID chatId = cmd.has("chatId") ? uuid(cmd, "chatId") : mainChatId;
+        if (chatId == null) { reply(id, "chat", false, null, "no chat joined"); return; }
+        reply(id, "chat", session.sendChatMessage(chatId, cmd.get("text").getAsString()), null, null);
+    }
+
+    private void doPlayerAction(JsonObject cmd, String id) {
+        PlayerAction action = PlayerAction.valueOf(cmd.get("action").getAsString());
+        UUID gameId = uuid(cmd, "gameId");
+        reply(id, "sendPlayerAction", session.sendPlayerAction(action, gameId, null), null, null);
+    }
+
+    private void doJoinTable(JsonObject cmd, String id) throws Exception {
+        UUID tableId = uuid(cmd, "tableId");
+        String name = cmd.has("name") ? cmd.get("name").getAsString() : session.getUserName();
+        DeckCardLists deck = basicLandTestDeck();
+        boolean ok = session.joinTable(mainRoomId, tableId, name, PlayerType.HUMAN, 1, deck, "");
+        reply(id, "joinTable", ok, null, null);
+    }
+
+    /** Replicates the Swing client's createTestGame: a quick match vs AI with a basic-land deck. */
+    private void doQuickGame(JsonObject cmd, String id) {
+        worker.submit(() -> {
+            try {
+                String gameType = cmd.has("gameType") ? cmd.get("gameType").getAsString() : "Momir Basic Two Player Duel";
+                String deckType = cmd.has("deckType") ? cmd.get("deckType").getAsString() : "Variant Magic - Momir Basic";
+                DeckCardLists deck = basicLandTestDeck();
+
+                MatchOptions options = new MatchOptions("Vs AI", gameType, false);
+                options.getPlayerTypes().add(PlayerType.HUMAN);
+                options.getPlayerTypes().add(PlayerType.COMPUTER_MAD);
+                options.setDeckType(deckType);
+                options.setAttackOption(MultiplayerAttackOption.MULTIPLE);
+                options.setRange(RangeOfInfluence.ONE);
+                options.setWinsNeeded(1);
+                options.setMatchTimeLimit(MatchTimeLimit.NONE);
+                options.setMatchBufferTime(MatchBufferTime.NONE);
+                options.setFreeMulligans(2);
+                options.setSkillLevel(SkillLevel.CASUAL);
+                options.setRollbackTurnsAllowed(true);
+                options.setQuitRatio(100);
+                options.setMinimumRating(0);
+
+                TableView table = session.createTable(mainRoomId, options);
+                if (table == null) { reply(id, "quickGame", false, null, "createTable null (gameType '" + gameType + "'): " + session.getLastError()); return; }
+                UUID tableId = table.getTableId();
+                boolean j1 = session.joinTable(mainRoomId, tableId, session.getUserName(), PlayerType.HUMAN, 1, deck, "");
+                String e1 = session.getLastError();
+                boolean j2 = session.joinTable(mainRoomId, tableId, "Computer", PlayerType.COMPUTER_MAD, 1, deck, "");
+                String e2 = session.getLastError();
+                boolean started = session.startMatch(mainRoomId, tableId);
+                String e3 = session.getLastError();
+                if (!started) {
+                    reply(id, "quickGame", false, null,
+                        "join1=" + j1 + "(" + e1 + ") join2=" + j2 + "(" + e2 + ") startMatch=false(" + e3 + ")");
+                    return;
+                }
+                reply(id, "quickGame", true, "{\"tableId\":\"" + tableId + "\"}", null);
+            } catch (Throwable t) {
+                reply(id, "quickGame", false, null, String.valueOf(t.getMessage()));
             }
-            Collection<TableView> tables = session.getTables(room);
-            JsonObject o = new JsonObject();
-            o.addProperty("type", "tables");
-            String json = Json.tryToJson(tables);
-            if (json != null) {
-                o.add("data", com.google.gson.JsonParser.parseString(json));
-            } else {
-                o.addProperty("count", tables == null ? 0 : tables.size());
-                o.addProperty("dataError", true);
-            }
-            send(o);
-        } catch (Throwable t) {
-            error("getTables", String.valueOf(t.getMessage()));
+        });
+    }
+
+    /** 25 basic lands — the same minimal deck the Swing client's test game uses. */
+    private DeckCardLists basicLandTestDeck() throws Exception {
+        File f = File.createTempFile("bridge-deck", ".dck");
+        f.deleteOnExit();
+        try (FileWriter w = new FileWriter(f)) {
+            w.write("12 Swamp\n12 Forest\n12 Island\n12 Mountain\n12 Plains\n");
         }
+        return DeckImporter.importDeckFromFile(f.getAbsolutePath(), false);
     }
 
     public void doDisconnect() {

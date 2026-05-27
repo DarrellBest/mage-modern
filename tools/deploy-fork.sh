@@ -73,6 +73,14 @@ swap_dir "$LIVE/mage-server/lib";    swap_dir "$LIVE/mage-server/plugins"
 swap_dir "$LIVE/mage-client/lib"
 stale=$(find "$BUNDLE" "$LIVE" -name '*-[0-9]*.jar' ! -name "*-${POMV}.jar" -path '*mage*' | grep -E '/mage[^/]*-[0-9]' | wc -l || true)
 
+# CRITICAL: config.xml registers plugins by version-stamped jar filename. After swapping
+# jars to a new version, realign those refs or the player-type/deck-validator/game-type
+# plugins fail to load ("Unknown player type", DeckValidatorFactory NPE) and games break.
+echo ">> realigning config.xml plugin jar versions to ${POMV}"
+for cfg in "$BUNDLE/mage-server/config/config.xml" "$LIVE/mage-server/config/config.xml"; do
+  [ -f "$cfg" ] && sed -i -E "s/-[0-9]+\.[0-9]+\.[0-9]+\.jar/-${POMV}.jar/g" "$cfg" && echo "   updated $cfg"
+done
+
 echo ">> re-zipping bundle"
 cd "$BUNDLE"; rm -f "$WEBZIP"; zip -qr "$WEBZIP" mage-client mage-server
 echo "   bundle: $(du -h "$WEBZIP" | cut -f1)"
