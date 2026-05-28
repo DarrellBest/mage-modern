@@ -50,7 +50,7 @@ public class ChatPanelBasic extends javax.swing.JPanel {
     /**
      * Chat message color for personal infos.
      */
-    protected static final String USER_INFO_COLOR = "Yellow";
+    protected static final String USER_INFO_COLOR = "#F3C97A"; // arcane gold (was harsh CSS "Yellow")
     /**
      * Chat message color for status infos.
      */

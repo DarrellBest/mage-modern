@@ -264,7 +264,32 @@ public final class GamePanel extends javax.swing.JPanel {
         // ... skip + stack
         JPanel pnlCommandsSkipAndStack = new JPanel(new BorderLayout());
         pnlCommandsSkipAndStack.setOpaque(false);
-        pnlCommandsSkipAndStack.add(pnlShortCuts, BorderLayout.NORTH);
+        // shortcuts hidden by default; a small arrow toggle exposes the F-key strip
+        pnlShortCuts.setVisible(false);
+        final javax.swing.JToggleButton shortcutsToggle = new javax.swing.JToggleButton("▾ Shortcuts");
+        shortcutsToggle.setOpaque(false);
+        shortcutsToggle.setFocusable(false);
+        shortcutsToggle.setBorderPainted(false);
+        shortcutsToggle.setContentAreaFilled(false);
+        shortcutsToggle.setForeground(new Color(0x9B, 0x8F, 0xC0));
+        shortcutsToggle.setFont(shortcutsToggle.getFont().deriveFont(java.awt.Font.PLAIN, 11f));
+        shortcutsToggle.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+        shortcutsToggle.setMargin(new java.awt.Insets(2, 6, 2, 6));
+        shortcutsToggle.addActionListener(e -> {
+            boolean show = shortcutsToggle.isSelected();
+            pnlShortCuts.setVisible(show);
+            shortcutsToggle.setText(show ? "▴ Shortcuts" : "▾ Shortcuts");
+            pnlCommandsSkipAndStack.revalidate();
+            pnlCommandsSkipAndStack.repaint();
+        });
+        JPanel shortcutsHeader = new JPanel(new BorderLayout());
+        shortcutsHeader.setOpaque(false);
+        shortcutsHeader.add(shortcutsToggle, BorderLayout.WEST);
+        JPanel northStack = new JPanel(new BorderLayout());
+        northStack.setOpaque(false);
+        northStack.add(shortcutsHeader, BorderLayout.NORTH);
+        northStack.add(pnlShortCuts, BorderLayout.CENTER);
+        pnlCommandsSkipAndStack.add(northStack, BorderLayout.NORTH);
         pnlCommandsSkipAndStack.add(stackObjects, BorderLayout.CENTER);
         // ... split: feedback + hand <|> skip + stack
         splitHandAndStack.setLeftComponent(pnlCommandsFeedbackAndHand);
@@ -2378,7 +2403,8 @@ public final class GamePanel extends javax.swing.JPanel {
         // warning, it's important to store/restore splitters in same order as real life GUI
         // from outer to inner (otherwise panels will be hidden or weird)
         // also it must be restored by thread queue
-        this.splitters.put(PreferencesDialog.KEY_GAMEPANEL_DIVIDER_LOCATIONS_GAME_AND_BIG_CARD, new MageSplitter(splitGameAndBigCard, 0.15));
+        // card preview collapsed by default; one-touch arrow on the divider reveals it
+        this.splitters.put(PreferencesDialog.KEY_GAMEPANEL_DIVIDER_LOCATIONS_GAME_AND_BIG_CARD, new MageSplitter(splitGameAndBigCard, 0.0));
         this.splitters.put(PreferencesDialog.KEY_GAMEPANEL_DIVIDER_LOCATIONS_BATTLEFIELD_AND_CHATS, new MageSplitter(splitBattlefieldAndChats, 0.80));
         this.splitters.put(PreferencesDialog.KEY_GAMEPANEL_DIVIDER_LOCATIONS_HAND_STACK, new MageSplitter(splitHandAndStack, 0.70));
         this.splitters.put(PreferencesDialog.KEY_GAMEPANEL_DIVIDER_LOCATIONS_CHAT_AND_LOGS, new MageSplitter(splitChatAndLogs, 0.40));

@@ -66,10 +66,10 @@ public class ChatPanelSeparated extends ChatPanelBasic {
             text.append(getColoredText(TIMESTAMP_COLOR, timeFormatter.format(time) + getTurnInfoPart(turnInfo) + ": "));
         }
         if (color == ChatMessage.MessageColor.ORANGE) {
-            textColor = "Orange";
+            textColor = "#FF7D4D"; // arcane ember
         }
         if (color == ChatMessage.MessageColor.YELLOW) {
-            textColor = "Yellow";
+            textColor = "#F3C97A"; // arcane gold
         }
         if (username != null && !username.isEmpty()) {
             text.append(getColoredText(userColor, username + userSeparator));
