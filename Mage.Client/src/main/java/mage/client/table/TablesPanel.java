@@ -644,12 +644,16 @@ public class TablesPanel extends javax.swing.JPanel {
         jSplitPane1.setLeftComponent(chatPanelMain);
         jSplitPane1.setRightComponent(jPanelTables);
         jSplitPane1.setResizeWeight(0.30);
-        final boolean[] dividerApplied = {false};
+        // re-apply the 30% ratio on every real resize so the divider tracks the lobby width
+        // even after maximize (the one-shot approach was firing on tiny startup widths).
         jSplitPane1.addComponentListener(new java.awt.event.ComponentAdapter() {
             @Override public void componentResized(java.awt.event.ComponentEvent e) {
-                if (!dividerApplied[0] && jSplitPane1.getWidth() > 200) {
-                    jSplitPane1.setDividerLocation((int) (jSplitPane1.getWidth() * 0.30));
-                    dividerApplied[0] = true;
+                int w = jSplitPane1.getWidth();
+                if (w > 400) {
+                    int want = (int) (w * 0.30);
+                    if (Math.abs(jSplitPane1.getDividerLocation() - want) > 8) {
+                        jSplitPane1.setDividerLocation(want);
+                    }
                 }
             }
         });

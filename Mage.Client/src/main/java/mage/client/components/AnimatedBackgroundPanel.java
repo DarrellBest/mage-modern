@@ -42,7 +42,7 @@ public class AnimatedBackgroundPanel extends ImagePanel {
     public enum AtmospherePreset {
         //      count fps sizeMin sizeMax spdMin spdMax aMin  aMax  tint vignette glow
         LOBBY(   110,  33,  1.2f,   3.4f,   4f,    16f, 0.30f, 0.85f, 0.55f, 0.85f, true),
-        INGAME(   28,  20,  0.8f,   2.4f,   6f,    20f, 0.18f, 0.45f, 0.30f, 0.55f, false);
+        INGAME(   28,  20,  0.8f,   2.4f,   6f,    20f, 0.18f, 0.45f, 0.30f, 0.55f, true);
 
         final int count, fps;
         final float sizeMin, sizeMax, speedMin, speedMax, alphaMin, alphaMax, tintAlpha, vignetteAlpha;
