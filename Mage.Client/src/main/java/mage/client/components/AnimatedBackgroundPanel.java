@@ -6,12 +6,18 @@ import mage.components.ImagePanelStyle;
 
 import javax.swing.Timer;
 import java.awt.AlphaComposite;
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RadialGradientPaint;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
+import java.awt.Stroke;
+import java.awt.geom.AffineTransform;
+import java.awt.geom.Ellipse2D;
+import java.awt.geom.Line2D;
+import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
@@ -81,6 +87,10 @@ public class AnimatedBackgroundPanel extends ImagePanel {
     private int cacheW = -1, cacheH = -1;
     private Rectangle cacheGlow;
     private BufferedImage[] sprites;
+    // counter-rotating arcane sigils (lobby only) — ported from the launcher
+    private BufferedImage sigilOuter, sigilInner;
+    private float angleOuter = 0f, angleInner = 0f;
+    private static final int SIGIL_PX = 1024; // bake once, scale at paint
 
     public AnimatedBackgroundPanel(BufferedImage image, ImagePanelStyle style, AtmospherePreset preset) {
         super(image, style);
@@ -175,6 +185,9 @@ public class AnimatedBackgroundPanel extends ImagePanel {
             p.y = wrap(p.y + p.vy * dt, -MARGIN, h + MARGIN);
             p.phase += dt;
         }
+        // sigils: outer 60s clockwise, inner 40s reverse — matches the launcher exactly
+        angleOuter = (float) ((angleOuter + dt * Math.PI * 2.0 / 60.0) % (Math.PI * 2.0));
+        angleInner = (float) ((angleInner - dt * Math.PI * 2.0 / 40.0) % (Math.PI * 2.0));
         repaint();
     }
 
@@ -194,6 +207,13 @@ public class AnimatedBackgroundPanel extends ImagePanel {
         g.drawImage(bgCache, 0, 0, null); // accelerated blit of all static layers
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        // counter-rotating arcane sigils behind the logo (lobby preset only)
+        if (preset.drawGlow) {
+            if (sigilOuter == null) buildSigils();
+            float cx = w / 2f, cy = h / 2f, big = Math.min(w, h);
+            paintSigil(g2, sigilOuter, cx, cy, big * 0.55f, angleOuter, 0.45f);
+            paintSigil(g2, sigilInner, cx, cy, big * 0.36f, angleInner, 0.32f);
+        }
         for (Particle p : particles) {
             float twinkle = 0.6f + 0.4f * (float) Math.sin(p.phase * 2.0);
             float alpha = clamp01(p.baseAlpha * twinkle);
@@ -247,6 +267,74 @@ public class AnimatedBackgroundPanel extends ImagePanel {
             g.fillRect(0, 0, SPRITE, SPRITE);
             g.dispose();
             sprites[i] = s;
+        }
+    }
+
+    private void paintSigil(Graphics2D g2, BufferedImage img, float cx, float cy, float size, float angle, float alpha) {
+        AffineTransform t = AffineTransform.getTranslateInstance(cx, cy);
+        t.rotate(angle);
+        t.scale(size / img.getWidth(), size / img.getHeight());
+        t.translate(-img.getWidth() / 2.0, -img.getHeight() / 2.0);
+        Graphics2D gg = (Graphics2D) g2.create();
+        gg.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
+        gg.drawImage(img, t, null);
+        gg.dispose();
+    }
+
+    private void buildSigils() {
+        sigilOuter = makeSigil(SIGIL_PX, 0.7f, false);
+        sigilInner = makeSigil(SIGIL_PX, 1.0f, true);
+    }
+
+    /** Render the launcher's SVG sigil (viewBox 0..200) into a centered, scaled ARGB image. */
+    private BufferedImage makeSigil(int size, float strokeAtVB, boolean inner) {
+        BufferedImage img = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = img.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+        float scale = size / 200f;
+        g.translate(size / 2f, size / 2f);
+        g.scale(scale, scale);
+        g.translate(-100, -100); // viewBox center -> shift so SVG coords map directly
+        // glow pass (wide, dim soft purple)
+        g.setColor(new Color(0xA8, 0x75, 0xFF, 80));
+        g.setStroke(new BasicStroke(strokeAtVB * 3.5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        drawSigilShapes(g, inner);
+        // sharp pass (crisp arcane bright)
+        g.setColor(new Color(0xC9, 0xA7, 0xFF, 220));
+        g.setStroke(new BasicStroke(strokeAtVB, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        drawSigilShapes(g, inner);
+        g.dispose();
+        return img;
+    }
+
+    private void drawSigilShapes(Graphics2D g, boolean inner) {
+        if (inner) {
+            // <circle r=90> + <polygon points="100,20 160,140 40,140" stroke-dasharray="3 6">
+            g.draw(new Ellipse2D.Float(10, 10, 180, 180));
+            Stroke s = g.getStroke();
+            if (s instanceof BasicStroke) {
+                BasicStroke b = (BasicStroke) s;
+                g.setStroke(new BasicStroke(b.getLineWidth(), b.getEndCap(), b.getLineJoin(), 10f, new float[]{3f, 6f}, 0f));
+            }
+            Path2D tri = new Path2D.Float();
+            tri.moveTo(100, 20); tri.lineTo(160, 140); tri.lineTo(40, 140); tri.closePath();
+            g.draw(tri);
+            g.setStroke(s);
+        } else {
+            // <circle r=96>, <circle r=74>, two triangles -> star of david, <circle r=40>, crosshair, <circle r=8>
+            g.draw(new Ellipse2D.Float(4, 4, 192, 192));
+            g.draw(new Ellipse2D.Float(26, 26, 148, 148));
+            Path2D t1 = new Path2D.Float();
+            t1.moveTo(100, 12); t1.lineTo(176, 150); t1.lineTo(24, 150); t1.closePath();
+            g.draw(t1);
+            Path2D t2 = new Path2D.Float();
+            t2.moveTo(100, 188); t2.lineTo(24, 50); t2.lineTo(176, 50); t2.closePath();
+            g.draw(t2);
+            g.draw(new Ellipse2D.Float(60, 60, 80, 80));
+            g.draw(new Line2D.Float(100, 60, 100, 140));
+            g.draw(new Line2D.Float(60, 100, 140, 100));
+            g.draw(new Ellipse2D.Float(92, 92, 16, 16));
         }
     }
 
