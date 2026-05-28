@@ -639,15 +639,16 @@ public class TablesPanel extends javax.swing.JPanel {
         tableCompleted.setRowHeight(GUISizeHelper.tableRowHeight);
 
         jSplitPane1.setDividerSize(GUISizeHelper.dividerBarSize);
-        // right pane (players + chat) ~ 25% of lobby width. setDividerLocation(double) needs the
-        // split pane to be at its final size, so apply once on the first real resize and let the
-        // user freely drag the divider after.
-        jSplitPane1.setResizeWeight(0.75);
+        // Players + chat on the LEFT (~25% of width); tables on the RIGHT (~75%).
+        // The form sets jPanelTables LEFT / chatPanelMain RIGHT — swap them here.
+        jSplitPane1.setLeftComponent(chatPanelMain);
+        jSplitPane1.setRightComponent(jPanelTables);
+        jSplitPane1.setResizeWeight(0.25);
         final boolean[] dividerApplied = {false};
         jSplitPane1.addComponentListener(new java.awt.event.ComponentAdapter() {
             @Override public void componentResized(java.awt.event.ComponentEvent e) {
                 if (!dividerApplied[0] && jSplitPane1.getWidth() > 200) {
-                    jSplitPane1.setDividerLocation((int) (jSplitPane1.getWidth() * 0.75));
+                    jSplitPane1.setDividerLocation((int) (jSplitPane1.getWidth() * 0.25));
                     dividerApplied[0] = true;
                 }
             }
