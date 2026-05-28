@@ -71,7 +71,7 @@ public class PlayerPanelExt extends javax.swing.JPanel {
 
     float guiScaleMod = 1.0f;
 
-    private Color activeValueColor = new Color(244, 9, 47);
+    private Color activeValueColor = new Color(255, 125, 77); // arcane ember (was raw red)
     private Font fontValuesZero;
     private Font fontValuesNonZero;
 
@@ -153,11 +153,11 @@ public class PlayerPanelExt extends javax.swing.JPanel {
                 final Color textColor;  // use default in HoverButton
                 final Color foregroundColor;
                 if (pt.getBufferCount() > 0) {
-                    textColor = Color.GREEN;
-                    foregroundColor = Color.GREEN.darker().darker();
+                    textColor = new Color(70, 230, 214); // arcane teal (was raw GREEN)
+                    foregroundColor = new Color(28, 90, 84); // dark teal
                 } else if (pt.getCount() < 300) { // visual indication for under 5 minutes
-                    textColor = Color.RED;
-                    foregroundColor = Color.RED.darker().darker();
+                    textColor = new Color(255, 125, 77); // arcane ember (was raw RED)
+                    foregroundColor = new Color(110, 50, 28); // dark ember
                 } else {
                     textColor = null;
                     foregroundColor = Color.BLACK;
@@ -204,7 +204,7 @@ public class PlayerPanelExt extends javax.swing.JPanel {
             label.setForeground(fontColor);
             label.setFont(fontValuesNonZero);
         } else {
-            label.setForeground(new Color(100, 100, 100));
+            label.setForeground(new Color(155, 143, 192)); // arcane muted (was 90s gray 100,100,100)
             label.setFont(fontValuesZero);
         }
     }
@@ -387,11 +387,11 @@ public class PlayerPanelExt extends javax.swing.JPanel {
                 final Color textColor; // use default in HoverButton
                 final Color foregroundColor;
                 if (player.getBufferTimeLeft() > 0) {
-                    textColor = Color.GREEN;
-                    foregroundColor = Color.GREEN.darker().darker();
+                    textColor = new Color(70, 230, 214); // arcane teal (was raw GREEN)
+                    foregroundColor = new Color(28, 90, 84); // dark teal
                 } else if (player.getPriorityTimeLeftSecs() < 300) { // visual indication for under 5 minutes
-                    textColor = Color.RED;
-                    foregroundColor = Color.RED.darker().darker();
+                    textColor = new Color(255, 125, 77); // arcane ember (was raw RED)
+                    foregroundColor = new Color(110, 50, 28); // dark ember
                 } else {
                     textColor = null;
                     foregroundColor = Color.BLACK;

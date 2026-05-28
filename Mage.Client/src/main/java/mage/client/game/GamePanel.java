@@ -2303,7 +2303,8 @@ public final class GamePanel extends javax.swing.JPanel {
         txtHoldPriority = new javax.swing.JLabel();
         txtHoldPriority.setText("Hold");
         txtHoldPriority.setBorder(BorderFactory.createCompoundBorder(border, paddingBorder));
-        txtHoldPriority.setBackground(Color.LIGHT_GRAY);
+        txtHoldPriority.setBackground(new Color(40, 25, 78)); // arcane (was LIGHT_GRAY)
+        txtHoldPriority.setForeground(new Color(0xC9, 0xA7, 0xFF));
         txtHoldPriority.setOpaque(true);
         txtHoldPriority.setToolTipText("Holding priority after the next spell cast or ability activation");
         txtHoldPriority.setVisible(false);

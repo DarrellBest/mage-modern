@@ -34,11 +34,11 @@ public class ChatPanelBasic extends javax.swing.JPanel {
     /**
      * Chat message color for opponents.
      */
-    protected static final String OPPONENT_COLOR = "#FF7F50";
+    protected static final String OPPONENT_COLOR = "#F3C97A"; // arcane gold (was coral)
     /**
      * Chat message color for client player.
      */
-    protected static final String MY_COLOR = "#7FFFD4";
+    protected static final String MY_COLOR = "#46E6D6"; // arcane teal (was harsh aquamarine)
     /**
      * Chat message color for timestamps.
      */
@@ -95,11 +95,11 @@ public class ChatPanelBasic extends javax.swing.JPanel {
     public ChatPanelBasic() {
         initComponents();
         txtConversation.enableHyperlinksAndCardPopups();
-        setBackground(new Color(0, 0, 0, CHAT_ALPHA));
+        setBackground(new Color(28, 21, 54, CHAT_ALPHA));
         changeGUISize(GUISizeHelper.chatFont);
         if (jScrollPaneTxt != null) {
-            jScrollPaneTxt.setBackground(new Color(0, 0, 0, CHAT_ALPHA));
-            jScrollPaneTxt.getViewport().setBackground(new Color(0, 0, 0, CHAT_ALPHA));
+            jScrollPaneTxt.setBackground(new Color(28, 21, 54, CHAT_ALPHA));
+            jScrollPaneTxt.getViewport().setBackground(new Color(28, 21, 54, CHAT_ALPHA));
             jScrollPaneTxt.setViewportBorder(null);
         }
     }
@@ -237,10 +237,10 @@ public class ChatPanelBasic extends javax.swing.JPanel {
                 userSeparator = ": ";
         }
         if (color == MessageColor.ORANGE) {
-            textColor = "Orange";
+            textColor = "#FF7D4D"; // arcane ember (was harsh CSS "Orange")
         }
         if (color == MessageColor.YELLOW) {
-            textColor = "Yellow";
+            textColor = "#F3C97A"; // arcane gold (was harsh CSS "Yellow")
         }
         if (messageType == MessageType.WHISPER_FROM) {
             if (username.equalsIgnoreCase(SessionHandler.getUserName())) {
