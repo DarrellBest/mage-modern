@@ -2378,7 +2378,7 @@ public final class GamePanel extends javax.swing.JPanel {
         // warning, it's important to store/restore splitters in same order as real life GUI
         // from outer to inner (otherwise panels will be hidden or weird)
         // also it must be restored by thread queue
-        this.splitters.put(PreferencesDialog.KEY_GAMEPANEL_DIVIDER_LOCATIONS_GAME_AND_BIG_CARD, new MageSplitter(splitGameAndBigCard, 0.85));
+        this.splitters.put(PreferencesDialog.KEY_GAMEPANEL_DIVIDER_LOCATIONS_GAME_AND_BIG_CARD, new MageSplitter(splitGameAndBigCard, 0.15));
         this.splitters.put(PreferencesDialog.KEY_GAMEPANEL_DIVIDER_LOCATIONS_BATTLEFIELD_AND_CHATS, new MageSplitter(splitBattlefieldAndChats, 0.80));
         this.splitters.put(PreferencesDialog.KEY_GAMEPANEL_DIVIDER_LOCATIONS_HAND_STACK, new MageSplitter(splitHandAndStack, 0.70));
         this.splitters.put(PreferencesDialog.KEY_GAMEPANEL_DIVIDER_LOCATIONS_CHAT_AND_LOGS, new MageSplitter(splitChatAndLogs, 0.40));
@@ -2754,9 +2754,11 @@ public final class GamePanel extends javax.swing.JPanel {
         bigCardPanel.setLayout(new BorderLayout());
         bigCardPanel.add(bigCard, BorderLayout.NORTH);
 
-        // split: game <|> chat/log
-        splitGameAndBigCard.setLeftComponent(splitBattlefieldAndChats);
-        splitGameAndBigCard.setRightComponent(bigCardPanel);
+        // split: hover-card preview on the LEFT, battlefield + chat/log on the RIGHT
+        splitGameAndBigCard.setLeftComponent(bigCardPanel);
+        splitGameAndBigCard.setRightComponent(splitBattlefieldAndChats);
+        // big card is now the fixed-size left side; battlefield gets all extra width
+        splitGameAndBigCard.setResizeWeight(DIVIDER_KEEP_LEFT_COMPONENT);
     }
 
     private void removeListener() {

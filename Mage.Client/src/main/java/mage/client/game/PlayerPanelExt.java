@@ -112,7 +112,7 @@ public class PlayerPanelExt extends javax.swing.JPanel {
         this.fontValuesNonZero = this.getFont().deriveFont(Font.BOLD);
         this.GREEN_BORDER = new LineBorder(Color.green, sizeMod(3));
         this.RED_BORDER = new LineBorder(Color.red, sizeMod(2));
-        this.YELLOW_BORDER = new LineBorder(Color.yellow, sizeMod(3));
+        this.YELLOW_BORDER = new LineBorder(new Color(0xF3, 0xC9, 0x7A), sizeMod(3));
         this.EMPTY_BORDER = BorderFactory.createEmptyBorder(0, 0, 0, 0);
 
         setPreferredSize(new Dimension(sizeMod(PANEL_WIDTH), sizeMod(PANEL_HEIGHT)));
@@ -566,7 +566,7 @@ public class PlayerPanelExt extends javax.swing.JPanel {
 
         if (DebugUtil.GUI_GAME_DRAW_PLAYER_PANEL_BORDER) {
             setBorder(BorderFactory.createLineBorder(Color.green));
-            panelBackground.setBorder(BorderFactory.createLineBorder(Color.yellow));
+            panelBackground.setBorder(BorderFactory.createLineBorder(new Color(0xF3, 0xC9, 0x7A)));
         }
 
         // avatar in normal mode (image)

@@ -318,9 +318,10 @@ public class HelperPanel extends JPanel {
         // also colorize feedback panel on player's priority and enable sound notification
 
         int BUTTONS_H_GAP = 15;
-        Color ACTIVE_FEEDBACK_BACKGROUND_COLOR_MAIN = new Color(0, 0, 255, 50);
-        Color ACTIVE_FEEDBACK_BACKGROUND_COLOR_BATTLE = new Color(255, 0, 0, 50);
-        Color ACTIVE_FEEDBACK_BACKGROUND_COLOR_OTHER = new Color(0, 255, 0, 50);
+        // arcane palette (was raw RGB blue/red/green)
+        Color ACTIVE_FEEDBACK_BACKGROUND_COLOR_MAIN = new Color(168, 117, 255, 70);  // arcane purple
+        Color ACTIVE_FEEDBACK_BACKGROUND_COLOR_BATTLE = new Color(255, 125, 77, 70); // ember
+        Color ACTIVE_FEEDBACK_BACKGROUND_COLOR_OTHER = new Color(70, 230, 214, 70);  // teal
 
         // cleanup current settings to default (flow layout - different sizes)
         this.buttonGrid.setLayout(new FlowLayout(FlowLayout.CENTER, BUTTONS_H_GAP, 0));
