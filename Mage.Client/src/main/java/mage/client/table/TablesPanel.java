@@ -394,10 +394,43 @@ public class TablesPanel extends javax.swing.JPanel {
         for (JComponent component : components) {
             component.setOpaque(false);
         }
+        // outer panel + bottom message bar — let the spinning sigils + wordmark show through the whole lobby
+        this.setOpaque(false);
+        jPanelBottom.setOpaque(false);
 
-        // very translucent dark wash — the arcane background, wordmark, and sigils show through
-        jScrollPaneTablesActive.getViewport().setBackground(new Color(12, 9, 28, 30));
-        jScrollPaneTablesFinished.getViewport().setBackground(new Color(12, 9, 28, 30));
+        // --- LOBBY CLEANUP: bury the filter clutter, lead with the command actions ---
+        // The two filter toolbars (format/match-state/skill-level pills) dominate the header
+        // visually. Hide them by default and surface them behind a single "Filters ▾" toggle so
+        // the primary actions (New Match / New Tourney / Quick play) read as the focus.
+        filterBar1.setVisible(false);
+        filterBar2.setVisible(false);
+        final javax.swing.JToggleButton filterToggle = new javax.swing.JToggleButton("Filters ▾");
+        filterToggle.setOpaque(false);
+        filterToggle.setFocusable(false);
+        filterToggle.setFont(GUISizeHelper.dialogFont);
+        filterToggle.addActionListener(e -> {
+            boolean show = filterToggle.isSelected();
+            filterBar1.setVisible(show);
+            filterBar2.setVisible(show);
+            filterToggle.setText(show ? "Filters ▴" : "Filters ▾");
+            jPanelTop.revalidate();
+            jPanelTop.repaint();
+        });
+        jPanelTop.add(filterToggle);
+
+        // Bump the primary action buttons so they're the obvious focal point of the lobby.
+        java.awt.Font heavyFont = new java.awt.Font(GUISizeHelper.dialogFont.getName(), java.awt.Font.BOLD, GUISizeHelper.dialogFont.getSize() + 1);
+        for (javax.swing.JButton b : new javax.swing.JButton[]{btnNewTable, btnNewTournament, btnQuickStart2Player, btnQuickStart4Player, btnQuickStartMCTS}) {
+            b.setFont(heavyFont);
+            b.setMargin(new java.awt.Insets(10, 18, 10, 18));
+        }
+
+        // viewports + JTables fully transparent — only rendered rows paint, so the atmosphere
+        // (nebula, sigils, particles) reads through the entire empty lobby area
+        jScrollPaneTablesActive.getViewport().setBackground(new Color(12, 9, 28, 10));
+        jScrollPaneTablesFinished.getViewport().setBackground(new Color(12, 9, 28, 10));
+        tableTables.setOpaque(false);
+        tableCompleted.setOpaque(false);
 
         restoreFilters();
         setGUISize();

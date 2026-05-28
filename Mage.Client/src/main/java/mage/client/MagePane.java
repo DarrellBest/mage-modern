@@ -22,6 +22,9 @@
      public MagePane() {
          this.createdOrder = createdOrderGenerator.incrementAndGet();
          initComponents();
+         // base pane stays transparent so the desktop's AnimatedBackgroundPanel
+         // (nebula, sigils, particles) reads through the lobby / game pane hierarchy
+         this.setOpaque(false);
      }
 
      public void changeGUISize() {

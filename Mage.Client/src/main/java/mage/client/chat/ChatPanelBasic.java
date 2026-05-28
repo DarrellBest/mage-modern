@@ -361,10 +361,10 @@ public class ChatPanelBasic extends javax.swing.JPanel {
         jScrollPaneTxt.setPreferredSize(new java.awt.Dimension(32767, 32767));
 
         txtConversation.setEditable(false);
-        txtConversation.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, 1, 1, 1));
-        txtConversation.setFont(new java.awt.Font("Arial", 0, 14)); // NOI18N
+        txtConversation.setBorder(javax.swing.BorderFactory.createEmptyBorder(10, 14, 10, 14));
+        txtConversation.setFont(new java.awt.Font("Inter", 0, 13)); // NOI18N (falls back to default if Inter absent)
         txtConversation.setFocusCycleRoot(false);
-        txtConversation.setMargin(new java.awt.Insets(2, 2, 2, 2));
+        txtConversation.setMargin(new java.awt.Insets(6, 6, 6, 6));
         txtConversation.setOpaque(false);
         jScrollPaneTxt.setViewportView(txtConversation);
 

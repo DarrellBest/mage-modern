@@ -211,8 +211,8 @@ public class AnimatedBackgroundPanel extends ImagePanel {
         if (preset.drawGlow) {
             if (sigilOuter == null) buildSigils();
             float cx = w / 2f, cy = h / 2f, big = Math.min(w, h);
-            paintSigil(g2, sigilOuter, cx, cy, big * 0.55f, angleOuter, 0.45f);
-            paintSigil(g2, sigilInner, cx, cy, big * 0.36f, angleInner, 0.32f);
+            paintSigil(g2, sigilOuter, cx, cy, big * 0.55f, angleOuter, 0.90f);
+            paintSigil(g2, sigilInner, cx, cy, big * 0.36f, angleInner, 0.75f);
         }
         for (Particle p : particles) {
             float twinkle = 0.6f + 0.4f * (float) Math.sin(p.phase * 2.0);
@@ -237,7 +237,14 @@ public class AnimatedBackgroundPanel extends ImagePanel {
         BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
         Graphics2D g2 = img.createGraphics();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        super.paintComponent(g2); // theme background image, scaled to panel size
+        // pure void base for the lobby preset (the theme background image was drowning the sigils);
+        // in-game still uses the bg image so the battlefield reads through
+        if (preset.drawGlow) {
+            g2.setColor(VOID);
+            g2.fillRect(0, 0, w, h);
+        } else {
+            super.paintComponent(g2);
+        }
         paintNebula(g2, w, h);
         if (preset.drawGlow && glowRect != null) {
             drawRadial(g2, (float) glowRect.getCenterX(), (float) glowRect.getCenterY(),

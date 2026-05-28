@@ -75,6 +75,7 @@ public class PlayersChatPanel extends javax.swing.JPanel {
 
         jTablePlayers.setBackground(new Color(28, 21, 54, CHAT_ALPHA));
         jTablePlayers.setForeground(Color.white);
+        jTablePlayers.setOpaque(false);
         jTablePlayers.setRowSorter(new MageTableRowSorter(userTableModel));
         setGUISize();
 
@@ -89,7 +90,8 @@ public class PlayersChatPanel extends javax.swing.JPanel {
         jScrollPaneSystem.setViewportBorder(null);
 
         colorPaneSystem.setExtBackgroundColor(new Color(28, 21, 54, CHAT_ALPHA)); // Alpha = 255 not transparent
-        colorPaneSystem.setBorder(new EmptyBorder(5, 5, 5, 5));
+        // Twitch-style breathing room around the chat text
+        colorPaneSystem.setBorder(new EmptyBorder(12, 14, 12, 14));
         if (jScrollPanePlayers != null) {
             jScrollPanePlayers.setBackground(new Color(28, 21, 54, CHAT_ALPHA));
             jScrollPanePlayers.getViewport().setBackground(new Color(28, 21, 54, CHAT_ALPHA));
@@ -271,7 +273,7 @@ public class PlayersChatPanel extends javax.swing.JPanel {
         colorPaneSystem.setEditable(false);
         colorPaneSystem.setBackground(new java.awt.Color(28, 21, 54, CHAT_ALPHA));
         colorPaneSystem.setBorder(null);
-        colorPaneSystem.setFont(new java.awt.Font("Arial", 0, 14)); // NOI18N
+        colorPaneSystem.setFont(new java.awt.Font("Inter", 0, 13)); // NOI18N, falls back to default if Inter not installed
         colorPaneSystem.setMargin(new java.awt.Insets(0, 0, 0, 0));
         colorPaneSystem.setOpaque(false);
         jScrollPaneSystem.setViewportView(colorPaneSystem);
