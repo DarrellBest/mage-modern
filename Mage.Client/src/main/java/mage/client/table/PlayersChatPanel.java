@@ -71,9 +71,9 @@ public class PlayersChatPanel extends javax.swing.JPanel {
         userTableModel = new UserTableModel(); // needs to be set before initComponents();
 
         initComponents();
-        setBackground(new Color(0, 0, 0, CHAT_ALPHA));
+        setBackground(new Color(28, 21, 54, CHAT_ALPHA));
 
-        jTablePlayers.setBackground(new Color(0, 0, 0, CHAT_ALPHA));
+        jTablePlayers.setBackground(new Color(28, 21, 54, CHAT_ALPHA));
         jTablePlayers.setForeground(Color.white);
         jTablePlayers.setRowSorter(new MageTableRowSorter(userTableModel));
         setGUISize();
@@ -88,11 +88,11 @@ public class PlayersChatPanel extends javax.swing.JPanel {
         jScrollPaneSystem.getViewport().setOpaque(false);
         jScrollPaneSystem.setViewportBorder(null);
 
-        colorPaneSystem.setExtBackgroundColor(new Color(0, 0, 0, CHAT_ALPHA)); // Alpha = 255 not transparent
+        colorPaneSystem.setExtBackgroundColor(new Color(28, 21, 54, CHAT_ALPHA)); // Alpha = 255 not transparent
         colorPaneSystem.setBorder(new EmptyBorder(5, 5, 5, 5));
         if (jScrollPanePlayers != null) {
-            jScrollPanePlayers.setBackground(new Color(0, 0, 0, CHAT_ALPHA));
-            jScrollPanePlayers.getViewport().setBackground(new Color(0, 0, 0, CHAT_ALPHA));
+            jScrollPanePlayers.setBackground(new Color(28, 21, 54, CHAT_ALPHA));
+            jScrollPanePlayers.getViewport().setBackground(new Color(28, 21, 54, CHAT_ALPHA));
             jScrollPanePlayers.setViewportBorder(null);
         }
     }
@@ -269,7 +269,7 @@ public class PlayersChatPanel extends javax.swing.JPanel {
         jScrollPaneSystem.setOpaque(false);
 
         colorPaneSystem.setEditable(false);
-        colorPaneSystem.setBackground(new java.awt.Color(0, 0, 0));
+        colorPaneSystem.setBackground(new java.awt.Color(28, 21, 54, CHAT_ALPHA));
         colorPaneSystem.setBorder(null);
         colorPaneSystem.setFont(new java.awt.Font("Arial", 0, 14)); // NOI18N
         colorPaneSystem.setMargin(new java.awt.Insets(0, 0, 0, 0));

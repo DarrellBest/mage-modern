@@ -396,8 +396,8 @@ public class TablesPanel extends javax.swing.JPanel {
         }
 
         // very translucent dark wash — the arcane background, wordmark, and sigils show through
-        jScrollPaneTablesActive.getViewport().setBackground(new Color(12, 9, 28, 60));
-        jScrollPaneTablesFinished.getViewport().setBackground(new Color(12, 9, 28, 60));
+        jScrollPaneTablesActive.getViewport().setBackground(new Color(12, 9, 28, 30));
+        jScrollPaneTablesFinished.getViewport().setBackground(new Color(12, 9, 28, 30));
 
         restoreFilters();
         setGUISize();

@@ -578,6 +578,24 @@ public final class GuiDisplayUtil {
         UIManager.put("TabbedPane.showTabSeparators", false);
         UIManager.put("TitlePane.unifiedBackground", true);
 
+        // lobby tables — arcane-tinted translucent rows, distinct header, vivid selection
+        UIManager.put("Table.background", new Color(28, 21, 54, 170));        // translucent arcane purple
+        UIManager.put("Table.alternateRowColor", new Color(173, 136, 255, 26)); // soft arcane stripe
+        UIManager.put("Table.foreground", new Color(0xEC, 0xE6, 0xFB));        // bright readable text
+        UIManager.put("Table.gridColor", new Color(173, 136, 255, 30));
+        UIManager.put("Table.rowHeight", 28);
+        UIManager.put("Table.intercellSpacing", new java.awt.Dimension(0, 0));
+        UIManager.put("Table.showHorizontalLines", false);
+        UIManager.put("Table.showVerticalLines", false);
+        UIManager.put("Table.selectionBackground", new Color(189, 147, 249, 130));
+        UIManager.put("Table.selectionInactiveBackground", new Color(189, 147, 249, 70));
+        UIManager.put("Table.selectionForeground", new Color(0xFF, 0xFF, 0xFF));
+        UIManager.put("TableHeader.height", 32);
+        UIManager.put("TableHeader.background", new Color(40, 25, 78));         // deeper arcane than rows
+        UIManager.put("TableHeader.foreground", new Color(0xC9, 0xA7, 0xFF));   // arcane-bright headers
+        UIManager.put("TableHeader.separatorColor", new Color(173, 136, 255, 50));
+        UIManager.put("TableHeader.bottomSeparatorColor", new Color(173, 136, 255, 90));
+
         //UIManager.put("nimbusDisabledText", Color.green); // TODO: improve disabled color
         //UIManager.put("Table.rowHeight", GUISizeHelper.tableRowHeight);
 
