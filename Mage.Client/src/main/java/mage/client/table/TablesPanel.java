@@ -643,12 +643,12 @@ public class TablesPanel extends javax.swing.JPanel {
         // The form sets jPanelTables LEFT / chatPanelMain RIGHT — swap them here.
         jSplitPane1.setLeftComponent(chatPanelMain);
         jSplitPane1.setRightComponent(jPanelTables);
-        jSplitPane1.setResizeWeight(0.25);
+        jSplitPane1.setResizeWeight(0.30);
         final boolean[] dividerApplied = {false};
         jSplitPane1.addComponentListener(new java.awt.event.ComponentAdapter() {
             @Override public void componentResized(java.awt.event.ComponentEvent e) {
                 if (!dividerApplied[0] && jSplitPane1.getWidth() > 200) {
-                    jSplitPane1.setDividerLocation((int) (jSplitPane1.getWidth() * 0.25));
+                    jSplitPane1.setDividerLocation((int) (jSplitPane1.getWidth() * 0.30));
                     dividerApplied[0] = true;
                 }
             }
