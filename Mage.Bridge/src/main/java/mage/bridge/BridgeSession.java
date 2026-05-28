@@ -1,9 +1,14 @@
 package mage.bridge;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import mage.cards.decks.DeckCardLists;
 import mage.cards.decks.importer.DeckImporter;
+import mage.cards.repository.CardCriteria;
+import mage.cards.repository.CardInfo;
+import mage.cards.repository.CardRepository;
 import mage.constants.MatchBufferTime;
 import mage.constants.MatchTimeLimit;
 import mage.constants.MultiplayerAttackOption;
@@ -157,8 +162,16 @@ public class BridgeSession {
                 case "joinChat":           reply(id, c, session.joinChat(uuid(cmd, "chatId")), null, null); break;
                 case "leaveChat":          reply(id, c, session.leaveChat(uuid(cmd, "chatId")), null, null); break;
 
+                // deck building
+                case "searchCards":        doSearchCards(cmd, id); break;
+                case "listDecks":          reply(id, c, true, listDeckNames(), null); break;
+                case "loadDeck":           reply(id, c, true, DeckImporter.importDeckFromFile(deckFile(cmd.get("name").getAsString()).getAbsolutePath(), false), null); break;
+                case "saveDeck":           doSaveDeck(cmd, id); break;
+                case "deleteDeck":         deckFile(cmd.get("name").getAsString()).delete(); reply(id, c, true, null, null); break;
+
                 // tables / matches
                 case "quickGame":          doQuickGame(cmd, id); break;
+                case "createGame":         doCreateGame(cmd, id); break;
                 case "joinTable":          doJoinTable(cmd, id); break;
                 case "leaveTable":         reply(id, c, session.leaveTable(mainRoomId, uuid(cmd, "tableId")), null, null); break;
                 case "removeTable":        reply(id, c, session.removeTable(mainRoomId, uuid(cmd, "tableId")), null, null); break;
@@ -278,6 +291,124 @@ public class BridgeSession {
                 reply(id, "quickGame", true, "{\"tableId\":\"" + tableId + "\"}", null);
             } catch (Throwable t) {
                 reply(id, "quickGame", false, null, String.valueOf(t.getMessage()));
+            }
+        });
+    }
+
+    // ---------- deck building ----------
+
+    private static File decksDir() {
+        File dir = new File(System.getProperty("user.home"), "XMage/decks");
+        dir.mkdirs();
+        return dir;
+    }
+
+    private static File deckFile(String name) {
+        return new File(decksDir(), name.replaceAll("[^A-Za-z0-9 _-]", "_") + ".dck");
+    }
+
+    private java.util.List<String> listDeckNames() {
+        java.util.List<String> names = new java.util.ArrayList<>();
+        File[] files = decksDir().listFiles((d, n) -> n.toLowerCase().endsWith(".dck"));
+        if (files != null) {
+            for (File f : files) {
+                names.add(f.getName().replaceFirst("\\.dck$", ""));
+            }
+        }
+        java.util.Collections.sort(names);
+        return names;
+    }
+
+    private void doSearchCards(JsonObject cmd, String id) {
+        String q = cmd.has("query") ? cmd.get("query").getAsString().trim() : "";
+        int limit = cmd.has("limit") ? cmd.get("limit").getAsInt() : 60;
+        JsonArray arr = new JsonArray();
+        if (q.length() >= 2) {
+            CardCriteria cc = new CardCriteria().nameContains(q);
+            int n = 0;
+            for (CardInfo ci : CardRepository.instance.findCards(cc)) {
+                if (n++ >= limit) break;
+                JsonObject o = new JsonObject();
+                o.addProperty("name", ci.getName());
+                o.addProperty("setCode", ci.getSetCode());
+                o.addProperty("cardNumber", ci.getCardNumber());
+                try { o.addProperty("manaCost", String.join("", ci.getManaCosts(CardInfo.ManaCostSide.ALL))); } catch (Throwable ignored) { }
+                try { o.addProperty("types", String.valueOf(ci.getTypes())); } catch (Throwable ignored) { }
+                try { o.addProperty("rarity", ci.getRarity() != null ? ci.getRarity().toString() : ""); } catch (Throwable ignored) { }
+                o.addProperty("power", ci.getPower());
+                o.addProperty("toughness", ci.getToughness());
+                arr.add(o);
+            }
+        }
+        JsonObject out = new JsonObject();
+        out.addProperty("type", "reply");
+        out.addProperty("id", id);
+        out.addProperty("cmd", "searchCards");
+        out.addProperty("ok", true);
+        out.add("data", arr);
+        send(out);
+    }
+
+    private void doSaveDeck(JsonObject cmd, String id) throws Exception {
+        String name = cmd.get("name").getAsString();
+        JsonObject deck = cmd.getAsJsonObject("deck");
+        try (FileWriter w = new FileWriter(deckFile(name))) {
+            writeCards(w, deck.has("cards") ? deck.getAsJsonArray("cards") : null, "");
+            writeCards(w, deck.has("sideboard") ? deck.getAsJsonArray("sideboard") : null, "SB: ");
+        }
+        reply(id, "saveDeck", true, null, null);
+    }
+
+    private void writeCards(FileWriter w, JsonArray cards, String prefix) throws Exception {
+        if (cards == null) return;
+        for (JsonElement e : cards) {
+            JsonObject c = e.getAsJsonObject();
+            int amt = c.has("amount") ? c.get("amount").getAsInt() : 1;
+            String set = c.has("setCode") && !c.get("setCode").isJsonNull() ? c.get("setCode").getAsString() : "";
+            String num = c.has("cardNumber") && !c.get("cardNumber").isJsonNull() ? c.get("cardNumber").getAsString() : "";
+            String nm = c.get("cardName").getAsString();
+            String loc = (!set.isEmpty() && !num.isEmpty()) ? (" [" + set + ":" + num + "]") : "";
+            w.write(prefix + amt + loc + " " + nm + "\n");
+        }
+    }
+
+    /** Custom game: chosen game type + deck (saved deck by name, or the basic-land fallback) + N AI seats. */
+    private void doCreateGame(JsonObject cmd, String id) {
+        worker.submit(() -> {
+            try {
+                String gameType = cmd.has("gameType") ? cmd.get("gameType").getAsString() : "Momir Basic Two Player Duel";
+                String deckType = cmd.has("deckType") ? cmd.get("deckType").getAsString() : "Variant Magic - Momir Basic";
+                int ai = cmd.has("aiOpponents") ? Math.max(1, cmd.get("aiOpponents").getAsInt()) : 1;
+                DeckCardLists deck = cmd.has("deckName")
+                        ? DeckImporter.importDeckFromFile(deckFile(cmd.get("deckName").getAsString()).getAbsolutePath(), false)
+                        : basicLandTestDeck();
+
+                boolean multi = (1 + ai) > 2;
+                MatchOptions options = new MatchOptions("Custom Game", gameType, multi);
+                options.getPlayerTypes().add(PlayerType.HUMAN);
+                for (int i = 0; i < ai; i++) options.getPlayerTypes().add(PlayerType.COMPUTER_MAD);
+                options.setDeckType(deckType);
+                options.setAttackOption(MultiplayerAttackOption.MULTIPLE);
+                options.setRange(RangeOfInfluence.ONE);
+                options.setWinsNeeded(1);
+                options.setMatchTimeLimit(MatchTimeLimit.NONE);
+                options.setMatchBufferTime(MatchBufferTime.NONE);
+                options.setFreeMulligans(2);
+                options.setSkillLevel(SkillLevel.CASUAL);
+                options.setRollbackTurnsAllowed(true);
+                options.setQuitRatio(100);
+                options.setMinimumRating(0);
+
+                TableView table = session.createTable(mainRoomId, options);
+                if (table == null) { reply(id, "createGame", false, null, "createTable null (gameType '" + gameType + "'): " + session.getLastError()); return; }
+                UUID tid = table.getTableId();
+                boolean jh = session.joinTable(mainRoomId, tid, session.getUserName(), PlayerType.HUMAN, 1, deck, "");
+                for (int i = 0; i < ai; i++) session.joinTable(mainRoomId, tid, "Computer " + (i + 1), PlayerType.COMPUTER_MAD, 1, deck, "");
+                boolean started = session.startMatch(mainRoomId, tid);
+                reply(id, "createGame", started, "{\"tableId\":\"" + tid + "\"}",
+                        started ? null : ("join=" + jh + " start failed: " + session.getLastError()));
+            } catch (Throwable t) {
+                reply(id, "createGame", false, null, String.valueOf(t.getMessage()));
             }
         });
     }
