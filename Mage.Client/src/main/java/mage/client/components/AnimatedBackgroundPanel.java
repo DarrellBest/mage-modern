@@ -381,4 +381,126 @@ public class AnimatedBackgroundPanel extends ImagePanel {
         int v = Math.round(alpha * 255f);
         return v < 0 ? 0 : (v > 255 ? 255 : v);
     }
+
+    // ---- Reusable battlefield overlay (sigils + faint wordmark) ----
+    // Lets the in-game UI render the same arcane atmosphere over its own dark
+    // background. Self-contained: lazy-builds its sprites once and animates from
+    // a fixed epoch so callers only need to repaint on a Timer.
+
+    private static BufferedImage overlaySigilOuter;
+    private static BufferedImage overlaySigilInner;
+    private static final long OVERLAY_EPOCH = System.currentTimeMillis();
+
+    /**
+     * Paint counter-rotating arcane sigils centred in (w, h) plus a faint XMAGE
+     * wordmark behind them. Translucent — caller should paint its own background
+     * before this. Animation comes from System.currentTimeMillis(), so callers
+     * just need to schedule a repaint (~20 fps).
+     */
+    public static void paintBattlefieldOverlay(Graphics g, int w, int h) {
+        if (w <= 0 || h <= 0) return;
+        ensureOverlaySigils();
+        long now = System.currentTimeMillis() - OVERLAY_EPOCH;
+        float angleOuter = (float) ((now / 60000.0) * Math.PI * 2.0);          // 60s clockwise
+        float angleInner = -(float) ((now / 40000.0) * Math.PI * 2.0);         // 40s reverse
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+
+        float cx = w / 2f, cy = h / 2f;
+        float big = Math.min(w, h);
+
+        // faint XMAGE wordmark behind the sigils
+        String mark = "XMAGE";
+        int markSize = Math.max(48, (int) (big * 0.18f));
+        java.awt.Font f = new java.awt.Font("Serif", java.awt.Font.BOLD, markSize);
+        g2.setFont(f);
+        java.awt.FontMetrics fm = g2.getFontMetrics();
+        int tw = fm.stringWidth(mark);
+        int th = fm.getAscent();
+        // soft outer glow
+        g2.setColor(new Color(0xA8, 0x75, 0xFF, 22));
+        for (int i = 6; i >= 1; i--) {
+            g2.setFont(f.deriveFont(java.awt.Font.BOLD, (float) markSize));
+            g2.drawString(mark, cx - tw / 2f + i, cy + th / 3f);
+            g2.drawString(mark, cx - tw / 2f - i, cy + th / 3f);
+        }
+        g2.setColor(new Color(0xF3, 0xC9, 0x7A, 40));
+        g2.drawString(mark, cx - tw / 2f, cy + th / 3f);
+
+        // sigils on top of the wordmark
+        paintOverlaySigil(g2, overlaySigilOuter, cx, cy, big * 0.55f, angleOuter, 0.55f);
+        paintOverlaySigil(g2, overlaySigilInner, cx, cy, big * 0.36f, angleInner, 0.45f);
+
+        g2.dispose();
+    }
+
+    private static synchronized void ensureOverlaySigils() {
+        if (overlaySigilOuter == null) {
+            overlaySigilOuter = bakeSigil(SIGIL_PX, 0.7f, false);
+            overlaySigilInner = bakeSigil(SIGIL_PX, 1.0f, true);
+        }
+    }
+
+    private static void paintOverlaySigil(Graphics2D g2, BufferedImage img,
+                                          float cx, float cy, float size,
+                                          float angle, float alpha) {
+        AffineTransform t = AffineTransform.getTranslateInstance(cx, cy);
+        t.rotate(angle);
+        t.scale(size / img.getWidth(), size / img.getHeight());
+        t.translate(-img.getWidth() / 2.0, -img.getHeight() / 2.0);
+        Graphics2D gg = (Graphics2D) g2.create();
+        gg.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
+        gg.drawImage(img, t, null);
+        gg.dispose();
+    }
+
+    // Static twin of makeSigil() so the overlay doesn't need an instance.
+    private static BufferedImage bakeSigil(int size, float strokeAtVB, boolean inner) {
+        BufferedImage img = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = img.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+        float scale = size / 200f;
+        g.translate(size / 2f, size / 2f);
+        g.scale(scale, scale);
+        g.translate(-100, -100);
+        g.setColor(new Color(0xA8, 0x75, 0xFF, 80));
+        g.setStroke(new BasicStroke(strokeAtVB * 3.5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        drawSigilShapesStatic(g, inner);
+        g.setColor(new Color(0xC9, 0xA7, 0xFF, 220));
+        g.setStroke(new BasicStroke(strokeAtVB, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        drawSigilShapesStatic(g, inner);
+        g.dispose();
+        return img;
+    }
+
+    private static void drawSigilShapesStatic(Graphics2D g, boolean inner) {
+        if (inner) {
+            g.draw(new Ellipse2D.Float(10, 10, 180, 180));
+            Stroke s = g.getStroke();
+            if (s instanceof BasicStroke) {
+                BasicStroke b = (BasicStroke) s;
+                g.setStroke(new BasicStroke(b.getLineWidth(), b.getEndCap(), b.getLineJoin(),
+                        10f, new float[]{3f, 6f}, 0f));
+            }
+            Path2D tri = new Path2D.Float();
+            tri.moveTo(100, 20); tri.lineTo(160, 140); tri.lineTo(40, 140); tri.closePath();
+            g.draw(tri);
+            g.setStroke(s);
+        } else {
+            g.draw(new Ellipse2D.Float(4, 4, 192, 192));
+            g.draw(new Ellipse2D.Float(26, 26, 148, 148));
+            Path2D t1 = new Path2D.Float();
+            t1.moveTo(100, 12); t1.lineTo(176, 150); t1.lineTo(24, 150); t1.closePath();
+            g.draw(t1);
+            Path2D t2 = new Path2D.Float();
+            t2.moveTo(100, 188); t2.lineTo(24, 50); t2.lineTo(176, 50); t2.closePath();
+            g.draw(t2);
+            g.draw(new Ellipse2D.Float(60, 60, 80, 80));
+            g.draw(new Line2D.Float(100, 60, 100, 140));
+            g.draw(new Line2D.Float(60, 100, 140, 100));
+            g.draw(new Ellipse2D.Float(92, 92, 16, 16));
+        }
+    }
 }

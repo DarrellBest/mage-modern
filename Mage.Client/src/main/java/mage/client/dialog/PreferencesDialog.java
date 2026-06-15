@@ -628,7 +628,16 @@ public class PreferencesDialog extends javax.swing.JDialog {
     }
 
     private static void loadTheme() {
-        currentTheme = ThemeType.valueByName(getCachedValue(KEY_THEME, "Arcane"));
+        // One-time migration: bump the previous default ("Arcane") to "Carbon Fiber"
+        // so existing installs pick up the new default without losing custom picks.
+        if (!"v1".equals(getCachedValue("mage_modern_theme_default", ""))) {
+            String saved = getCachedValue(KEY_THEME, "");
+            if (saved.isEmpty() || "Arcane".equals(saved)) {
+                saveValue(KEY_THEME, "Carbon Fiber");
+            }
+            saveValue("mage_modern_theme_default", "v1");
+        }
+        currentTheme = ThemeType.valueByName(getCachedValue(KEY_THEME, "Carbon Fiber"));
         logger.info("Using GUI theme: " + currentTheme.getName());
         currentTheme.reload();
     }

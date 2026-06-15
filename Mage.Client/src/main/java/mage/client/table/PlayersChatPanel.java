@@ -16,6 +16,8 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.JTableHeader;
+import javax.swing.table.TableCellRenderer;
+import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
 import java.awt.*;
 import java.util.ArrayList;
@@ -77,6 +79,9 @@ public class PlayersChatPanel extends javax.swing.JPanel {
         jTablePlayers.setForeground(Color.white);
         jTablePlayers.setOpaque(false);
         jTablePlayers.setRowSorter(new MageTableRowSorter(userTableModel));
+        // Let columns keep their content widths; the scroll pane handles overflow
+        // so usernames + ratings aren't shrunk to "..." in a narrow side pane.
+        jTablePlayers.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
         setGUISize();
 
         TableUtil.setColumnWidthAndOrder(jTablePlayers, tableInfo.getColumnsWidth(), KEY_USERS_COLUMNS_WIDTH, KEY_USERS_COLUMNS_ORDER);
@@ -106,6 +111,31 @@ public class PlayersChatPanel extends javax.swing.JPanel {
     public void cleanUp() {
         TableUtil.saveColumnWidthAndOrderToPrefs(jTablePlayers, KEY_USERS_COLUMNS_WIDTH, KEY_USERS_COLUMNS_ORDER);
         jScrollPaneTalk.cleanUp();
+    }
+
+    /**
+     * Size each column to fit the widest cell + header so usernames and counts
+     * don't get clipped to "..." in a narrow side pane. Pairs with
+     * AUTO_RESIZE_OFF so the parent JScrollPane handles overflow horizontally.
+     */
+    private static void autosizeColumns(JTable t) {
+        TableColumnModel tcm = t.getColumnModel();
+        int rows = t.getRowCount();
+        for (int c = 0; c < t.getColumnCount(); c++) {
+            TableColumn col = tcm.getColumn(c);
+            // header
+            TableCellRenderer hr = col.getHeaderRenderer();
+            if (hr == null) hr = t.getTableHeader().getDefaultRenderer();
+            int w = hr.getTableCellRendererComponent(t, col.getHeaderValue(), false, false, -1, c)
+                    .getPreferredSize().width;
+            // rows
+            for (int r = 0; r < rows; r++) {
+                TableCellRenderer cr = t.getCellRenderer(r, c);
+                Component cmp = cr.getTableCellRendererComponent(t, t.getValueAt(r, c), false, false, r, c);
+                w = Math.max(w, cmp.getPreferredSize().width);
+            }
+            col.setPreferredWidth(w + 14); // +padding for borders/sort arrow
+        }
     }
 
     public void setGameData(UUID gameId, BigCard bigCard) {
@@ -163,6 +193,7 @@ public class PlayersChatPanel extends javax.swing.JPanel {
                     + " limit: " + roomUserInfo.getNumberMaxGames() + ')');
             th.repaint();
             this.fireTableDataChanged();
+            autosizeColumns(jTablePlayers);
         }
 
         @Override

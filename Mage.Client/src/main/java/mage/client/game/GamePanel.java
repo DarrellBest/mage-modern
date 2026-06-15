@@ -135,10 +135,16 @@ public final class GamePanel extends javax.swing.JPanel {
     public static class MageSplitter {
         JSplitPane splitPane;
         double defaultProportion;
+        boolean defaultHiddenRight; // start with the right/bottom pane collapsed on first run
 
         MageSplitter(JSplitPane splitPane, double defaultProportion) {
+            this(splitPane, defaultProportion, false);
+        }
+
+        MageSplitter(JSplitPane splitPane, double defaultProportion, boolean defaultHiddenRight) {
             this.splitPane = splitPane;
             this.defaultProportion = defaultProportion;
+            this.defaultHiddenRight = defaultHiddenRight;
         }
     }
 
@@ -264,32 +270,7 @@ public final class GamePanel extends javax.swing.JPanel {
         // ... skip + stack
         JPanel pnlCommandsSkipAndStack = new JPanel(new BorderLayout());
         pnlCommandsSkipAndStack.setOpaque(false);
-        // shortcuts hidden by default; a small arrow toggle exposes the F-key strip
-        pnlShortCuts.setVisible(false);
-        final javax.swing.JToggleButton shortcutsToggle = new javax.swing.JToggleButton("▾ Shortcuts");
-        shortcutsToggle.setOpaque(false);
-        shortcutsToggle.setFocusable(false);
-        shortcutsToggle.setBorderPainted(false);
-        shortcutsToggle.setContentAreaFilled(false);
-        shortcutsToggle.setForeground(new Color(0x9B, 0x8F, 0xC0));
-        shortcutsToggle.setFont(shortcutsToggle.getFont().deriveFont(java.awt.Font.PLAIN, 11f));
-        shortcutsToggle.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
-        shortcutsToggle.setMargin(new java.awt.Insets(2, 6, 2, 6));
-        shortcutsToggle.addActionListener(e -> {
-            boolean show = shortcutsToggle.isSelected();
-            pnlShortCuts.setVisible(show);
-            shortcutsToggle.setText(show ? "▴ Shortcuts" : "▾ Shortcuts");
-            pnlCommandsSkipAndStack.revalidate();
-            pnlCommandsSkipAndStack.repaint();
-        });
-        JPanel shortcutsHeader = new JPanel(new BorderLayout());
-        shortcutsHeader.setOpaque(false);
-        shortcutsHeader.add(shortcutsToggle, BorderLayout.WEST);
-        JPanel northStack = new JPanel(new BorderLayout());
-        northStack.setOpaque(false);
-        northStack.add(shortcutsHeader, BorderLayout.NORTH);
-        northStack.add(pnlShortCuts, BorderLayout.CENTER);
-        pnlCommandsSkipAndStack.add(northStack, BorderLayout.NORTH);
+        pnlCommandsSkipAndStack.add(pnlShortCuts, BorderLayout.NORTH);
         pnlCommandsSkipAndStack.add(stackObjects, BorderLayout.CENTER);
         // ... split: feedback + hand <|> skip + stack
         splitHandAndStack.setLeftComponent(pnlCommandsFeedbackAndHand);
@@ -336,6 +317,42 @@ public final class GamePanel extends javax.swing.JPanel {
         jLayeredBackgroundPane.setSize(1024, 768);
         this.add(jLayeredBackgroundPane);
         jLayeredBackgroundPane.add(splitGameAndBigCard, JLayeredPane.DEFAULT_LAYER);
+
+        // Sigils + wordmark as a click-through watermark above the game UI so the
+        // empty-purple battlefield gets some arcane atmosphere. contains() always
+        // returns false so it never swallows mouse events.
+        final JComponent battlefieldAtmosphere = new JComponent() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.45f));
+                mage.client.components.AnimatedBackgroundPanel
+                        .paintBattlefieldOverlay(g2, getWidth(), getHeight());
+                g2.dispose();
+            }
+            @Override
+            public boolean contains(int x, int y) {
+                return false; // never absorb mouse events
+            }
+        };
+        battlefieldAtmosphere.setOpaque(false);
+        battlefieldAtmosphere.setSize(1024, 768);
+        jLayeredBackgroundPane.add(battlefieldAtmosphere, JLayeredPane.PALETTE_LAYER);
+
+        // Animate the sigils at ~20 fps.
+        Timer battlefieldAtmosphereTimer = new Timer(50, e -> battlefieldAtmosphere.repaint());
+        battlefieldAtmosphereTimer.setCoalesce(true);
+        battlefieldAtmosphereTimer.start();
+
+        // Track size with the layered pane so the overlay always fills the play area.
+        jLayeredBackgroundPane.addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                battlefieldAtmosphere.setSize(jLayeredBackgroundPane.getWidth(),
+                        jLayeredBackgroundPane.getHeight());
+            }
+        });
 
         Map<String, JComponent> myUi = getUIComponents(jLayeredBackgroundPane);
         Plugins.instance.updateGamePanel(myUi);
@@ -764,6 +781,10 @@ public final class GamePanel extends javax.swing.JPanel {
      * @param defaultProportion 0.25 means 25% for left component and 75% for right
      */
     private void restoreSplitter(JSplitPane splitPane, String settingsKey, double defaultProportion) {
+        restoreSplitter(splitPane, settingsKey, defaultProportion, false);
+    }
+
+    private void restoreSplitter(JSplitPane splitPane, String settingsKey, double defaultProportion, boolean defaultHiddenRight) {
         Map<String, Integer> allLocations = loadSplitterLocationsFromSettings(settingsKey);
 
         Rectangle screenRec = MageFrame.getDesktop().getBounds();
@@ -773,11 +794,20 @@ public final class GamePanel extends javax.swing.JPanel {
         // WARNING, new divider location must be restored independently in swing threads one by one
         int newLocation = allLocations.getOrDefault(screenKey, DIVIDER_POSITION_DEFAULT);
         if (newLocation == DIVIDER_POSITION_DEFAULT) {
-            // use default location
-            SwingUtilities.invokeLater(() -> {
-                splitPane.resetToPreferredSizes();
-                splitPane.setDividerLocation(defaultProportion);
-            });
+            // use default location (or default-hide the right pane if requested)
+            if (defaultHiddenRight) {
+                SwingUtilities.invokeLater(() -> {
+                    splitPane.resetToPreferredSizes();
+                    splitPane.setDividerLocation(defaultProportion);
+                    splitPane.getRightComponent().setMinimumSize(new Dimension());
+                    splitPane.setDividerLocation(1.0d);
+                });
+            } else {
+                SwingUtilities.invokeLater(() -> {
+                    splitPane.resetToPreferredSizes();
+                    splitPane.setDividerLocation(defaultProportion);
+                });
+            }
         } else if (newLocation == DIVIDER_POSITION_HIDDEN_LEFT_OR_TOP) {
             // use hidden (hide left)
             SwingUtilities.invokeLater(() -> {
@@ -821,7 +851,7 @@ public final class GamePanel extends javax.swing.JPanel {
         // current
         String currentKey = splittersQueue.keySet().stream().findFirst().get();
         MageSplitter currentSplitter = splittersQueue.remove(currentKey);
-        restoreSplitter(currentSplitter.splitPane, currentKey, currentSplitter.defaultProportion);
+        restoreSplitter(currentSplitter.splitPane, currentKey, currentSplitter.defaultProportion, currentSplitter.defaultHiddenRight);
 
         // next in queue
         SwingUtilities.invokeLater(() -> {
@@ -2405,7 +2435,13 @@ public final class GamePanel extends javax.swing.JPanel {
         // also it must be restored by thread queue
         // card preview collapsed by default; one-touch arrow on the divider reveals it
         this.splitters.put(PreferencesDialog.KEY_GAMEPANEL_DIVIDER_LOCATIONS_GAME_AND_BIG_CARD, new MageSplitter(splitGameAndBigCard, 0.0));
-        this.splitters.put(PreferencesDialog.KEY_GAMEPANEL_DIVIDER_LOCATIONS_BATTLEFIELD_AND_CHATS, new MageSplitter(splitBattlefieldAndChats, 0.80));
+        // Auto-hide the right pane (log + chat) on startup; users can still re-expand with the one-touch arrow.
+        // One-time wipe so existing users with a pre-modernization saved width also get the new default.
+        if (!"v1".equals(PreferencesDialog.getCachedValue("mage_modern_autohide_chat", ""))) {
+            PreferencesDialog.saveValue(PreferencesDialog.KEY_GAMEPANEL_DIVIDER_LOCATIONS_BATTLEFIELD_AND_CHATS, "");
+            PreferencesDialog.saveValue("mage_modern_autohide_chat", "v1");
+        }
+        this.splitters.put(PreferencesDialog.KEY_GAMEPANEL_DIVIDER_LOCATIONS_BATTLEFIELD_AND_CHATS, new MageSplitter(splitBattlefieldAndChats, 0.80, true));
         this.splitters.put(PreferencesDialog.KEY_GAMEPANEL_DIVIDER_LOCATIONS_HAND_STACK, new MageSplitter(splitHandAndStack, 0.70));
         this.splitters.put(PreferencesDialog.KEY_GAMEPANEL_DIVIDER_LOCATIONS_CHAT_AND_LOGS, new MageSplitter(splitChatAndLogs, 0.40));
 
