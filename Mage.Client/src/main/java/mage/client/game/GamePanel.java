@@ -318,9 +318,11 @@ public final class GamePanel extends javax.swing.JPanel {
         this.add(jLayeredBackgroundPane);
         jLayeredBackgroundPane.add(splitGameAndBigCard, JLayeredPane.DEFAULT_LAYER);
 
-        // Sigils + wordmark as a click-through watermark above the game UI so the
-        // empty-purple battlefield gets some arcane atmosphere. contains() always
-        // returns false so it never swallows mouse events.
+        // Sigils + wordmark painted BEHIND the game UI so the empty-purple
+        // battlefield gets some arcane atmosphere without covering the cards.
+        // The battlefield panels are non-opaque, so this shows through empty
+        // areas while opaque cards paint on top of it. contains() always returns
+        // false so it never swallows mouse events.
         final JComponent battlefieldAtmosphere = new JComponent() {
             @Override
             protected void paintComponent(Graphics g) {
@@ -338,7 +340,8 @@ public final class GamePanel extends javax.swing.JPanel {
         };
         battlefieldAtmosphere.setOpaque(false);
         battlefieldAtmosphere.setSize(1024, 768);
-        jLayeredBackgroundPane.add(battlefieldAtmosphere, JLayeredPane.PALETTE_LAYER);
+        // Below DEFAULT_LAYER (the game UI) so the overlay sits behind the cards.
+        jLayeredBackgroundPane.add(battlefieldAtmosphere, Integer.valueOf(JLayeredPane.DEFAULT_LAYER - 50));
 
         // Animate the sigils at ~20 fps.
         Timer battlefieldAtmosphereTimer = new Timer(50, e -> battlefieldAtmosphere.repaint());
