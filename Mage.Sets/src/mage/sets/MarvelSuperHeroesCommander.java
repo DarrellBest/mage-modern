@@ -25,9 +25,12 @@ public final class MarvelSuperHeroesCommander extends ExpansionSet {
         cards.add(new SetCardInfo("Abomination, World Ravager", 355, Rarity.RARE, mage.cards.a.AbominationWorldRavager.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Abomination, World Ravager", 47, Rarity.RARE, mage.cards.a.AbominationWorldRavager.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Absorbing Man and Titania", 510, Rarity.RARE, mage.cards.a.AbsorbingManAndTitania.class));
+        cards.add(new SetCardInfo("Accelerated Evolution", 711, Rarity.COMMON, mage.cards.a.AcceleratedEvolution.class));
         cards.add(new SetCardInfo("Age of Ultron", 41, Rarity.RARE, mage.cards.a.AgeOfUltron.class));
         cards.add(new SetCardInfo("Alien Symbiosis", 791, Rarity.UNCOMMON, mage.cards.a.AlienSymbiosis.class));
         cards.add(new SetCardInfo("Amazing Spider-Girl", 583, Rarity.RARE, mage.cards.a.AmazingSpiderGirl.class));
+        cards.add(new SetCardInfo("Ancestral Communion", 376, Rarity.RARE, mage.cards.a.AncestralCommunion.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Ancestral Communion", 64, Rarity.RARE, mage.cards.a.AncestralCommunion.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Annie Joins Up", 281, Rarity.RARE, mage.cards.a.AnnieJoinsUp.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Annie Joins Up", 403, Rarity.RARE, mage.cards.a.AnnieJoinsUp.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Ant-Man's Air Force", 759, Rarity.UNCOMMON, mage.cards.a.AntMansAirForce.class));
@@ -41,6 +44,7 @@ public final class MarvelSuperHeroesCommander extends ExpansionSet {
         cards.add(new SetCardInfo("Arcane Signet", 193, Rarity.UNCOMMON, mage.cards.a.ArcaneSignet.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Arcane Signet", 194, Rarity.UNCOMMON, mage.cards.a.ArcaneSignet.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Armed Assailant", 647, Rarity.COMMON, mage.cards.a.ArmedAssailant.class));
+        cards.add(new SetCardInfo("Astonishing Spider-Man", 740, Rarity.RARE, mage.cards.a.AstonishingSpiderMan.class));
         cards.add(new SetCardInfo("Atlantean Skirmisher", 616, Rarity.UNCOMMON, mage.cards.a.AtlanteanSkirmisher.class));
         cards.add(new SetCardInfo("Aunt May", 768, Rarity.UNCOMMON, mage.cards.a.AuntMay.class));
         cards.add(new SetCardInfo("Austere Command", 121, Rarity.RARE, mage.cards.a.AustereCommand.class, NON_FULL_USE_VARIOUS));
@@ -560,6 +564,7 @@ public final class MarvelSuperHeroesCommander extends ExpansionSet {
         cards.add(new SetCardInfo("The Fabulous Frog-Man", 559, Rarity.COMMON, mage.cards.t.TheFabulousFrogMan.class));
         cards.add(new SetCardInfo("The Falcon, Sam Wilson", 837, Rarity.UNCOMMON, mage.cards.t.TheFalconSamWilson.class));
         cards.add(new SetCardInfo("The Fantastic Four", 741, Rarity.MYTHIC, mage.cards.t.TheFantasticFour.class));
+        cards.add(new SetCardInfo("The Fantasticar", 104, Rarity.RARE, mage.cards.t.TheFantasticar.class));
         cards.add(new SetCardInfo("The Great Mound", 120, Rarity.RARE, mage.cards.t.TheGreatMound.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("The Great Mound", 479, Rarity.RARE, mage.cards.t.TheGreatMound.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("The Howling Commandos", 598, Rarity.COMMON, mage.cards.t.TheHowlingCommandos.class));
