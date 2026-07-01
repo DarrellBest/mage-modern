@@ -20,7 +20,7 @@ public final class ClientDefaultSettings {
 
     static {
         // default values
-        serverName = "localhost";
+        serverName = "play.darrellbest.com"; // fork server (upstream default was "localhost")
         port = 17171;
         cardScalingFactor = 0.4;
         cardScalingFactorEnlarged = 0.5;

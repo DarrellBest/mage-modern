@@ -46,6 +46,16 @@ public class ConnectDialog extends MageDialog {
     public ConnectDialog() {
         initComponents();
 
+        // Fork server: expose a single connect preset for play.darrellbest.com and hide the
+        // public/local presets (repurposing the existing "X" button avoids fragile GroupLayout edits).
+        btnFindMain.setText("FORK");
+        btnFindMain.setIcon(null);
+        btnFindMain.setToolTipText("Connect to play.darrellbest.com (fork server)");
+        btnFindMain.setEnabled(true);
+        for (javax.swing.JButton b : new javax.swing.JButton[]{btnFindLocal, btnFindBeta, btnFindUs, btnFindOther, btnFindEU}) {
+            b.setVisible(false);
+        }
+
         this.txtServer.addActionListener(connectAction);
         this.txtPort.addActionListener(connectAction);
         this.txtUserName.addActionListener(connectAction);
@@ -787,7 +797,7 @@ public class ConnectDialog extends MageDialog {
     }//GEN-LAST:event_btnWhatsNewActionPerformed
 
     private void btnFindMainActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnFindMainActionPerformed
-        setServerSettings("xmage.de", "17171", true);
+        setServerSettings("play.darrellbest.com", "17171", false);
     }//GEN-LAST:event_btnFindMainActionPerformed
 
     private void btnFindEUActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnFindEUActionPerformed
