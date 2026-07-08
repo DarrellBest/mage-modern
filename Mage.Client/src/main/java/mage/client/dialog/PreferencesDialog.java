@@ -3275,7 +3275,9 @@ public class PreferencesDialog extends javax.swing.JDialog {
         int returnVal = fc_i.showOpenDialog(PreferencesDialog.this);
         if (returnVal == JFileChooser.APPROVE_OPTION) {
             File file = fc_i.getSelectedFile();
-            txtBackgroundImagePath.setText(file.getAbsolutePath());
+            if (file != null) {
+                txtBackgroundImagePath.setText(file.getAbsolutePath());
+            }
         }
     }
 
@@ -3283,7 +3285,9 @@ public class PreferencesDialog extends javax.swing.JDialog {
         int returnVal = fc_i.showOpenDialog(PreferencesDialog.this);
         if (returnVal == JFileChooser.APPROVE_OPTION) {
             File file = fc_i.getSelectedFile();
-            txtBattlefieldImagePath.setText(file.getAbsolutePath());
+            if (file != null) {
+                txtBattlefieldImagePath.setText(file.getAbsolutePath());
+            }
         }
     }
 
@@ -3291,7 +3295,9 @@ public class PreferencesDialog extends javax.swing.JDialog {
         int returnVal = fc.showOpenDialog(PreferencesDialog.this);
         if (returnVal == JFileChooser.APPROVE_OPTION) {
             File file = fc.getSelectedFile();
-            txtBattlefieldIBGMPath.setText(file.getAbsolutePath());
+            if (file != null) {
+                txtBattlefieldIBGMPath.setText(file.getAbsolutePath());
+            }
         }
     }//GEN-LAST:event_btnBattlefieldBGMBrowseActionPerformed
 
@@ -3320,7 +3326,9 @@ public class PreferencesDialog extends javax.swing.JDialog {
 
         if (returnVal == JFileChooser.APPROVE_OPTION) {
             File file = fc.getSelectedFile();
-            txtImageFolderPath.setText(file.getAbsolutePath());
+            if (file != null) {
+                txtImageFolderPath.setText(file.getAbsolutePath());
+            }
         }
     }//GEN-LAST:event_btnBrowseImageLocationActionPerformed
 
