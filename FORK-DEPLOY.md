@@ -46,6 +46,27 @@ ssh user@192.168.1.87 'cd ~/launcher-src && npm install \
 Then hand over the download links:
 `http://play.darrellbest.com:17080/files/XMageLauncher-<ver>.exe` (and `.AppImage`).
 
+### macOS build (GitHub Actions — no mac hardware here)
+
+electron-builder can only produce mac targets on macOS, so the dmg builds on a free
+GitHub-hosted mac runner (`.github/workflows/mac-build.yml` in the Launcher repo):
+
+```bash
+# bump version in Launcher/electron/package.json, commit, then:
+git tag mac-v<ver> && git push origin mac-v<ver>
+# → builds a universal (Intel + Apple Silicon) dmg, ad-hoc signs it, publishes it as
+#   a release asset. Pull it onto the server for distribution:
+curl -L -o /tmp/XMageLauncher-<ver>.dmg \
+  https://github.com/DarrellBest/Launcher/releases/download/mac-v<ver>/XMageLauncher-<ver>.dmg
+scp /tmp/XMageLauncher-<ver>.dmg user@192.168.1.87:/var/www/html/files/
+```
+
+Mac link: `http://play.darrellbest.com:17080/files/XMageLauncher-<ver>.dmg`.
+Mac-user caveats (no Apple Developer ID → not notarized):
+- First launch: right-click → Open, or System Settings → Privacy & Security → "Open Anyway" (macOS 15+ removed the right-click bypass).
+- Apple Silicon needs Rosetta 2 for the bundled x64 Java 8 (`softwareupdate --install-rosetta --agree-to-license`); the launcher itself runs natively.
+- The mac Java tarball (`jre-8u201-macosx-x64.tar.gz`) is already hosted in `/var/www/html/files/java/` and the launcher already handles the mac JRE layout (`Contents/Home`).
+
 ## Hard-won gotchas (don't relearn these)
 
 - **Always verify the restart** — confirm the running process is the new jar; don't just trust that the script restarted it. (`full-deploy.sh` stage 3 does this.)
