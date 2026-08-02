@@ -97,6 +97,8 @@ echo "  running: ${jar:-none}  heap=${heap:-?}  up=${up:-?}s"
 echo "$jar" | grep -q "mage-server-${POMV}.jar" || { echo "  FAIL: live jar != ${POMV}"; RC=1; }
 ss -tln 2>/dev/null | grep -q ":17171" && echo "  :17171 LISTENING ✓" || { echo "  FAIL: :17171 not listening"; RC=1; }
 ss -tln 2>/dev/null | grep -q ":17080" && echo "  :17080 web up ✓"      || echo "  WARN: web :17080 down"
+plugerr=$(journalctl -u xmage-fork --since "-3 min" --no-pager 2>/dev/null | grep -c "Can.t load plugin" || true)
+[ "${plugerr:-0}" = 0 ] && echo "  plugin load errors: none ✓" || { echo "  FAIL: $plugerr plugin load errors this boot (journalctl -u xmage-fork)"; RC=1; }
 
 echo "--- [4] heap guard (OOM lesson) ---"
 heap_mb=$(echo "${heap:-Xmx0m}" | grep -oE '[0-9]+')

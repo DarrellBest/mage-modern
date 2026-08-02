@@ -49,6 +49,32 @@ find ~/.m2/repository -name "mage*-${POMV}.jar" \
   ! -name '*-sources.jar' ! -name '*-tests.jar' -exec cp {} "$STAGE/" \;
 echo ">> staged $(ls "$STAGE" | wc -l) fork jars"
 
+# 2b. stage third-party deps the new manifests reference. start-fork.sh launches via
+# `java -jar`, so the classpath is the manifest Class-Path with VERSION-PINNED names —
+# when upstream bumps a dep (sqlite-jdbc 3.32->3.53, 2026-08-02), the new jar must ship
+# too or the server dies at boot ("No suitable driver").
+python3 - "$STAGE" <<'PY'
+import os, re, sys, zipfile, glob, shutil
+stage = sys.argv[1]
+m2 = os.path.expanduser("~/.m2/repository")
+jars = {}
+for root, _, files in os.walk(m2):
+    for f in files:
+        if f.endswith(".jar") and not f.endswith(("-sources.jar", "-tests.jar")):
+            jars.setdefault(f, os.path.join(root, f))
+def stage_deps(mainglob):
+    for main in glob.glob(os.path.join(stage, mainglob)):
+        with zipfile.ZipFile(main) as z:
+            mf = z.read("META-INF/MANIFEST.MF").decode("utf-8", "replace")
+        m = re.search(r"^Class-Path: (.*)$", mf.replace("\r\n", "\n").replace("\n ", ""), re.M)
+        for e in (m.group(1).split() if m else []):
+            b = os.path.basename(e)
+            if b.endswith(".jar") and not os.path.exists(os.path.join(stage, b)) and b in jars:
+                shutil.copy2(jars[b], os.path.join(stage, b))
+stage_deps("mage-server-*.jar"); stage_deps("mage-client-*.jar")
+print(">> staged manifest deps; stage total:", len(os.listdir(stage)))
+PY
+
 # 3. ship to server (no-op when building on the server itself)
 [ "$ON_SERVER" = 1 ] || rsync -az --delete "$STAGE/" "$REMOTE:$STAGE/"
 
@@ -86,6 +112,58 @@ echo ">> realigning config.xml plugin jar versions to ${POMV}"
 for cfg in "$BUNDLE/mage-server/config/config.xml" "$LIVE/mage-server/config/config.xml"; do
   [ -f "$cfg" ] && sed -i -E "s/-[0-9]+\.[0-9]+\.[0-9]+\.jar/-${POMV}.jar/g" "$cfg" && echo "   updated $cfg"
 done
+
+# jar dirs must satisfy the main jar's manifest Class-Path (java -jar launch): add
+# newly-referenced dep versions from the stage, drop the stale ones they replace.
+echo ">> reconciling dependency jars against manifests"
+python3 - "$STAGE" "$BUNDLE" "$LIVE" <<'PY'
+import os, re, sys, zipfile, glob, shutil
+stage, bundle, live = sys.argv[1:4]
+def mf_entries(jar):
+    with zipfile.ZipFile(jar) as z:
+        mf = z.read("META-INF/MANIFEST.MF").decode("utf-8", "replace")
+    m = re.search(r"^Class-Path: (.*)$", mf.replace("\r\n", "\n").replace("\n ", ""), re.M)
+    return [os.path.basename(e) for e in (m.group(1).split() if m else []) if e.endswith(".jar")]
+rc = 0
+for libdir, mainpat in [(bundle + "/mage-server/lib", "mage-server-*.jar"),
+                        (bundle + "/mage-client/lib", "mage-client-*.jar"),
+                        (live + "/mage-server/lib", "mage-server-*.jar"),
+                        (live + "/mage-client/lib", "mage-client-*.jar")]:
+    mains = glob.glob(os.path.join(libdir, mainpat))
+    if not mains: continue
+    want = set(mf_entries(mains[0]))
+    for b in sorted(want):
+        if not os.path.exists(os.path.join(libdir, b)):
+            src = os.path.join(stage, b)
+            if os.path.exists(src): shutil.copy2(src, os.path.join(libdir, b)); print("   +", b, "->", libdir)
+            else: print("   !! unresolvable manifest dep:", b, "for", libdir); rc = 1
+    for j in glob.glob(os.path.join(libdir, "*.jar")):
+        b = os.path.basename(j)
+        if b in want or b == os.path.basename(mains[0]) or b.startswith("mage"): continue
+        stem = re.sub(r"-[0-9][0-9.]*[^/]*\.jar$", "", b)
+        if any(w.startswith(stem + "-") for w in want):
+            os.remove(j); print("   -", b, "(stale version)")
+sys.exit(rc)
+PY
+
+# every plugin jar config.xml references must exist in plugins/ — upstream artifactId
+# renames (booster-draft->boosterdraft, momir->momirfreeforall, 2026-08-02) otherwise
+# strand the config; unresolvable refs fail the deploy LOUDLY so the config gets fixed.
+echo ">> ensuring config-referenced plugins exist"
+python3 - "$STAGE" "$BUNDLE" "$LIVE" <<'PY'
+import os, re, sys, shutil
+stage, bundle, live = sys.argv[1:4]
+rc = 0
+for cfg, plugdir in [(bundle + "/mage-server/config/config.xml", bundle + "/mage-server/plugins"),
+                     (live + "/mage-server/config/config.xml", live + "/mage-server/plugins")]:
+    if not os.path.exists(cfg): continue
+    for j in sorted(set(re.findall(r'jar="(mage-[a-z0-9-]+-[0-9.]+\.jar)"', open(cfg).read()))):
+        if not os.path.exists(os.path.join(plugdir, j)):
+            src = os.path.join(stage, j)
+            if os.path.exists(src): shutil.copy2(src, os.path.join(plugdir, j)); print("   +", j, "->", plugdir)
+            else: print("   !! config.xml references missing plugin (upstream rename? fix config):", j); rc = 1
+sys.exit(rc)
+PY
 
 echo ">> re-zipping bundle"
 cd "$BUNDLE"; rm -f "$WEBZIP"; zip -qr "$WEBZIP" mage-client mage-server
