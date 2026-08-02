@@ -8,9 +8,14 @@ Kept separate from the upstream `readme.md` so it never causes merge conflicts o
 When the request is **"go"** (or "deploy", "full loop", "pull the latest fork and deploy", "ship an update"):
 
 ```bash
-cd ~/projects/mage-modern
-./tools/full-deploy.sh
+ssh user@192.168.1.87 'cd ~/projects/mage-modern && ./tools/full-deploy.sh'
 ```
+
+**The build home is the game server itself** (repo clone at `~/projects/mage-modern` on
+.87; Maven in `~/.local`, pinned to JDK 21 via `~/.mavenrc`). The deploy scripts are
+dual-home — they detect where they run, so the loop also works from a dev-box clone
+(builds locally, ships over ssh) if that box has a real JDK (needs `ct.sym`; a JRE-only
+install fails `--release 8` with "release version 8 not supported").
 
 That one script is the whole loop. It:
 
@@ -22,11 +27,11 @@ That one script is the whole loop. It:
 
 **Report back** the stage results — especially `VERIFY: ALL GREEN ✓`. If stage 1 hits conflicts or verify fails, stop and surface it; don't force past it.
 
-The build runs on this box (aarch64 DGX) — fine, Java jars are portable. Friends pick up the update through the launcher.
+Friends pick up the update through the launcher.
 
 ## Infrastructure
 
-- **Server / build host for the launcher**: `user@192.168.1.87` (`user-X570-AORUS-XTREME`, x86_64, passwordless sudo for `systemctl … xmage-fork`).
+- **Server / build host**: `user@192.168.1.87` (`user-X570-AORUS-XTREME`, x86_64, 24 cores/62 GB, passwordless sudo for `systemctl … xmage-fork`). Repo clones live in `~/projects/{mage-modern,Launcher}`; pushes use the server's own GitHub ssh key.
 - **Live server install**: `~/Documents/xmage/xmage/` — `mage-server/` runs the game on `:17171`; heap is set in `mage-server/start-fork.sh` (currently `-Xmx8192m`).
 - **Web/config** (`:17080`): `/var/www/html/config.json`, downloads in `/var/www/html/files/` (`mage-update_fork.zip`, `XMageLauncher-*.exe/.AppImage`).
 

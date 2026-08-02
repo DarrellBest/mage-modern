@@ -2,9 +2,10 @@
 #
 # deploy-fork.sh — one command to ship a new fork build end-to-end.
 #
-# Run from the repo root on the dev box (which has Maven + JDK). Java jars are
-# platform-independent, so we build here (where git lives) and ship only the
-# rebuilt fork jars to the server.
+# Dual-home: run from the repo root on the game server itself (preferred — the build
+# lands directly where it's served, no network hops) OR on a remote dev box (jars are
+# platform-independent, so any box with Maven + a real JDK works; they ship via rsync).
+# The script detects which case it's in by whether the live install dir exists locally.
 #
 #   ./tools/deploy-fork.sh
 #
@@ -29,6 +30,11 @@ set -euo pipefail
 
 REMOTE=user@192.168.1.87
 STAGE=/tmp/forkjars
+LIVE_ROOT=/home/user/Documents/xmage/xmage     # exists only on the game server
+export PATH="$HOME/.local/bin:$PATH"           # mvn lives in ~/.local/bin on both boxes
+
+[ -d "$LIVE_ROOT" ] && ON_SERVER=1 || ON_SERVER=0
+run_on_server(){ if [ "$ON_SERVER" = 1 ]; then bash -s "$@"; else ssh "$REMOTE" 'bash -s' "$@"; fi; }
 
 cd "$(dirname "$0")/.."                  # repo root
 POMV=$(grep -m1 '<version>' pom.xml | sed -E 's/.*<version>(.*)<\/version>.*/\1/')
@@ -43,12 +49,12 @@ find ~/.m2/repository -name "mage*-${POMV}.jar" \
   ! -name '*-sources.jar' ! -name '*-tests.jar' -exec cp {} "$STAGE/" \;
 echo ">> staged $(ls "$STAGE" | wc -l) fork jars"
 
-# 3. ship to server
-rsync -az --delete "$STAGE/" "$REMOTE:$STAGE/"
+# 3. ship to server (no-op when building on the server itself)
+[ "$ON_SERVER" = 1 ] || rsync -az --delete "$STAGE/" "$REMOTE:$STAGE/"
 
 # 4. on the server: refresh bundle + live server, re-zip, bump version, restart server
 #    (POMV passed as $1 so the spaced version string is built remotely, not via ssh args)
-ssh "$REMOTE" 'bash -s' "$POMV" <<'REMOTE_EOF'
+run_on_server "$POMV" <<'REMOTE_EOF'
 set -euo pipefail
 POMV="$1"
 VERSTR="${POMV}-fork ($(date '+%Y-%m-%d %H-%M'))"   # unique per build -> forces update

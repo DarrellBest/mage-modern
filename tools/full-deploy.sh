@@ -33,6 +33,12 @@ REMOTE=user@192.168.1.87
 WORK_BRANCH=ui-modernization                 # our fork's feature branch (what gets deployed)
 MAIN_BRANCH=master                           # upstream's default branch
 MIN_HEAP_MB=4096                             # warn below this (OOM lesson)
+LIVE_ROOT=/home/user/Documents/xmage/xmage   # exists only on the game server
+export PATH="$HOME/.local/bin:$PATH"         # mvn lives in ~/.local/bin on both boxes
+
+# Dual-home (see deploy-fork.sh): verify runs locally on the server, over ssh from a dev box.
+[ -d "$LIVE_ROOT" ] && ON_SERVER=1 || ON_SERVER=0
+run_on_server(){ if [ "$ON_SERVER" = 1 ]; then bash -s "$@"; else ssh -o BatchMode=yes "$REMOTE" 'bash -s' "$@"; fi; }
 
 say(){ printf '\n\033[1m==> %s\033[0m\n' "$*"; }
 die(){ printf '\033[31mERROR: %s\033[0m\n' "$*" >&2; exit 1; }
@@ -62,8 +68,8 @@ say "[2/5] Build + ship + restart (deploy-fork.sh)"
 "$REPO_DIR/tools/deploy-fork.sh"
 
 # ---------------------------------------------------------------- Stages 3-5: remote verify
-say "[3/5..5/5] Verify on $REMOTE (restart + heap + version audit)"
-ssh -o BatchMode=yes "$REMOTE" 'bash -s' "$POMV" "$MIN_HEAP_MB" <<'REMOTE_EOF'
+say "[3/5..5/5] Verify (restart + heap + version audit)"
+run_on_server "$POMV" "$MIN_HEAP_MB" <<'REMOTE_EOF'
 set -uo pipefail
 POMV="$1"; MIN_HEAP_MB="$2"
 LIVE=/home/user/Documents/xmage/xmage
