@@ -58,9 +58,17 @@ if ! git merge --no-edit "$MAIN_BRANCH"; then
   git merge --abort
   die "merge conflicts merging ${MAIN_BRANCH} into ${WORK_BRANCH} — resolve manually, then re-run"
 fi
+POMV=$(grep -m1 '<version>' pom.xml | sed -E 's/.*<version>(.*)<\/version>.*/\1/')
+
+# Fork-only modules aren't touched by upstream's version-bump script — realign their
+# parent ref after a bump, or a fresh ~/.m2 can't resolve it (non-resolvable parent POM).
+if [ -f Mage.Bridge/pom.xml ] && ! grep -q "<version>${POMV}</version>" Mage.Bridge/pom.xml; then
+  sed -i "0,/<version>[0-9.]*<\/version>/s//<version>${POMV}<\/version>/" Mage.Bridge/pom.xml
+  git commit -q -m "bridge: align parent pom to ${POMV} (upstream version bump)" Mage.Bridge/pom.xml
+  echo "    realigned Mage.Bridge parent to ${POMV}"
+fi
 git push origin "$WORK_BRANCH"
 
-POMV=$(grep -m1 '<version>' pom.xml | sed -E 's/.*<version>(.*)<\/version>.*/\1/')
 echo "    deploying version: $POMV  (commit $(git rev-parse --short HEAD))"
 
 # ---------------------------------------------------------------- Stage 2: build + deploy
