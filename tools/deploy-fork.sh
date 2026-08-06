@@ -166,6 +166,12 @@ sys.exit(rc)
 PY
 
 echo ">> re-zipping bundle"
+if [ ! -d "$BUNDLE" ]; then
+  echo "   !! $BUNDLE missing — can't re-zip the launcher update bundle." >&2
+  echo "   !! Recover with: mkdir -p \"$BUNDLE\" && cd \"$BUNDLE\" && unzip \"$WEBZIP\"" >&2
+  echo "   !! (restores the last known-good bundle as a base; this script will then re-swap fresh jars into it)" >&2
+  exit 1
+fi
 cd "$BUNDLE"; rm -f "$WEBZIP"; zip -qr "$WEBZIP" mage-client mage-server
 echo "   bundle: $(du -h "$WEBZIP" | cut -f1)"
 
