@@ -5,6 +5,12 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import mage.abilities.Ability;
+import mage.abilities.keyword.DeathtouchAbility;
+import mage.abilities.keyword.DoubleStrikeAbility;
+import mage.abilities.keyword.FirstStrikeAbility;
+import mage.abilities.keyword.FlyingAbility;
+import mage.abilities.keyword.MenaceAbility;
+import mage.abilities.keyword.ReachAbility;
 import mage.constants.RangeOfInfluence;
 import mage.game.Game;
 import mage.game.events.GameEvent;
@@ -113,6 +119,7 @@ public class ComputerPlayerKanna extends ComputerPlayer7 {
             String defId = "def-" + defendersById.size();
             defendersById.put(defId, defenderId);
             defendersDesc.append(String.format("- %s: %s (%d life)%n", defId, defender.getName(), defender.getLife()));
+            defendersDesc.append(boardStateSummary(defenderId, game));
 
             for (Permanent attacker : getAvailableAttackers(defenderId, game)) {
                 uniqueAttackers.putIfAbsent(attacker.getId(), attacker);
@@ -134,12 +141,15 @@ public class ComputerPlayerKanna extends ComputerPlayer7 {
                     atkId, attacker.getName(), attacker.getPower().getValue(), attacker.getToughness().getValue()));
         }
 
+        Player me = game.getPlayer(playerId);
         String prompt = String.format(
-                "You are Kanna, playing Magic: The Gathering as %s. It's your combat step. Decide which of "
-                        + "your available creatures should attack, and who each one attacks. It's fine to attack with none "
-                        + "of them if that's the better play.%n%n%sYour available attackers:%n%s%nPossible defenders:%n%s%n"
+                "You are Kanna, playing Magic: The Gathering as %s (%d life). It's your combat step. Decide which of "
+                        + "your available creatures should attack, and who each one attacks. Each defender's possible "
+                        + "blockers and other permanents are listed so you can judge whether an attack is actually safe. "
+                        + "It's fine to attack with none of them if that's the better play.%n%n%sYour available attackers:"
+                        + "%n%s%nPossible defenders:%n%s%n"
                         + "Call declare_attackers using only the short ids listed above.",
-                getName(), historyBlock(), attackersDesc, defendersDesc
+                getName(), me == null ? 0 : me.getLife(), historyBlock(), attackersDesc, defendersDesc
         );
 
         JsonObject toolCall = callOllamaForDecision(
@@ -309,6 +319,57 @@ public class ComputerPlayerKanna extends ComputerPlayer7 {
         while (combatHistory.size() > MAX_HISTORY_ENTRIES) {
             combatHistory.removeFirst();
         }
+    }
+
+    /**
+     * Compact "what does this player actually have" block: their untapped creatures (i.e. their
+     * real possible blockers -- a tapped creature can't block, so there's no reason to list it
+     * and burn tokens on it) and any other permanents they control, so attack decisions aren't
+     * made blind to what's actually on the other side of the table.
+     */
+    private static String boardStateSummary(UUID controllerId, Game game) {
+        List<String> blockerLines = new ArrayList<>();
+        List<String> otherPermanents = new ArrayList<>();
+        for (Permanent permanent : game.getBattlefield().getAllActivePermanents(controllerId)) {
+            if (permanent.isCreature(game)) {
+                if (!permanent.isTapped()) {
+                    blockerLines.add(permanent.getName()
+                            + " (" + permanent.getPower().getValue() + "/" + permanent.getToughness().getValue() + ")"
+                            + keywordSummary(permanent, game));
+                }
+            } else {
+                otherPermanents.add(permanent.getName());
+            }
+        }
+        StringBuilder sb = new StringBuilder();
+        sb.append("  Possible blockers: ").append(blockerLines.isEmpty() ? "none" : String.join(", ", blockerLines)).append(System.lineSeparator());
+        if (!otherPermanents.isEmpty()) {
+            sb.append("  Other permanents: ").append(String.join(", ", otherPermanents)).append(System.lineSeparator());
+        }
+        return sb.toString();
+    }
+
+    private static String keywordSummary(Permanent permanent, Game game) {
+        List<String> keywords = new ArrayList<>();
+        if (permanent.getAbilities(game).containsClass(FlyingAbility.class)) {
+            keywords.add("Flying");
+        }
+        if (permanent.getAbilities(game).containsClass(ReachAbility.class)) {
+            keywords.add("Reach");
+        }
+        if (permanent.getAbilities(game).containsClass(MenaceAbility.class)) {
+            keywords.add("Menace");
+        }
+        if (permanent.getAbilities(game).containsClass(DeathtouchAbility.class)) {
+            keywords.add("Deathtouch");
+        }
+        if (permanent.getAbilities(game).containsClass(FirstStrikeAbility.class)) {
+            keywords.add("First Strike");
+        }
+        if (permanent.getAbilities(game).containsClass(DoubleStrikeAbility.class)) {
+            keywords.add("Double Strike");
+        }
+        return keywords.isEmpty() ? "" : " [" + String.join(", ", keywords) + "]";
     }
 
     private static JsonObject pairArraySchema(String arrayName, String field1, String field2) {
