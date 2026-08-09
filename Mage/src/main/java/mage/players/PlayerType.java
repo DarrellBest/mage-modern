@@ -11,7 +11,10 @@ public enum PlayerType {
     HUMAN("Human", false, true),
     COMPUTER_DRAFT_BOT("Computer - draftbot", true, false),
     COMPUTER_MONTE_CARLO("Computer - monte carlo", true, true),
-    COMPUTER_MAD("Computer - mad", true, true);
+    COMPUTER_MAD("Computer - mad", true, true),
+    // DARRELLBEST-FORK (keep on merge/rebase from upstream): registers our Mage.Player.AI.Kanna
+    // plugin (LLM tool-calling via Ollama) as a selectable AI type in config.xml/the client dropdown.
+    COMPUTER_KANNA("Computer - kanna", true, true);
 
     final String description;
     final boolean isAI;
