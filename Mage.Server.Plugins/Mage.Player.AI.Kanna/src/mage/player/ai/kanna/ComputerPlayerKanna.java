@@ -130,11 +130,14 @@ public class ComputerPlayerKanna extends ComputerPlayer7 {
                 getName(), attackersDesc, defendersDesc
         );
 
+        logger.info("Kanna: prompt sent to " + OLLAMA_MODEL + " for " + getName() + ":\n" + prompt);
+
         JsonObject toolCall = callOllamaForAttackDecision(prompt);
         if (toolCall == null) {
             logger.info("Kanna: model chose not to attack this combat");
             return;
         }
+        logger.info("Kanna: raw tool-call arguments: " + toolCall);
 
         JsonArray attacks = toolCall.getAsJsonArray("attacks");
         if (attacks == null) {
@@ -144,6 +147,7 @@ public class ComputerPlayerKanna extends ComputerPlayer7 {
 
         Player attackingPlayer = game.getPlayer(attackingPlayerId);
         List<UUID> declared = new ArrayList<>();
+        List<String> declaredSummary = new ArrayList<>();
         for (JsonElement el : attacks) {
             JsonObject pair = el.getAsJsonObject();
             String atkId = pair.has("attacker_id") ? pair.get("attacker_id").getAsString() : null;
@@ -158,9 +162,12 @@ public class ComputerPlayerKanna extends ComputerPlayer7 {
             }
             attackingPlayer.declareAttacker(attacker.getId(), defenderId, game, false);
             declared.add(attacker.getId());
+            Player defenderPlayer = game.getPlayer(defenderId);
+            declaredSummary.add(attacker.getName() + " -> " + (defenderPlayer == null ? defId : defenderPlayer.getName()));
         }
 
-        logger.info("Kanna declared " + declared.size() + " attacker(s) via " + OLLAMA_MODEL);
+        logger.info("Kanna declared " + declared.size() + " attacker(s) via " + OLLAMA_MODEL
+                + (declaredSummary.isEmpty() ? "" : ": " + String.join(", ", declaredSummary)));
     }
 
     /**
