@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import mage.constants.RangeOfInfluence;
 import mage.game.Game;
+import mage.game.events.GameEvent;
 import mage.game.permanent.Permanent;
 import mage.player.ai.ComputerPlayer6;
 import mage.players.Player;
@@ -57,21 +58,29 @@ public class ComputerPlayerKanna extends ComputerPlayer6 {
 
     @Override
     public void selectAttackers(Game game, UUID attackingPlayerId) {
-        try {
-            if (chooseAttackersWithKanna(game, attackingPlayerId)) {
-                return;
-            }
-        } catch (Exception e) {
-            logger.warn("Kanna: LLM attack decision failed, falling back to normal AI logic - " + e, e);
+        logger.info("Kanna: selectAttackers called for " + getName());
+
+        // same protocol the stock declareAttackers() follows: fire the pre-combat event, then
+        // respect any replacement effect that prevents/replaces declaring attackers entirely
+        // (e.g. "you can't attack this turn"). Once this fires we're committed to handling this
+        // combat step ourselves -- falling back to super.selectAttackers() after this point would
+        // fire both events a second time and double-trigger any "before combat" abilities.
+        game.fireEvent(new GameEvent(GameEvent.EventType.DECLARE_ATTACKERS_STEP_PRE, null, null, attackingPlayerId));
+        if (game.replaceEvent(GameEvent.getEvent(GameEvent.EventType.DECLARING_ATTACKERS, attackingPlayerId, attackingPlayerId))) {
+            logger.info("Kanna: declaring attackers was replaced/prevented this combat");
+            return;
         }
-        super.selectAttackers(game, attackingPlayerId);
+
+        try {
+            chooseAttackersWithKanna(game, attackingPlayerId);
+        } catch (Throwable e) {
+            // safe default on any failure: declare no attacks this combat, rather than risk
+            // re-running (and double-firing) the normal AI's own declareAttackers logic
+            logger.warn("Kanna: LLM attack decision failed, declaring no attacks this combat - " + e, e);
+        }
     }
 
-    /**
-     * @return true if Kanna made (or explicitly skipped) a valid decision;
-     * false to fall back to the normal AI.
-     */
-    private boolean chooseAttackersWithKanna(Game game, UUID attackingPlayerId) throws Exception {
+    private void chooseAttackersWithKanna(Game game, UUID attackingPlayerId) throws Exception {
         // dedup by real permanent id first -- a creature can be a legal attacker against
         // more than one opponent, and must only be listed/offered once either way
         Map<UUID, Permanent> uniqueAttackers = new HashMap<>();
@@ -93,7 +102,8 @@ public class ComputerPlayerKanna extends ComputerPlayer6 {
         }
 
         if (uniqueAttackers.isEmpty() || defendersById.isEmpty()) {
-            return true; // nothing to do, no need to call the LLM
+            logger.info("Kanna: no legal attackers/defenders this combat, nothing to do");
+            return;
         }
 
         // short synthetic ids instead of raw UUIDs -- much less error-prone for the LLM to echo back
@@ -116,12 +126,14 @@ public class ComputerPlayerKanna extends ComputerPlayer6 {
 
         JsonObject toolCall = callOllamaForAttackDecision(prompt);
         if (toolCall == null) {
-            return true; // model chose to attack with nothing, or gave no tool call - valid "do nothing"
+            logger.info("Kanna: model chose not to attack this combat");
+            return;
         }
 
         JsonArray attacks = toolCall.getAsJsonArray("attacks");
         if (attacks == null) {
-            return false; // malformed response, let the fallback handle this combat step
+            logger.warn("Kanna: tool-call response had no 'attacks' array, declaring no attacks");
+            return;
         }
 
         Player attackingPlayer = game.getPlayer(attackingPlayerId);
@@ -143,7 +155,6 @@ public class ComputerPlayerKanna extends ComputerPlayer6 {
         }
 
         logger.info("Kanna declared " + declared.size() + " attacker(s) via " + OLLAMA_MODEL);
-        return true;
     }
 
     /**
