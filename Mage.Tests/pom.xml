@@ -46,6 +46,13 @@
             <version>${project.version}</version>
             <scope>compile</scope>
         </dependency>
+        <!-- DARRELLBEST-FORK (keep on merge/rebase): lets tests wrap ComputerPlayerKanna -->
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>mage-player-ai-kanna</artifactId>
+            <version>${project.version}</version>
+            <scope>compile</scope>
+        </dependency>
 
         <dependency>
             <groupId>${project.groupId}</groupId>

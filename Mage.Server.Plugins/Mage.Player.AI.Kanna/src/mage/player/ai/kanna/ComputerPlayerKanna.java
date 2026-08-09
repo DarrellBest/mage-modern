@@ -8,7 +8,7 @@ import mage.constants.RangeOfInfluence;
 import mage.game.Game;
 import mage.game.events.GameEvent;
 import mage.game.permanent.Permanent;
-import mage.player.ai.ComputerPlayer6;
+import mage.player.ai.ComputerPlayer7;
 import mage.players.Player;
 import org.apache.log4j.Logger;
 
@@ -26,16 +26,22 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * Proof-of-concept AI player: normal ComputerPlayer6 logic for everything,
+ * Proof-of-concept AI player: normal ComputerPlayer7 logic for everything,
  * except attack declaration, which is decided by an LLM (via Ollama tool
  * calling) instead of the built-in heuristics.
+ * <p>
+ * Extends ComputerPlayer7, not ComputerPlayer6 -- ComputerPlayer6 alone has no
+ * priority() override and falls back to ComputerPlayer's "minimum
+ * implementation for do nothing" (just passes every priority window).
+ * ComputerPlayer7 is what actually wires the simulation/decision machinery up
+ * to real play.
  * <p>
  * Isolated in its own plugin module on purpose -- never touches shared
  * engine files, so pulling from upstream never conflicts with this class.
  *
  * @author Darrell Best
  */
-public class ComputerPlayerKanna extends ComputerPlayer6 {
+public class ComputerPlayerKanna extends ComputerPlayer7 {
 
     private static final Logger logger = Logger.getLogger(ComputerPlayerKanna.class);
 
