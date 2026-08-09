@@ -4622,7 +4622,15 @@ public abstract class PlayerImpl implements Player, Serializable {
     // ability with 2-3 target/cost requirements can still blow up into millions of
     // combinations and freeze/OOM the AI (server disconnects, "too many possible targets").
     // This cap stops that multiplication once it's already generated plenty of options.
-    private static final int MAX_TARGET_OPTIONS_PER_ABILITY_FORK_FIX = 2000;
+    //
+    // Was 2000 -- still too loose. This value gets multiplied together across every playable
+    // ability on the battlefield (see MAX_TOTAL_ACTIONS_FORK_FIX in SimulatedPlayer2), and THAT
+    // result is the branching factor at every one of maxDepth (== skill, so 6-8 for a "hard" AI)
+    // levels of minimax search -- confirmed live: a 50-permanent board pegged 18 of 24 CPU cores
+    // continuously for 4+ minutes and made the server unable to service any client, reconnect or
+    // not. 2000 was nowhere near tight enough once raised to that power; 300 still comfortably
+    // covers real-world abilities (which rarely approach even double digits of legal combos).
+    private static final int MAX_TARGET_OPTIONS_PER_ABILITY_FORK_FIX = 300;
 
     /**
      * AI related code, generate all possible usage use cases for activating ability (all possible targets combination)

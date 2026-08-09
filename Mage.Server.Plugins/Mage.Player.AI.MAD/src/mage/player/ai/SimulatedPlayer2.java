@@ -110,7 +110,14 @@ public final class SimulatedPlayer2 extends ComputerPlayer {
     // in PlayerImpl), but nothing capped the TOTAL across every playable ability on the whole
     // battlefield -- with enough activatable sources (big board, myriad-style triggers, etc.)
     // that aggregate could still explode and freeze/OOM the AI. This is the backstop.
-    private static final int MAX_TOTAL_ACTIONS_FORK_FIX = 3000;
+    //
+    // Was 3000 -- still not tight enough. This is the branching factor at EVERY one of maxDepth
+    // (== skill, 6-8 for a "hard" AI) levels of minimax search, so the real cost is this number
+    // raised to that power, not the number itself. Confirmed live: 3000 still let the server peg
+    // 18 of 24 CPU cores continuously for 4+ minutes straight and go completely unresponsive to
+    // every client on a 50-permanent board. 200 keeps normal decisions (which rarely approach
+    // even a few dozen real options) essentially untouched while making the worst case bounded.
+    private static final int MAX_TOTAL_ACTIONS_FORK_FIX = 200;
 
     private void simulateOptions(Game game) {
         List<ActivatedAbility> playables = game.getPlayer(playerId).getPlayable(game, isSimulatedPlayer);
