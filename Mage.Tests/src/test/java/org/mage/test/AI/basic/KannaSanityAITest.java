@@ -54,4 +54,22 @@ public class KannaSanityAITest extends CardTestPlayerBaseAI {
 
         assertLife(playerB, 20 - 2);
     }
+
+    @Test
+    public void test_Kanna_BlocksAnObviousLethalThreat() {
+        // Wall of Wood has defender (can't attack), so it's guaranteed to still be untapped and
+        // available to block on turn 2 regardless of what Kanna decided to do on its own turn 1.
+        // If block declaration is broken, PlayerA takes the full 2 damage instead of 0.
+        addCard(Zone.BATTLEFIELD, playerA, "Wall of Wood", 1); // 0/5, defender
+        addCard(Zone.BATTLEFIELD, playerB, "Grizzly Bears", 1);
+        addCard(Zone.BATTLEFIELD, playerB, "Forest", 1);
+
+        attack(2, playerB, "Grizzly Bears");
+
+        setStrictChooseMode(true);
+        setStopAt(2, PhaseStep.END_TURN);
+        execute();
+
+        assertLife(playerA, 20);
+    }
 }
