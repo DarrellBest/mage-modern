@@ -21,6 +21,7 @@ import mage.abilities.hint.common.CitysBlessingHint;
 import mage.abilities.hint.common.CurrentDungeonHint;
 import mage.abilities.hint.common.InitiativeHint;
 import mage.abilities.hint.common.MonarchHint;
+import mage.abilities.hint.common.PlayersLeftRightHint;
 import mage.abilities.keyword.*;
 import mage.cards.*;
 import mage.cards.decks.CardNameUtil;
@@ -58,6 +59,7 @@ import mage.verify.mtgjson.MtgJsonSet;
 import mage.verify.mtgjson.SpellBookCardsPage;
 import mage.watchers.Watcher;
 import net.java.truevfs.access.TFile;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -1021,8 +1023,6 @@ public class VerifyCardDataTest {
         ignoreBoosterSets.add("Zendikar Rising Expeditions"); // box toppers
         ignoreBoosterSets.add("March of the Machine: The Aftermath"); // epilogue boosters aren't for draft
         ignoreBoosterSets.add("Mystery Booster"); // temporary
-        // TEMPORARY: Pending MTGJson updates
-        ignoreBoosterSets.add("The Hobbit");
     }
 
     @Test
@@ -1102,11 +1102,6 @@ public class VerifyCardDataTest {
 
         // CHECK: unknown set or wrong name
         for (ExpansionSet set : sets) {
-            if ("MBC".equals(set.getCode())) {
-                // TODO: skip name check until MBC metadata is updated in MtgJSON
-                continue;
-            }
-
             if (set.getSetType().equals(SetType.CUSTOM_SET)) {
                 // skip unofficial sets like Star Wars
                 continue;
@@ -1210,6 +1205,15 @@ public class VerifyCardDataTest {
         Set<String> implementedSets = sets.stream().map(ExpansionSet::getCode).collect(Collectors.toSet());
         MtgJsonService.sets().values().forEach(jsonSet -> {
             if (jsonSet.booster != null && !jsonSet.booster.isEmpty() && !implementedSets.contains(jsonSet.code)) {
+                if (jsonSet.code.equals("HBG")) {
+                    // TODO: remove after implement dozens A-cards, see HBG - Alchemy Horizons: Baldur's Gate
+                    return;
+                }
+                if (jsonSet.code.equals("OM1")) {
+                    // TODO: Determine how to model this set, if at all.
+                    // Wizards released this in lieu of SPM due to licensing issues. Almost mechannically identical, but with unique card names/art.
+                    return;
+                }
                 // how-to fix: it's miss promo sets with boosters, so just add/generate it in most use cases
                 errorsList.add(String.format("Error: missing set implementation (important for draft format) - %s - %s - boosters: %s",
                         jsonSet.code,
@@ -2607,9 +2611,10 @@ public class VerifyCardDataTest {
         cardHints.put(InitiativeHint.class, "the initiative");
         cardHints.put(CurrentDungeonHint.class, "venture into");
         cardHints.put(ColorsOfManaSpentToCastCount.getHint().getClass(), "Converge —");
+        cardHints.put(PlayersLeftRightHint.class, "choose left or right");
         for (Class hintClass : cardHints.keySet()) {
             String lookupText = cardHints.get(hintClass);
-            boolean needHint = ref.text.contains(lookupText);
+            boolean needHint = StringUtils.containsIgnoreCase(ref.text, lookupText);
             if (needHint) {
                 boolean haveHint = card.getAbilities()
                         .stream()

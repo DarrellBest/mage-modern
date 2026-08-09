@@ -117,6 +117,7 @@ public final class MarvelSuperHeroes extends ExpansionSet {
         cards.add(new SetCardInfo("Crimson Operative", 126, Rarity.COMMON, mage.cards.c.CrimsonOperative.class));
         cards.add(new SetCardInfo("Crossbones, Malicious Mercenary", 91, Rarity.UNCOMMON, mage.cards.c.CrossbonesMaliciousMercenary.class));
         cards.add(new SetCardInfo("Crowd of True Believers", 14, Rarity.COMMON, mage.cards.c.CrowdOfTrueBelievers.class));
+        cards.add(new SetCardInfo("Cruel Alliance", 92, Rarity.COMMON, mage.cards.c.CruelAlliance.class));
         cards.add(new SetCardInfo("Dark Deed", 93, Rarity.UNCOMMON, mage.cards.d.DarkDeed.class));
         cards.add(new SetCardInfo("Dark Fortress", 264, Rarity.RARE, mage.cards.d.DarkFortress.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Dark Fortress", 380, Rarity.RARE, mage.cards.d.DarkFortress.class, NON_FULL_USE_VARIOUS));
@@ -370,6 +371,8 @@ public final class MarvelSuperHeroes extends ExpansionSet {
         cards.add(new SetCardInfo("The Sentry, Golden Guardian", 358, Rarity.RARE, mage.cards.t.TheSentryGoldenGuardian.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("The Serpent Society", 226, Rarity.RARE, mage.cards.t.TheSerpentSociety.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("The Serpent Society", 424, Rarity.RARE, mage.cards.t.TheSerpentSociety.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("The Super Hero Civil War", 231, Rarity.RARE, mage.cards.t.TheSuperHeroCivilWar.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("The Super Hero Civil War", 308, Rarity.RARE, mage.cards.t.TheSuperHeroCivilWar.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("The Ten Rings", 251, Rarity.MYTHIC, mage.cards.t.TheTenRings.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("The Ten Rings", 313, Rarity.MYTHIC, mage.cards.t.TheTenRings.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("The Thing, Ben Grimm", 190, Rarity.UNCOMMON, mage.cards.t.TheThingBenGrimm.class, NON_FULL_USE_VARIOUS));
