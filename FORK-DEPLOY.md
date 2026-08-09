@@ -37,40 +37,45 @@ Friends pick up the update through the launcher.
 
 ## Launcher (separate — only when launcher code changes)
 
-The Electron launcher (`~/projects/Launcher`) is a **different artifact** and is NOT part of `full-deploy.sh`. It only rebuilds when its own code changes. Build it on the **x86_64 server** (has wine + makensis; the aarch64 DGX cannot cross-build a working Windows exe):
+The Electron launcher (`~/projects/Launcher`) is a **different artifact** and is NOT part of `full-deploy.sh`. It only rebuilds when its own code changes.
+
+**One version → one GitHub Release, all three platforms.** Bump the version in `Launcher/electron/package.json`, commit, then on the **x86_64 server** (has wine + makensis; the aarch64 DGX cannot cross-build a working Windows exe):
 
 ```bash
-# bump version in Launcher/electron/package.json first, then:
-rsync -az --exclude node_modules --exclude dist ~/projects/Launcher/electron/ user@192.168.1.87:~/launcher-src/
-ssh user@192.168.1.87 'cd ~/launcher-src && npm install \
-  && npx electron-builder --win portable --x64 \
-  && npx electron-builder --linux AppImage --x64 \
-  && cp -f dist/XMageLauncher-*.exe dist/XMageLauncher-*.AppImage /var/www/html/files/'
+cd ~/projects/Launcher && ./tools/release-launcher.sh
 ```
 
-Then hand over the download links:
-`http://play.darrellbest.com:17080/files/XMageLauncher-<ver>.exe` (and `.AppImage`).
+That one script builds win (NSIS installer) + linux (AppImage) locally, copies them
+(plus the `electron-updater` manifests) to `/var/www/html/files/`, tags `v<ver>`, pushes
+it — which also triggers `mac-build.yml` on GitHub Actions to build + ad-hoc-sign the
+mac dmg — and publishes the win/linux assets to the GitHub Release (the mac job adds
+its dmg to that same release; whichever job gets there first creates it, the other
+uploads into it).
 
-### macOS build (GitHub Actions — no mac hardware here)
+Watch the mac build finish (usually a few minutes): `https://github.com/DarrellBest/Launcher/actions`
 
-electron-builder can only produce mac targets on macOS, so the dmg builds on a free
-GitHub-hosted mac runner (`.github/workflows/mac-build.yml` in the Launcher repo):
+Download links (same for everyone, and where the launcher's own auto-updater fetches from):
+- GitHub Release page: `https://github.com/DarrellBest/Launcher/releases/tag/v<ver>`
+- Web mirror (also the auto-updater's fallback feed if GitHub is unreachable):
+  `http://play.darrellbest.com:17080/files/XMageLauncher-<ver>-Setup.exe` (and `.AppImage`, `.dmg`)
 
-```bash
-# bump version in Launcher/electron/package.json, commit, then:
-git tag mac-v<ver> && git push origin mac-v<ver>
-# → builds a universal (Intel + Apple Silicon) dmg, ad-hoc signs it, publishes it as
-#   a release asset. Pull it onto the server for distribution:
-curl -L -o /tmp/XMageLauncher-<ver>.dmg \
-  https://github.com/DarrellBest/Launcher/releases/download/mac-v<ver>/XMageLauncher-<ver>.dmg
-scp /tmp/XMageLauncher-<ver>.dmg user@192.168.1.87:/var/www/html/files/
-```
+### Launcher self-update
 
-Mac link: `http://play.darrellbest.com:17080/files/XMageLauncher-<ver>.dmg`.
+Windows and Linux builds check GitHub Releases on launch and self-install updates via
+`electron-updater` (GitHub primary, falls back to the web mirror above if GitHub can't
+be reached). **macOS does not self-install** — ad-hoc signing (no Apple Developer ID)
+fails Squirrel.Mac's signature check, so mac just shows "update available" with a link
+to the release page for a manual download, same as before.
+
 Mac-user caveats (no Apple Developer ID → not notarized):
 - First launch: right-click → Open, or System Settings → Privacy & Security → "Open Anyway" (macOS 15+ removed the right-click bypass).
 - Apple Silicon needs Rosetta 2 for the bundled x64 Java 8 (`softwareupdate --install-rosetta --agree-to-license`); the launcher itself runs natively.
 - The mac Java tarball (`jre-8u201-macosx-x64.tar.gz`) is already hosted in `/var/www/html/files/java/` and the launcher already handles the mac JRE layout (`Contents/Home`).
+
+Windows caveat (no code-signing cert): the NSIS installer will still trigger a
+SmartScreen "unknown publisher" warning on first run (click "More info" → "Run
+anyway") — same class of friction as the old unsigned portable exe, just at install
+time instead of every launch.
 
 ## Hard-won gotchas (don't relearn these)
 
