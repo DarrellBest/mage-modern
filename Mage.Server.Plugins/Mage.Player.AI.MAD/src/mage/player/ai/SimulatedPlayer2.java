@@ -105,11 +105,21 @@ public final class SimulatedPlayer2 extends ComputerPlayer {
         return list;
     }
 
+    // DARRELLBEST-FORK (keep on merge/rebase from upstream): each ability's own option
+    // combinations are already capped individually (see MAX_TARGET_OPTIONS_PER_ABILITY_FORK_FIX
+    // in PlayerImpl), but nothing capped the TOTAL across every playable ability on the whole
+    // battlefield -- with enough activatable sources (big board, myriad-style triggers, etc.)
+    // that aggregate could still explode and freeze/OOM the AI. This is the backstop.
+    private static final int MAX_TOTAL_ACTIONS_FORK_FIX = 3000;
+
     private void simulateOptions(Game game) {
         List<ActivatedAbility> playables = game.getPlayer(playerId).getPlayable(game, isSimulatedPlayer);
         for (ActivatedAbility ability : playables) {
             if (ability.isManaAbility()) {
                 continue;
+            }
+            if (allActions.size() >= MAX_TOTAL_ACTIONS_FORK_FIX) {
+                break;
             }
             List<Ability> options = game.getPlayer(playerId).getPlayableOptions(ability, game);
             options = optimizeOptions(game, options, ability);
