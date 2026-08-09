@@ -18,7 +18,9 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,12 +51,18 @@ public class ComputerPlayerKanna extends ComputerPlayer7 {
     private static final String OLLAMA_MODEL = "deepseek-v4-pro:cloud";
     private static final int REQUEST_TIMEOUT_MS = 30_000;
 
+    // kept small on purpose: this gets re-sent in full with every prompt, so history length
+    // is a direct, ongoing token cost, not a one-time one
+    private static final int MAX_HISTORY_ENTRIES = 5;
+    private final Deque<String> combatHistory = new ArrayDeque<>();
+
     public ComputerPlayerKanna(String name, RangeOfInfluence range, int skill) {
         super(name, range, skill);
     }
 
     public ComputerPlayerKanna(final ComputerPlayerKanna player) {
         super(player);
+        this.combatHistory.addAll(player.combatHistory);
     }
 
     @Override
@@ -122,12 +130,18 @@ public class ComputerPlayerKanna extends ComputerPlayer7 {
                     atkId, attacker.getName(), attacker.getPower().getValue(), attacker.getToughness().getValue()));
         }
 
+        // compact on purpose -- one line per past turn, no rationale/thinking text -- since this
+        // gets re-sent with every single prompt, not just paid for once
+        String historyText = combatHistory.isEmpty()
+                ? ""
+                : "Your recent combat decisions:\n" + String.join("\n", combatHistory) + "\n\n";
+
         String prompt = String.format(
                 "You are Kanna, playing Magic: The Gathering as %s. It's your combat step. Decide which of "
                         + "your available creatures should attack, and who each one attacks. It's fine to attack with none "
-                        + "of them if that's the better play.%n%nYour available attackers:%n%s%nPossible defenders:%n%s%n"
+                        + "of them if that's the better play.%n%n%sYour available attackers:%n%s%nPossible defenders:%n%s%n"
                         + "Call declare_attackers using only the short ids listed above.",
-                getName(), attackersDesc, defendersDesc
+                getName(), historyText, attackersDesc, defendersDesc
         );
 
         logger.info("Kanna: prompt sent to " + OLLAMA_MODEL + " for " + getName() + ":\n" + prompt);
@@ -135,6 +149,7 @@ public class ComputerPlayerKanna extends ComputerPlayer7 {
         JsonObject toolCall = callOllamaForAttackDecision(prompt);
         if (toolCall == null) {
             logger.info("Kanna: model chose not to attack this combat");
+            recordHistory(game, "declared no attacks");
             return;
         }
         logger.info("Kanna: raw tool-call arguments: " + toolCall);
@@ -168,6 +183,14 @@ public class ComputerPlayerKanna extends ComputerPlayer7 {
 
         logger.info("Kanna declared " + declared.size() + " attacker(s) via " + OLLAMA_MODEL
                 + (declaredSummary.isEmpty() ? "" : ": " + String.join(", ", declaredSummary)));
+        recordHistory(game, declaredSummary.isEmpty() ? "declared no attacks" : String.join(", ", declaredSummary));
+    }
+
+    private void recordHistory(Game game, String summary) {
+        combatHistory.addLast("T" + game.getTurnNum() + ": " + summary);
+        while (combatHistory.size() > MAX_HISTORY_ENTRIES) {
+            combatHistory.removeFirst();
+        }
     }
 
     /**
