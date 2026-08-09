@@ -4616,6 +4616,14 @@ public abstract class PlayerImpl implements Player, Serializable {
         addTargetOptions(options, option, targetNum, game);
     }
 
+    // DARRELLBEST-FORK (keep on merge/rebase from upstream): each target slot is already
+    // capped individually (see TargetImpl.getTargetOptions), but addTargetOptions/
+    // addCostTargetOptions below multiply those slots together with NO ceiling, so an
+    // ability with 2-3 target/cost requirements can still blow up into millions of
+    // combinations and freeze/OOM the AI (server disconnects, "too many possible targets").
+    // This cap stops that multiplication once it's already generated plenty of options.
+    private static final int MAX_TARGET_OPTIONS_PER_ABILITY_FORK_FIX = 2000;
+
     /**
      * AI related code, generate all possible usage use cases for activating ability (all possible targets combination)
      */
@@ -4633,6 +4641,10 @@ public abstract class PlayerImpl implements Player, Serializable {
 
         // analyse all possible use cases
         for (Target targetOption : currentTarget.getTargetOptions(option, game)) {
+            // DARRELLBEST-FORK (keep on merge/rebase): see MAX_TARGET_OPTIONS_PER_ABILITY_FORK_FIX above
+            if (options.size() >= MAX_TARGET_OPTIONS_PER_ABILITY_FORK_FIX) {
+                break;
+            }
             // fill target
             Ability newOption = option.copy();
             if (targetOption instanceof TargetAmount) {
@@ -4666,6 +4678,10 @@ public abstract class PlayerImpl implements Player, Serializable {
      */
     private void addCostTargetOptions(List<Ability> options, Ability option, int targetNum, Game game) {
         for (UUID targetId : option.getCosts().getTargets().get(targetNum).possibleTargets(playerId, option, game)) {
+            // DARRELLBEST-FORK (keep on merge/rebase): see MAX_TARGET_OPTIONS_PER_ABILITY_FORK_FIX above
+            if (options.size() >= MAX_TARGET_OPTIONS_PER_ABILITY_FORK_FIX) {
+                break;
+            }
             Ability newOption = option.copy();
             newOption.getCosts().getTargets().get(targetNum).addTarget(targetId, option, game, true);
             if (targetNum < option.getCosts().getTargets().size() - 1) {
