@@ -99,4 +99,59 @@ public class OllamaClientTest {
             assertTrue(client.getRetryCount() >= 1);
         }
     }
+
+    @Test
+    public void nonSuccessResponseWithNoErrorBodySurfacesAsIOException() throws Exception {
+        // HttpURLConnection#getErrorStream() is documented to return null when the server
+        // sent a non-2xx status with no error body -- an empty-body 500 is the realistic way
+        // that happens. What matters is that the failure arrives as IOException (catchable,
+        // retried) and never as a NullPointerException from wrapping a null stream in a reader.
+        //
+        // A bare accept()-then-close() (no bytes at all) does NOT reliably exercise this: it
+        // typically fails earlier, inside getResponseCode() itself (e.g. SocketTimeoutException
+        // or "unexpected end of stream"), before the code under test ever reaches the
+        // getErrorStream() branch -- so it would pass identically whether or not the null-stream
+        // guard exists. To pin the actual fix, the fake server below writes a real minimal HTTP
+        // response (status line + Content-Length: 0) and then closes, which reliably produces
+        // status=500 with a null error stream. It loops so both the initial attempt and the
+        // one retry get served, keeping the test deterministic and fast (no read-timeout waits).
+        final java.net.ServerSocket server = new java.net.ServerSocket(0);
+        Thread serverThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    while (!server.isClosed()) {
+                        java.net.Socket socket = server.accept();
+                        try {
+                            java.io.OutputStream out = socket.getOutputStream();
+                            out.write(("HTTP/1.1 500 Internal Server Error\r\n"
+                                    + "Content-Length: 0\r\n\r\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                            out.flush();
+                        } finally {
+                            socket.close();
+                        }
+                    }
+                } catch (Exception ignored) {
+                    // socket closed under us at test teardown; not interesting
+                }
+            }
+        });
+        serverThread.setDaemon(true);
+        serverThread.start();
+
+        try {
+            OllamaClient client = new OllamaClient("http://127.0.0.1:" + server.getLocalPort(), "any-model");
+            client.setTimeoutMs(1000);
+            try {
+                client.call("prompt", new java.util.ArrayList<JsonObject>());
+                org.junit.Assert.fail("expected IOException");
+            } catch (java.io.IOException expected) {
+                assertTrue(client.getRetryCount() >= 1);
+            } catch (RuntimeException unexpected) {
+                org.junit.Assert.fail("must surface as IOException, not " + unexpected);
+            }
+        } finally {
+            server.close();
+        }
+    }
 }

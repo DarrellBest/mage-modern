@@ -7,6 +7,7 @@ import com.google.gson.JsonParser;
 import org.apache.log4j.Logger;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -22,7 +23,10 @@ import java.util.List;
  * Retries once when a response contains no tool call at all. Measured rate of
  * that happening on the tuned local profile is roughly 1 in 6 -- the model
  * answers in prose instead. Without the retry (and the caller's fallback) a
- * failed response is indistinguishable from a deliberate "do nothing".
+ * failed response is indistinguishable from a deliberate "do nothing". A
+ * request that fails outright with an {@link IOException} (unreachable host,
+ * non-200 response, etc.) is also retried once, on the same one-retry budget,
+ * before the exception is allowed to propagate to the caller.
  *
  * @author Darrell Best
  */
@@ -190,7 +194,16 @@ public class OllamaClient {
             }
 
             int status = conn.getResponseCode();
-            InputStream stream = status == 200 ? conn.getInputStream() : conn.getErrorStream();
+            InputStream stream;
+            if (status == 200) {
+                stream = conn.getInputStream();
+            } else {
+                InputStream error = conn.getErrorStream();
+                // getErrorStream() is null when the server sent no error body; without this
+                // guard the reader below NPEs, which is unchecked and so escapes call()'s
+                // IOException retry entirely.
+                stream = error != null ? error : new ByteArrayInputStream(new byte[0]);
+            }
             StringBuilder sb = new StringBuilder();
             BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8));
             try {
