@@ -60,25 +60,57 @@ public final class CombatEvaluator {
         int firstStrikeDamage = attackerStrikesFirst ? attacker.power : 0;
         int regularDamage = attacker.doubleStrike ? attacker.power
                 : (attacker.firstStrike ? 0 : attacker.power);
-        int totalDamage = firstStrikeDamage + regularDamage;
 
-        // A blocker only escapes striking back if the first-strike step alone killed it.
-        List<String> deadAfterFirstStrike = killedBy(attacker, blockers, firstStrikeDamage);
-        List<String> dead = killedBy(attacker, blockers, totalDamage);
-
-        boolean anyBlockerStrikesFirst = anyStrikesFirst(blockers);
-        int damageBack = 0;
+        // --- first-strike step ---
+        // Only blockers with first or double strike deal damage in this step.
+        int firstStrikeDamageBack = 0;
+        boolean lethalInFirstStrikeStep = false;
         for (CreatureView blocker : blockers) {
-            boolean killedBeforeItStruck = attackerStrikesFirst && !anyBlockerStrikesFirst
-                    && deadAfterFirstStrike.contains(blocker.name);
-            if (!killedBeforeItStruck) {
-                damageBack += blocker.power * (blocker.doubleStrike ? 2 : 1);
+            if (blocker.firstStrike || blocker.doubleStrike) {
+                firstStrikeDamageBack += blocker.power;
                 if (blocker.deathtouch && blocker.power > 0) {
-                    damageBack = Math.max(damageBack, attacker.toughness);
+                    lethalInFirstStrikeStep = true;
                 }
             }
         }
-        boolean attackerDies = damageBack >= attacker.toughness;
+        List<String> deadAfterFirstStrike = killedBy(attacker, blockers, firstStrikeDamage);
+        boolean attackerDiesInFirstStrikeStep =
+                lethalInFirstStrikeStep || firstStrikeDamageBack >= attacker.toughness;
+
+        // --- regular step ---
+        // An attacker killed in the first-strike step is removed from combat and deals nothing more.
+        List<String> dead;
+        int totalDealt;
+        if (attackerDiesInFirstStrikeStep) {
+            dead = deadAfterFirstStrike;
+            totalDealt = firstStrikeDamage;
+        } else {
+            totalDealt = firstStrikeDamage + regularDamage;
+            dead = killedBy(attacker, blockers, totalDealt);
+        }
+
+        int regularDamageBack = 0;
+        boolean lethalInRegularStep = false;
+        if (!attackerDiesInFirstStrikeStep) {
+            for (CreatureView blocker : blockers) {
+                // A blocker that died in the first-strike step never reaches this step.
+                // A first-strike-only blocker already dealt its damage and does not deal again.
+                boolean alreadyDead = deadAfterFirstStrike.contains(blocker.name);
+                boolean strikesAgain = blocker.doubleStrike || !blocker.firstStrike;
+                if (!alreadyDead && strikesAgain) {
+                    regularDamageBack += blocker.power;
+                    if (blocker.deathtouch && blocker.power > 0) {
+                        lethalInRegularStep = true;
+                    }
+                }
+            }
+        }
+
+        int damageBack = attackerDiesInFirstStrikeStep
+                ? firstStrikeDamageBack
+                : firstStrikeDamageBack + regularDamageBack;
+        boolean attackerDies = attackerDiesInFirstStrikeStep || lethalInRegularStep
+                || damageBack >= attacker.toughness;
 
         int damageThrough = 0;
         if (attacker.trample) {
@@ -86,7 +118,7 @@ public final class CombatEvaluator {
             for (CreatureView blocker : blockers) {
                 soak += attacker.deathtouch ? 1 : blocker.toughness;
             }
-            damageThrough = Math.max(0, totalDamage - soak);
+            damageThrough = Math.max(0, totalDealt - soak);
         }
 
         StringBuilder summary = new StringBuilder();
@@ -135,12 +167,28 @@ public final class CombatEvaluator {
             return evaluateUnblocked(attacker);
         }
         AttackOutcome worst = null;
-        for (CreatureView blocker : able) {
-            List<CreatureView> single = new ArrayList<CreatureView>();
-            single.add(blocker);
-            AttackOutcome outcome = evaluateBlockedBy(attacker, single);
-            if (worst == null || rank(outcome) < rank(worst)) {
-                worst = outcome;
+        if (attacker.menace) {
+            // legalBlockers guarantees able.size() >= 2 here; a lone blocker is not a legal
+            // assignment against menace, so evaluating one would model an impossible block.
+            for (int i = 0; i < able.size(); i++) {
+                for (int j = i + 1; j < able.size(); j++) {
+                    List<CreatureView> pair = new ArrayList<CreatureView>();
+                    pair.add(able.get(i));
+                    pair.add(able.get(j));
+                    AttackOutcome outcome = evaluateBlockedBy(attacker, pair);
+                    if (worst == null || rank(outcome) < rank(worst)) {
+                        worst = outcome;
+                    }
+                }
+            }
+        } else {
+            for (CreatureView blocker : able) {
+                List<CreatureView> single = new ArrayList<CreatureView>();
+                single.add(blocker);
+                AttackOutcome outcome = evaluateBlockedBy(attacker, single);
+                if (worst == null || rank(outcome) < rank(worst)) {
+                    worst = outcome;
+                }
             }
         }
         return worst;
@@ -153,15 +201,6 @@ public final class CombatEvaluator {
     /** Higher is better for the attacker. Used only to pick the defender's best block. */
     private static int rank(AttackOutcome outcome) {
         return (outcome.attackerDies ? -10 : 0) + outcome.blockersThatDie.size() * 5 + outcome.damageThrough;
-    }
-
-    private static boolean anyStrikesFirst(List<CreatureView> creatures) {
-        for (CreatureView creature : creatures) {
-            if (creature.firstStrike || creature.doubleStrike) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private static String join(List<String> names) {

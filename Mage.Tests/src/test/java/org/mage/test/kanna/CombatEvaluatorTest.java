@@ -180,4 +180,36 @@ public class CombatEvaluatorTest {
         assertTrue(o.summary.contains("Bear"));
         assertFalse(o.summary.trim().isEmpty());
     }
+
+    @Test
+    public void firstStrikeBlockerThatKillsAttackerTakesNoDamage() {
+        // attacker has no first strike; blocker kills it in the first-strike step,
+        // so the attacker is removed from combat and never deals damage
+        CreatureView blocker = with("b", "Lancer", 3, 1, false, false, false, false, true, false, false);
+        AttackOutcome o = CombatEvaluator.evaluateBlockedBy(plain("a", "Bear", 2, 2),
+                Arrays.asList(blocker));
+        assertTrue(o.attackerDies);
+        assertTrue("blocker must survive untouched", o.blockersThatDie.isEmpty());
+    }
+
+    @Test
+    public void mixedGangOnlyLetsSurvivingBlockersStrikeBack() {
+        // attacker's first-strike damage kills both blockers; only the first-striking
+        // blocker ever swings back, for 1, which the 2-toughness attacker survives
+        CreatureView a = with("b", "Squire", 1, 1, false, false, false, false, true, false, false);
+        CreatureView b = plain("c", "Ogre", 2, 3);
+        CreatureView attacker = with("a", "Captain", 5, 2, false, false, false, false, true, false, false);
+        AttackOutcome o = CombatEvaluator.evaluateBlockedBy(attacker, Arrays.asList(a, b));
+        assertEquals(Arrays.asList("Squire", "Ogre"), o.blockersThatDie);
+        assertFalse("only the first-striking blocker deals damage back", o.attackerDies);
+    }
+
+    @Test
+    public void menaceAttackerIsEvaluatedAgainstTwoBlockersNotOne() {
+        CreatureView menacer = with("a", "Boggart", 3, 3, false, false, true, false, false, false, false);
+        List<CreatureView> blockers = Arrays.asList(plain("b", "Bear", 2, 2), plain("c", "Bear2", 2, 2));
+        AttackOutcome o = CombatEvaluator.evaluateLikely(menacer, blockers);
+        assertFalse("menace means it is never blocked by a lone creature", o.unblocked);
+        assertTrue("two 2/2s deal 4 to a 3/3", o.attackerDies);
+    }
 }
