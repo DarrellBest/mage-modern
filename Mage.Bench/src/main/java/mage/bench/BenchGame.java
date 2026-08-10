@@ -15,6 +15,7 @@ import mage.game.mulligan.MulliganType;
 import mage.player.ai.kanna.ComputerPlayerKanna;
 import mage.players.Player;
 import mage.util.RandomUtil;
+import org.apache.log4j.Logger;
 
 import java.io.File;
 import java.util.HashMap;
@@ -33,6 +34,8 @@ import java.util.Map;
  */
 public final class BenchGame {
 
+    private static final Logger logger = Logger.getLogger(BenchGame.class);
+
     private static final Map<String, DeckCardLists> DECK_CACHE = new HashMap<>();
 
     private BenchGame() {
@@ -40,6 +43,8 @@ public final class BenchGame {
 
     public static GameResult run(BenchConfig config, int gameIndex, long seed, boolean seatSwapped) {
         long startNanos = System.nanoTime();
+        // shared by both seats: correct for a mismatched matchup (kanna vs cp7), but a
+        // kanna-vs-kanna run merges both players' LLM stats into one BenchMetrics instance
         BenchMetrics metrics = new BenchMetrics();
         Game game = null;
         try {
@@ -70,30 +75,38 @@ public final class BenchGame {
 
             int turns = game.getState().getTurnNum();
             String winnerKey = null;
+            int winnerSeat = 0;
             if (seat1.hasWon()) {
                 winnerKey = seat1Key;
+                winnerSeat = 1;
             } else if (seat2.hasWon()) {
                 winnerKey = seat2Key;
+                winnerSeat = 2;
             }
 
             Termination termination;
             if (winnerKey != null) {
                 termination = Termination.WIN;
-            } else {
-                // engine treats the turn cap as a draw; a genuine draw before the cap is
-                // vanishingly rare in a duel, so treat "no winner" at or past the cap as CAP
+            } else if (turns >= config.turnCap) {
+                // engine treats the turn cap as a draw; distinguish that from a genuine
+                // mutual-loss draw by checking whether the cap was actually reached
                 termination = Termination.CAP;
+            } else {
+                termination = Termination.DRAW;
             }
 
             long wallMs = (System.nanoTime() - startNanos) / 1_000_000L;
-            return new GameResult(gameIndex, seed, winnerKey, turns, wallMs,
+            return new GameResult(gameIndex, seed, winnerKey, winnerSeat, turns, wallMs,
                     termination, null, seatSwapped, metrics.snapshot());
 
         } catch (Throwable e) {
             long wallMs = (System.nanoTime() - startNanos) / 1_000_000L;
             int turns = game == null ? 0 : game.getState().getTurnNum();
             String message = e.getClass().getSimpleName() + ": " + e.getMessage();
-            return new GameResult(gameIndex, seed, null, turns, wallMs,
+            // full stack trace, not just the message: an ERROR row with only "NullPointerException:
+            // null" leaves nothing to debug once the game state that caused it is gone
+            logger.error("Bench game " + gameIndex + " (seed " + seed + ") failed: " + message, e);
+            return new GameResult(gameIndex, seed, null, 0, turns, wallMs,
                     Termination.ERROR, message, seatSwapped, metrics.snapshot());
         }
     }
@@ -134,7 +147,17 @@ public final class BenchGame {
         if (!file.exists()) {
             throw new IllegalArgumentException("Deck file not found: " + file.getAbsolutePath());
         }
-        DeckCardLists list = DeckImporter.importDeckFromFile(file.getAbsolutePath(), true);
+        // 3-arg overload with a real StringBuilder: the 2-arg overload silently drops
+        // unresolvable lines into a throwaway buffer instead of failing, so a deck with bad
+        // lines would load short and every game in the run would silently use the wrong deck.
+        // saveAutoFixedFile=false because true opens the source .dck file for writing --
+        // a benchmark run must never mutate repo-tracked deck files as a side effect of
+        // reading them.
+        StringBuilder errors = new StringBuilder();
+        DeckCardLists list = DeckImporter.importDeckFromFile(file.getAbsolutePath(), errors, false);
+        if (errors.length() > 0) {
+            throw new IllegalArgumentException("Deck '" + deckName + "' failed to import: " + errors);
+        }
         DECK_CACHE.put(key, list);
         return list;
     }

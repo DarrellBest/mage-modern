@@ -45,7 +45,7 @@ public final class BenchConfig {
         String playerA = "kanna";
         String playerB = "cp7";
         int skill = 6;
-        String model = "qwen3.6:latest";
+        String model = "xmage-ai-qwen3.6:latest";
         int turnCap = 50;
         String out = "bench-results.jsonl";
         String deckDir = "Mage.Tests";

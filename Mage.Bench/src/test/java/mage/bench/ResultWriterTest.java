@@ -16,7 +16,8 @@ public class ResultWriterTest {
     public TemporaryFolder folder = new TemporaryFolder();
 
     private GameResult result(int index, String winner, Termination termination) {
-        return new GameResult(index, 100L + index, winner, 12, 3400L, termination, null, index % 2 == 1, LlmStats.empty());
+        int winnerSeat = winner == null ? 0 : 1;
+        return new GameResult(index, 100L + index, winner, winnerSeat, 12, 3400L, termination, null, index % 2 == 1, LlmStats.empty());
     }
 
     @Test

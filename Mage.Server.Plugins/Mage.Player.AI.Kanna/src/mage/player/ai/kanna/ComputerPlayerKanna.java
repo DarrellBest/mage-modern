@@ -62,9 +62,10 @@ public class ComputerPlayerKanna extends ComputerPlayerMCTS {
 
     // DARRELLBEST-FORK (keep on merge/rebase from upstream): url/model are instance fields
     // rather than constants so the benchmark harness can point a run at a specific local
-    // model without rebuilding. Defaults match the previous hardcoded values' intent.
+    // model without rebuilding. Default model points at the user's tuned Ollama profile
+    // (a custom Modelfile layered on qwen3.6), not the base model.
     private String ollamaUrl = "http://localhost:11434/api/chat";
-    private String ollamaModel = "qwen3.6:latest";
+    private String ollamaModel = "xmage-ai-qwen3.6:latest";
 
     /**
      * Instrumentation callback the benchmark harness supplies. Declared here rather than

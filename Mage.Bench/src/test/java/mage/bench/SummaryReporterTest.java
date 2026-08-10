@@ -11,7 +11,21 @@ import static org.junit.Assert.assertTrue;
 public class SummaryReporterTest {
 
     private GameResult game(int index, String winner, Termination termination, long wallMs) {
-        return new GameResult(index, index, winner, 10, wallMs, termination, null, index % 2 == 1, LlmStats.empty());
+        boolean swapped = index % 2 == 1;
+        int winnerSeat;
+        if (winner == null) {
+            winnerSeat = 0;
+        } else {
+            // "kanna" is always playerA in these tests; resolve it to whichever seat
+            // playerA occupies for this game (seat 2 when swapped) so seat-based
+            // attribution in SummaryReporter reproduces the same result these tests
+            // were written to check by key
+            boolean isPlayerA = "kanna".equals(winner);
+            int seatA = swapped ? 2 : 1;
+            int seatB = swapped ? 1 : 2;
+            winnerSeat = isPlayerA ? seatA : seatB;
+        }
+        return new GameResult(index, index, winner, winnerSeat, 10, wallMs, termination, null, swapped, LlmStats.empty());
     }
 
     private List<GameResult> games(int kannaWins, int cp7Wins, int caps, int errors) {
@@ -88,6 +102,40 @@ public class SummaryReporterTest {
         RunSummary summary = SummaryReporter.summarize(new ArrayList<GameResult>(), "kanna");
         assertEquals(0, summary.total);
         assertEquals(0, summary.decisive);
+    }
+
+    @Test
+    public void identicalKeyMatchup_attributesBySeatNotByKey() {
+        // cp7 vs cp7 control run: the key is identical on both seats, so attribution by
+        // key would (incorrectly) book every decisive game as a win for A. Seat 1 wins 5,
+        // seat 2 wins 5, none swapped -- must come out 50/50, not 100/0.
+        List<GameResult> results = new ArrayList<>();
+        for (int i = 0; i < 5; i++) {
+            results.add(new GameResult(i, i, "cp7", 1, 10, 1000L, Termination.WIN, null, false, LlmStats.empty()));
+        }
+        for (int i = 5; i < 10; i++) {
+            results.add(new GameResult(i, i, "cp7", 2, 10, 1000L, Termination.WIN, null, false, LlmStats.empty()));
+        }
+
+        RunSummary summary = SummaryReporter.summarize(results, "cp7");
+        assertEquals(10, summary.decisive);
+        assertEquals(5, summary.winsA);
+        assertEquals(5, summary.winsB);
+        assertEquals(0.50, summary.winRateA, 0.0001);
+    }
+
+    @Test
+    public void drawsAreCountedSeparatelyAndExcludedFromDecisive() {
+        List<GameResult> results = new ArrayList<>();
+        results.add(new GameResult(0, 0, "kanna", 1, 10, 1000L, Termination.WIN, null, false, LlmStats.empty()));
+        results.add(new GameResult(1, 1, null, 0, 8, 1000L, Termination.DRAW, null, false, LlmStats.empty()));
+        results.add(new GameResult(2, 2, null, 0, 50, 1000L, Termination.CAP, null, false, LlmStats.empty()));
+
+        RunSummary summary = SummaryReporter.summarize(results, "kanna");
+        assertEquals(3, summary.total);
+        assertEquals(1, summary.decisive);
+        assertEquals(1, summary.draws);
+        assertEquals(1, summary.caps);
     }
 
     @Test

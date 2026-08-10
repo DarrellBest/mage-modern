@@ -17,7 +17,7 @@ public class BenchConfigTest {
         assertEquals("kanna", config.playerA);
         assertEquals("cp7", config.playerB);
         assertEquals(6, config.skill);
-        assertEquals("qwen3.6:latest", config.model);
+        assertEquals("xmage-ai-qwen3.6:latest", config.model);
         assertEquals(50, config.turnCap);
         assertEquals("bench-results.jsonl", config.out);
     }
