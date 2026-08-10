@@ -99,7 +99,7 @@ public class KannaAgentTest {
         KannaAgent agent = new KannaAgent(client, 4);
         Decision decision = agent.chooseAction("prompt", catalog(), answerer());
         assertTrue("never committed within the cap", decision.fallback);
-        assertTrue("must not exceed the cap", client.callCount <= 4);
+        assertEquals("cap must be used exactly", 4, client.callCount);
     }
 
     @Test
@@ -179,5 +179,59 @@ public class KannaAgentTest {
                 });
         assertFalse("declining to attack is a real decision, not a failure", decision.fallback);
         assertTrue(decision.pairs.isEmpty());
+    }
+
+    @Test
+    public void toolCallWithNullArgumentsFallsBackRatherThanThrowing() {
+        ScriptedClient client = new ScriptedClient(
+                Arrays.asList(new ToolCall("declare_attackers", null)));
+        KannaAgent agent = new KannaAgent(client, 4);
+        Decision decision = agent.choosePairs("prompt", "declare_attackers", "attacks",
+                "attacker_id", "defender_id", new KannaAgent.PairValidator() {
+                    @Override
+                    public boolean isValid(String a, String b) {
+                        return true;
+                    }
+                });
+        assertTrue(decision.fallback);
+        assertEquals(1, agent.getInvalidCount());
+    }
+
+    @Test
+    public void unknownToolNameFallsBackAndIsCounted() {
+        JsonObject args = new JsonObject();
+        args.addProperty("whatever", "x");
+        ScriptedClient client = new ScriptedClient(
+                Arrays.asList(new ToolCall("summon_dragon", args)));
+        KannaAgent agent = new KannaAgent(client, 4);
+        Decision decision = agent.chooseAction("prompt", catalog(), answerer());
+        assertTrue(decision.fallback);
+        assertEquals(1, agent.getInvalidCount());
+    }
+
+    @Test
+    public void nonObjectArrayElementIsDroppedAndCounted() {
+        com.google.gson.JsonArray attacks = new com.google.gson.JsonArray();
+        attacks.add("not-an-object");
+        JsonObject valid = new JsonObject();
+        valid.addProperty("attacker_id", "atk-0");
+        valid.addProperty("defender_id", "def-0");
+        attacks.add(valid);
+        JsonObject args = new JsonObject();
+        args.add("attacks", attacks);
+
+        ScriptedClient client = new ScriptedClient(
+                Arrays.asList(new ToolCall("declare_attackers", args)));
+        KannaAgent agent = new KannaAgent(client, 4);
+        Decision decision = agent.choosePairs("prompt", "declare_attackers", "attacks",
+                "attacker_id", "defender_id", new KannaAgent.PairValidator() {
+                    @Override
+                    public boolean isValid(String a, String b) {
+                        return true;
+                    }
+                });
+        assertFalse("one bad element does not fail the whole decision", decision.fallback);
+        assertEquals(1, decision.pairs.size());
+        assertEquals(1, agent.getInvalidCount());
     }
 }

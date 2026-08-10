@@ -42,6 +42,13 @@ public final class KannaAgent {
         this.maxToolCalls = maxToolCalls;
     }
 
+    /**
+     * @return how many times the model gave a genuinely bad answer (unresolvable id,
+     * unknown tool, malformed pair, missing arguments). Deliberately excludes the
+     * transport-exception path and the cap-reached path: those are infrastructure
+     * failure and budget exhaustion, not the model answering badly, and this count
+     * is meant to measure model quality specifically -- do not fold those in.
+     */
     public int getInvalidCount() {
         return invalidCount;
     }
@@ -110,6 +117,11 @@ public final class KannaAgent {
         }
         if (call == null) {
             logger.warn("Kanna: no tool call returned for " + toolName + ", deferring to heuristics");
+            invalidCount++;
+            return Decision.fallback();
+        }
+        if (call.arguments == null) {
+            logger.warn("Kanna: tool call carried no arguments, deferring to heuristics");
             invalidCount++;
             return Decision.fallback();
         }
