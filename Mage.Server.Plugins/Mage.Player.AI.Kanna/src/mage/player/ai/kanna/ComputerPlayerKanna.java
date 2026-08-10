@@ -1,30 +1,18 @@
 package mage.player.ai.kanna;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import mage.abilities.Ability;
-import mage.abilities.keyword.DeathtouchAbility;
-import mage.abilities.keyword.DoubleStrikeAbility;
-import mage.abilities.keyword.FirstStrikeAbility;
-import mage.abilities.keyword.FlyingAbility;
-import mage.abilities.keyword.MenaceAbility;
-import mage.abilities.keyword.ReachAbility;
+import mage.abilities.ActivatedAbility;
+import mage.abilities.common.PassAbility;
+import mage.constants.Outcome;
 import mage.constants.RangeOfInfluence;
 import mage.game.Game;
 import mage.game.events.GameEvent;
 import mage.game.permanent.Permanent;
-import mage.player.ai.ComputerPlayerMCTS;
+import mage.player.ai.ComputerPlayer;
 import mage.players.Player;
+import mage.target.Target;
 import org.apache.log4j.Logger;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -32,50 +20,34 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 /**
- * AI player: Monte Carlo Tree Search (ComputerPlayerMCTS) for everything,
- * except attack and block declaration, which are decided by an LLM (via
- * Ollama tool calling) instead.
+ * Kanna: a fully agentic, LLM-driven Magic player.
  * <p>
- * Extends ComputerPlayerMCTS rather than ComputerPlayer6/7's exhaustive
- * minimax. Minimax's cost is (branching factor)^depth -- even a capped
- * branching factor still compounds exponentially across maxDepth (== skill,
- * 6-8 for a "hard" AI), which is what pegged 18 of 24 CPU cores for 4+
- * minutes straight on a 50-permanent board and made the server unresponsive
- * to every client. MCTS instead runs a fixed time/iteration budget of
- * sampled rollouts -- cost is bounded by that budget, not by how deep the
- * tree could theoretically go, so a huge board just means cruder rollouts
- * within the same budget instead of exponential blowup.
+ * Heuristics compute and the model judges. Before any decision reaches the model,
+ * CombatEvaluator and ActionRanker enumerate and annotate every legal option with
+ * its exact consequences; the model then picks one, using read-only inspection
+ * tools if it wants to look deeper. The same heuristics stand in when the model
+ * fails, so a failure is a reasonable move plus a metric, never a silent pass.
  * <p>
- * Isolated in its own plugin module on purpose -- never touches shared
- * engine files, so pulling from upstream never conflicts with this class.
+ * Extends ComputerPlayer, NOT ComputerPlayerMCTS/6/7: there is no search here.
+ * Note that ComputerPlayer.priority() is a no-op that just passes -- overriding it
+ * is mandatory, and forgetting to is silent rather than loud.
  *
  * @author Darrell Best
  */
-public class ComputerPlayerKanna extends ComputerPlayerMCTS {
+public class ComputerPlayerKanna extends ComputerPlayer {
 
     private static final Logger logger = Logger.getLogger(ComputerPlayerKanna.class);
 
-    private static final int REQUEST_TIMEOUT_MS = 30_000;
+    private static final int MAX_TOOL_CALLS = 4;
+    private static final int SHORTLIST_SIZE = 8;
+    private static final int MAX_HISTORY_ENTRIES = 5;
 
-    // DARRELLBEST-FORK (keep on merge/rebase from upstream): url/model are instance fields
-    // rather than constants so the benchmark harness can point a run at a specific local
-    // model without rebuilding. Default model points at the user's tuned Ollama profile
-    // (a custom Modelfile layered on qwen3.6), not the base model.
-    private String ollamaUrl = "http://localhost:11434/api/chat";
-    private String ollamaModel = "xmage-ai-qwen3.6:latest";
-
-    // DARRELLBEST-FORK (keep on merge/rebase from upstream): new interface + field, not
-    // present upstream -- lets the benchmark harness observe LLM latency and invalid tool
-    // calls per decision (see the Javadoc below for why the interface is declared here
-    // instead of in Mage.Bench).
     /**
-     * Instrumentation callback the benchmark harness supplies. Declared here rather than
-     * imported from the bench module because Mage.Bench depends on this module, not the
-     * other way round -- the reverse would be a dependency cycle. No-ops when unset, so
-     * the plugin stays usable on the live server.
+     * Instrumentation callback the benchmark harness supplies. Declared here rather
+     * than imported from Mage.Bench because Mage.Bench depends on this module, not
+     * the other way round -- the reverse would be a Maven cycle. No-ops when unset.
      */
     public interface DecisionMetrics {
         void recordLlmCall(long latencyMs);
@@ -83,11 +55,30 @@ public class ComputerPlayerKanna extends ComputerPlayerMCTS {
         void recordInvalidToolCall();
     }
 
+    private String ollamaUrl = "http://localhost:11434";
+    private String ollamaModel = "xmage-ai-qwen3.6:latest";
     private DecisionMetrics metrics;
+    private final Deque<String> combatHistory = new ArrayDeque<String>();
 
-    // DARRELLBEST-FORK (keep on merge/rebase from upstream): setters new to this fork, giving
-    // the benchmark harness a way to configure a Kanna instance (model, Ollama URL, metrics
-    // sink) per run instead of only via the constants this class used to hardcode.
+    public ComputerPlayerKanna(String name, RangeOfInfluence range, int skill) {
+        // skill is accepted and ignored: it meant search depth/think time, and there
+        // is no search any more. Kept so PlayerFactory and the server need no change.
+        super(name, range);
+    }
+
+    public ComputerPlayerKanna(final ComputerPlayerKanna player) {
+        super(player);
+        this.ollamaUrl = player.ollamaUrl;
+        this.ollamaModel = player.ollamaModel;
+        this.metrics = player.metrics;
+        this.combatHistory.addAll(player.combatHistory);
+    }
+
+    @Override
+    public ComputerPlayerKanna copy() {
+        return new ComputerPlayerKanna(this);
+    }
+
     public void setOllamaUrl(String ollamaUrl) {
         this.ollamaUrl = ollamaUrl;
     }
@@ -96,282 +87,456 @@ public class ComputerPlayerKanna extends ComputerPlayerMCTS {
         this.ollamaModel = model;
     }
 
+    public String getModel() {
+        return ollamaModel;
+    }
+
     public void setBenchMetrics(DecisionMetrics metrics) {
         this.metrics = metrics;
     }
 
-    // kept small on purpose: this gets re-sent in full with every prompt, so history length
-    // is a direct, ongoing token cost, not a one-time one. Shared between attacks and blocks
-    // rather than tracked separately, to avoid doubling that recurring cost.
-    private static final int MAX_HISTORY_ENTRIES = 5;
-    private final Deque<String> combatHistory = new ArrayDeque<>();
-
-    public ComputerPlayerKanna(String name, RangeOfInfluence range, int skill) {
-        super(name, range, skill);
+    private KannaAgent newAgent() {
+        return new KannaAgent(new OllamaClient(ollamaUrl, ollamaModel), MAX_TOOL_CALLS);
     }
 
-    public ComputerPlayerKanna(final ComputerPlayerKanna player) {
-        super(player);
-        this.combatHistory.addAll(player.combatHistory);
-        // DARRELLBEST-FORK (keep on merge/rebase from upstream): carry the fork-added
-        // ollamaUrl/ollamaModel/metrics fields through copy() too, or every MCTS rollout
-        // clone of a Kanna player would silently fall back to the hardcoded defaults and
-        // lose its harness-configured model/metrics mid-simulation.
-        this.ollamaUrl = player.ollamaUrl;
-        this.ollamaModel = player.ollamaModel;
-        this.metrics = player.metrics;
+    private void reportInvalid(KannaAgent agent) {
+        if (metrics == null) {
+            return;
+        }
+        for (int i = 0; i < agent.getInvalidCount(); i++) {
+            metrics.recordInvalidToolCall();
+        }
     }
+
+    // ------------------------------------------------------------------ priority
 
     @Override
-    public ComputerPlayerKanna copy() {
-        return new ComputerPlayerKanna(this);
+    public boolean priority(Game game) {
+        List<ActivatedAbility> playable = getPlayable(game, true);
+
+        // Trivial-decision bypass. Most priority windows in Magic offer nothing but
+        // Pass; sending each to the model would cost a round trip per window and make
+        // the player unusable. This is load-bearing, not an optimisation.
+        if (playable.isEmpty() || onlyPass(playable)) {
+            pass(game);
+            return false;
+        }
+
+        ActionCatalog catalog = new ActionCatalog();
+        for (ActivatedAbility ability : playable) {
+            catalog.add(ability, ability.toString());
+        }
+        PassAbility passAbility = new PassAbility();
+        catalog.add(passAbility, "Pass");
+
+        List<RankedAction> ranked = ActionRanker.rank(catalog);
+        String prompt = buildPriorityPrompt(game, ranked, catalog.size());
+
+        KannaAgent agent = newAgent();
+        long start = System.nanoTime();
+        Decision decision = agent.chooseAction(prompt, catalog, new KannaAgent.InspectionAnswerer() {
+            @Override
+            public String answer(ToolCall call) {
+                if ("show_all_actions".equals(call.name)) {
+                    return ActionRanker.render(ActionRanker.rank(catalog), catalog.size());
+                }
+                if ("get_card_text".equals(call.name)) {
+                    String id = call.arguments.has("id") ? call.arguments.get("id").getAsString() : null;
+                    String label = catalog.labelFor(id);
+                    return label == null ? "No such id." : label;
+                }
+                return null;
+            }
+        });
+        recordLatency(start);
+        reportInvalid(agent);
+
+        if (decision.fallback) {
+            // Heuristics already ranked everything to build the prompt, so the fallback
+            // is free and strictly better than passing: take the top-ranked action.
+            RankedAction best = ranked.isEmpty() ? null : ranked.get(0);
+            ActivatedAbility chosen = best == null ? null : catalog.resolve(best.id);
+            if (chosen == null || chosen instanceof PassAbility) {
+                pass(game);
+                return false;
+            }
+            logger.info("Kanna: heuristic fallback plays " + best.label);
+            activateAbility(chosen, game);
+            return true;
+        }
+
+        ActivatedAbility chosen = catalog.resolve(decision.chosenId);
+        if (chosen instanceof PassAbility) {
+            pass(game);
+            return false;
+        }
+        logger.info("Kanna plays " + catalog.labelFor(decision.chosenId) + " via " + ollamaModel);
+        activateAbility(chosen, game);
+        return true;
     }
 
-    // ---------------------------------------------------------------- attacks
+    private static boolean onlyPass(List<ActivatedAbility> playable) {
+        for (ActivatedAbility ability : playable) {
+            if (!(ability instanceof PassAbility)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private String buildPriorityPrompt(Game game, List<RankedAction> ranked, int total) {
+        Player me = game.getPlayer(playerId);
+        StringBuilder sb = new StringBuilder();
+        sb.append("You are Kanna, playing Magic: The Gathering as ").append(getName())
+                .append(" (").append(me == null ? 0 : me.getLife()).append(" life).")
+                .append(System.lineSeparator());
+        sb.append("Turn ").append(game.getTurnNum()).append(", ").append(game.getStep().getType())
+                .append('.').append(System.lineSeparator()).append(System.lineSeparator());
+        sb.append("Your creatures: ").append(GameStateFormatter.describeCreatures(myCreatures(game)))
+                .append(System.lineSeparator());
+        for (UUID opponentId : game.getOpponents(playerId, true)) {
+            Player opponent = game.getPlayer(opponentId);
+            if (opponent == null) {
+                continue;
+            }
+            sb.append(opponent.getName()).append(" (").append(opponent.getLife()).append(" life) creatures: ")
+                    .append(GameStateFormatter.describeCreatures(creaturesOf(opponentId, game)))
+                    .append(System.lineSeparator());
+        }
+        sb.append(historyBlock());
+        sb.append(System.lineSeparator()).append("Your options:").append(System.lineSeparator());
+        sb.append(ActionRanker.render(ActionRanker.shortlist(ranked, SHORTLIST_SIZE), total));
+        sb.append(System.lineSeparator())
+                .append("Call choose_action with exactly one id from the list above.");
+        return sb.toString();
+    }
+
+    private List<CreatureView> myCreatures(Game game) {
+        return creaturesOf(playerId, game);
+    }
+
+    private static List<CreatureView> creaturesOf(UUID controllerId, Game game) {
+        List<CreatureView> views = new ArrayList<CreatureView>();
+        int index = 0;
+        for (Permanent permanent : game.getBattlefield().getAllActivePermanents(controllerId)) {
+            if (permanent.isCreature(game)) {
+                views.add(CreatureView.from("c-" + index++, permanent, game));
+            }
+        }
+        return views;
+    }
+
+    // ------------------------------------------------------------------ targeting
+
+    @Override
+    public boolean chooseTarget(Outcome outcome, Target target, Ability source, Game game) {
+        List<UUID> possible = new ArrayList<UUID>(target.possibleTargets(getId(), source, game));
+        if (possible.size() <= 1) {
+            // no real choice to make -- do not spend a model round trip on it
+            return super.chooseTarget(outcome, target, source, game);
+        }
+
+        Map<String, UUID> byId = new HashMap<String, UUID>();
+        ActionCatalog catalog = new ActionCatalog();
+        StringBuilder options = new StringBuilder();
+        int index = 0;
+        for (UUID candidate : possible) {
+            String id = "tgt-" + index++;
+            byId.put(id, candidate);
+            options.append("- ").append(id).append(": ").append(describeTarget(candidate, game))
+                    .append(System.lineSeparator());
+        }
+
+        StringBuilder prompt = new StringBuilder();
+        prompt.append("You are Kanna. Choose a target for: ")
+                .append(source == null ? "an effect" : source.toString())
+                .append(System.lineSeparator())
+                .append("Outcome is ").append(outcome).append('.')
+                .append(System.lineSeparator()).append(System.lineSeparator())
+                .append("Possible targets:").append(System.lineSeparator()).append(options)
+                .append(System.lineSeparator())
+                .append("Call choose_action with exactly one tgt- id from the list above.");
+
+        for (Map.Entry<String, UUID> entry : byId.entrySet()) {
+            catalog.add(new PassAbility(), entry.getKey());
+        }
+
+        KannaAgent agent = newAgent();
+        long start = System.nanoTime();
+        Decision decision = agent.chooseAction(prompt.toString(), catalog,
+                new KannaAgent.InspectionAnswerer() {
+                    @Override
+                    public String answer(ToolCall call) {
+                        return "show_all_actions".equals(call.name) ? options.toString() : null;
+                    }
+                });
+        recordLatency(start);
+        reportInvalid(agent);
+
+        if (decision.fallback) {
+            return super.chooseTarget(outcome, target, source, game);
+        }
+        String chosenLabel = catalog.labelFor(decision.chosenId);
+        UUID chosen = byId.get(chosenLabel);
+        if (chosen == null) {
+            return super.chooseTarget(outcome, target, source, game);
+        }
+        target.addTarget(chosen, source, game);
+        logger.info("Kanna targets " + describeTarget(chosen, game));
+        return true;
+    }
+
+    private static String describeTarget(UUID id, Game game) {
+        Permanent permanent = game.getPermanent(id);
+        if (permanent != null) {
+            return permanent.getName() + " (" + permanent.getPower().getValue()
+                    + "/" + permanent.getToughness().getValue() + ")";
+        }
+        Player player = game.getPlayer(id);
+        if (player != null) {
+            return "player " + player.getName() + " (" + player.getLife() + " life)";
+        }
+        return id.toString();
+    }
+
+    // ------------------------------------------------------------------ attacks
 
     @Override
     public void selectAttackers(Game game, UUID attackingPlayerId) {
-        logger.info("Kanna: selectAttackers called for " + getName());
-
-        // same protocol the stock declareAttackers() follows: fire the pre-combat event, then
-        // respect any replacement effect that prevents/replaces declaring attackers entirely
-        // (e.g. "you can't attack this turn"). Once this fires we're committed to handling this
-        // combat step ourselves -- falling back to super.selectAttackers() after this point would
-        // fire both events a second time and double-trigger any "before combat" abilities.
         game.fireEvent(new GameEvent(GameEvent.EventType.DECLARE_ATTACKERS_STEP_PRE, null, null, attackingPlayerId));
-        if (game.replaceEvent(GameEvent.getEvent(GameEvent.EventType.DECLARING_ATTACKERS, attackingPlayerId, attackingPlayerId))) {
-            logger.info("Kanna: declaring attackers was replaced/prevented this combat");
+        if (game.replaceEvent(GameEvent.getEvent(
+                GameEvent.EventType.DECLARING_ATTACKERS, attackingPlayerId, attackingPlayerId))) {
             return;
         }
-
         try {
-            chooseAttackersWithKanna(game, attackingPlayerId);
+            declareAttacksAgentically(game, attackingPlayerId);
         } catch (Throwable e) {
-            // safe default on any failure: declare no attacks this combat, rather than risk
-            // re-running (and double-firing) the normal AI's own declareAttackers logic
-            logger.warn("Kanna: LLM attack decision failed, declaring no attacks this combat - " + e, e);
+            logger.warn("Kanna: attack decision failed, deferring to heuristics - " + e, e);
+            super.selectAttackers(game, attackingPlayerId);
         }
     }
 
-    private void chooseAttackersWithKanna(Game game, UUID attackingPlayerId) throws Exception {
-        // dedup by real permanent id first -- a creature can be a legal attacker against
-        // more than one opponent, and must only be listed/offered once either way
-        Map<UUID, Permanent> uniqueAttackers = new HashMap<>();
-        Map<String, UUID> defendersById = new HashMap<>();
-        StringBuilder defendersDesc = new StringBuilder();
+    private void declareAttacksAgentically(Game game, UUID attackingPlayerId) {
+        final Map<String, Permanent> attackers = new HashMap<String, Permanent>();
+        final Map<String, UUID> defenders = new HashMap<String, UUID>();
+        List<CreatureView> attackerViews = new ArrayList<CreatureView>();
+        StringBuilder defenderText = new StringBuilder();
 
         for (UUID defenderId : game.getOpponents(playerId, true)) {
             Player defender = game.getPlayer(defenderId);
             if (defender == null || !defender.isInGame()) {
                 continue;
             }
-            String defId = "def-" + defendersById.size();
-            defendersById.put(defId, defenderId);
-            defendersDesc.append(String.format("- %s: %s (%d life)%n", defId, defender.getName(), defender.getLife()));
-            defendersDesc.append(boardStateSummary(defenderId, game));
-
+            String defId = "def-" + defenders.size();
+            defenders.put(defId, defenderId);
+            List<CreatureView> blockers = untappedCreaturesOf(defenderId, game);
+            defenderText.append("- ").append(defId).append(": ").append(defender.getName())
+                    .append(" (").append(defender.getLife()).append(" life), possible blockers: ")
+                    .append(GameStateFormatter.describeCreatures(blockers))
+                    .append(System.lineSeparator());
             for (Permanent attacker : getAvailableAttackers(defenderId, game)) {
-                uniqueAttackers.putIfAbsent(attacker.getId(), attacker);
+                if (!attackers.containsValue(attacker)) {
+                    String atkId = "atk-" + attackers.size();
+                    attackers.put(atkId, attacker);
+                    attackerViews.add(CreatureView.from(atkId, attacker, game));
+                }
             }
         }
 
-        if (uniqueAttackers.isEmpty() || defendersById.isEmpty()) {
-            logger.info("Kanna: no legal attackers/defenders this combat, nothing to do");
+        if (attackers.isEmpty() || defenders.isEmpty()) {
             return;
         }
 
-        // short synthetic ids instead of raw UUIDs -- much less error-prone for the LLM to echo back
-        Map<String, Permanent> attackersById = new HashMap<>();
-        StringBuilder attackersDesc = new StringBuilder();
-        for (Permanent attacker : uniqueAttackers.values()) {
-            String atkId = "atk-" + attackersById.size();
-            attackersById.put(atkId, attacker);
-            attackersDesc.append(String.format("- %s: %s (%d/%d)%n",
-                    atkId, attacker.getName(), attacker.getPower().getValue(), attacker.getToughness().getValue()));
-        }
+        UUID firstDefenderId = defenders.values().iterator().next();
+        Player firstDefender = game.getPlayer(firstDefenderId);
+        int defenderLife = firstDefender == null ? 20 : firstDefender.getLife();
+        String optionText = GameStateFormatter.attackOptions(attackerViews,
+                untappedCreaturesOf(firstDefenderId, game), defenderLife);
 
+        StringBuilder prompt = new StringBuilder();
         Player me = game.getPlayer(playerId);
-        String prompt = String.format(
-                "You are Kanna, playing Magic: The Gathering as %s (%d life). It's your combat step. Decide which of "
-                        + "your available creatures should attack, and who each one attacks. Each defender's possible "
-                        + "blockers and other permanents are listed so you can judge whether an attack is actually safe. "
-                        + "It's fine to attack with none of them if that's the better play.%n%n%sYour available attackers:"
-                        + "%n%s%nPossible defenders:%n%s%n"
-                        + "Call declare_attackers using only the short ids listed above.",
-                getName(), me == null ? 0 : me.getLife(), historyBlock(), attackersDesc, defendersDesc
-        );
+        prompt.append("You are Kanna, playing as ").append(getName())
+                .append(" (").append(me == null ? 0 : me.getLife()).append(" life). It is your combat step.")
+                .append(System.lineSeparator()).append(historyBlock())
+                .append(System.lineSeparator()).append("Your possible attacks, with computed outcomes:")
+                .append(System.lineSeparator()).append(optionText)
+                .append(System.lineSeparator()).append("Defenders:").append(System.lineSeparator())
+                .append(defenderText).append(System.lineSeparator())
+                .append("Call declare_attackers using only the ids above. An empty list means attack with nobody.");
 
-        JsonObject toolCall = callOllamaForDecision(
-                "declare_attackers", "Choose which creatures attack and who they attack this combat.",
-                pairArraySchema("attacks", "attacker_id", "defender_id"), prompt
-        );
-        if (toolCall == null) {
-            logger.info("Kanna: model chose not to attack this combat");
-            recordHistory(game, "attack", "declared no attacks");
-            return;
-        }
+        KannaAgent agent = newAgent();
+        long start = System.nanoTime();
+        Decision decision = agent.choosePairs(prompt.toString(), "declare_attackers", "attacks",
+                "attacker_id", "defender_id", new KannaAgent.PairValidator() {
+                    @Override
+                    public boolean isValid(String attackerId, String defenderId) {
+                        return attackers.containsKey(attackerId) && defenders.containsKey(defenderId);
+                    }
+                });
+        recordLatency(start);
+        reportInvalid(agent);
 
-        JsonArray attacks = toolCall.getAsJsonArray("attacks");
-        if (attacks == null) {
-            logger.warn("Kanna: tool-call response had no 'attacks' array, declaring no attacks");
+        if (decision.fallback) {
+            logger.info("Kanna: deferring attacks to heuristics");
+            super.selectAttackers(game, attackingPlayerId);
             return;
         }
 
         Player attackingPlayer = game.getPlayer(attackingPlayerId);
-        List<UUID> declared = new ArrayList<>();
-        List<String> declaredSummary = new ArrayList<>();
-        for (JsonElement el : attacks) {
-            JsonObject pair = el.getAsJsonObject();
-            String atkId = pair.has("attacker_id") ? pair.get("attacker_id").getAsString() : null;
-            String defId = pair.has("defender_id") ? pair.get("defender_id").getAsString() : null;
-            Permanent attacker = atkId == null ? null : attackersById.get(atkId);
-            UUID defenderId = defId == null ? null : defendersById.get(defId);
-            boolean legalAgainstThisDefender = attacker != null && defenderId != null
-                    && getAvailableAttackers(defenderId, game).stream().anyMatch(p -> p.getId().equals(attacker.getId()));
-            if (attacker == null || defenderId == null || declared.contains(attacker.getId()) || !legalAgainstThisDefender) {
-                logger.warn("Kanna: ignoring invalid/hallucinated attack pair from LLM: " + atkId + " -> " + defId);
-                // DARRELLBEST-FORK (keep on merge/rebase from upstream): feeds
-                // BenchMetrics.recordInvalidToolCall, the benchmark harness's signal for how
-                // often a Modelfile hallucinates tool-call arguments.
-                if (metrics != null) {
-                    metrics.recordInvalidToolCall();
-                }
+        List<String> summary = new ArrayList<String>();
+        List<UUID> declared = new ArrayList<UUID>();
+        for (String[] pair : decision.pairs) {
+            Permanent attacker = attackers.get(pair[0]);
+            UUID defenderId = defenders.get(pair[1]);
+            if (attacker == null || defenderId == null || declared.contains(attacker.getId())) {
                 continue;
             }
             attackingPlayer.declareAttacker(attacker.getId(), defenderId, game, false);
             declared.add(attacker.getId());
-            Player defenderPlayer = game.getPlayer(defenderId);
-            declaredSummary.add(attacker.getName() + " -> " + (defenderPlayer == null ? defId : defenderPlayer.getName()));
+            summary.add(attacker.getName());
         }
-
-        logger.info("Kanna declared " + declared.size() + " attacker(s) via " + ollamaModel
-                + (declaredSummary.isEmpty() ? "" : ": " + String.join(", ", declaredSummary)));
-        recordHistory(game, "attack", declaredSummary.isEmpty() ? "declared no attacks" : String.join(", ", declaredSummary));
+        logger.info("Kanna attacks with " + declared.size() + " creature(s) via " + ollamaModel
+                + (summary.isEmpty() ? "" : ": " + join(summary)));
+        recordHistory(game, "attack", summary.isEmpty() ? "no attacks" : join(summary));
     }
 
-    // ---------------------------------------------------------------- blocks
+    // ------------------------------------------------------------------ blocks
 
     @Override
     public void selectBlockers(Ability source, Game game, UUID defendingPlayerId) {
-        logger.info("Kanna: selectBlockers called for " + getName());
-
-        // same commit-once protocol as selectAttackers -- see the comment there
         game.fireEvent(new GameEvent(GameEvent.EventType.DECLARE_BLOCKERS_STEP_PRE, null, null, defendingPlayerId));
-        if (game.replaceEvent(GameEvent.getEvent(GameEvent.EventType.DECLARING_BLOCKERS, defendingPlayerId, defendingPlayerId))) {
-            logger.info("Kanna: declaring blockers was replaced/prevented this combat");
+        if (game.replaceEvent(GameEvent.getEvent(
+                GameEvent.EventType.DECLARING_BLOCKERS, defendingPlayerId, defendingPlayerId))) {
             return;
         }
-
         try {
-            chooseBlockersWithKanna(game, defendingPlayerId);
+            declareBlocksAgentically(source, game, defendingPlayerId);
         } catch (Throwable e) {
-            logger.warn("Kanna: LLM block decision failed, declaring no blocks this combat - " + e, e);
+            logger.warn("Kanna: block decision failed, deferring to heuristics - " + e, e);
+            super.selectBlockers(source, game, defendingPlayerId);
         }
     }
 
-    private void chooseBlockersWithKanna(Game game, UUID defendingPlayerId) throws Exception {
-        Map<String, Permanent> attackersById = new HashMap<>();
-        StringBuilder attackersDesc = new StringBuilder();
+    private void declareBlocksAgentically(Ability source, Game game, UUID defendingPlayerId) {
+        final Map<String, Permanent> attackers = new HashMap<String, Permanent>();
+        final Map<String, Permanent> blockers = new HashMap<String, Permanent>();
+        List<CreatureView> attackerViews = new ArrayList<CreatureView>();
+        List<CreatureView> blockerViews = new ArrayList<CreatureView>();
+
         for (UUID attackerId : game.getCombat().getAttackers()) {
             if (!defendingPlayerId.equals(game.getCombat().getDefendingPlayerId(attackerId, game))) {
-                continue; // attacking someone else, not relevant to my blocks
+                continue;
             }
             Permanent attacker = game.getPermanent(attackerId);
             if (attacker == null) {
                 continue;
             }
-            String atkId = "atk-" + attackersById.size();
-            attackersById.put(atkId, attacker);
-            attackersDesc.append(String.format("- %s: %s (%d/%d)%n",
-                    atkId, attacker.getName(), attacker.getPower().getValue(), attacker.getToughness().getValue()));
+            String id = "atk-" + attackers.size();
+            attackers.put(id, attacker);
+            attackerViews.add(CreatureView.from(id, attacker, game));
         }
-
-        if (attackersById.isEmpty()) {
-            logger.info("Kanna: nothing attacking me this combat, nothing to block");
+        if (attackers.isEmpty()) {
             return;
         }
 
-        Map<String, Permanent> blockersById = new HashMap<>();
-        StringBuilder blockersDesc = new StringBuilder();
         for (Permanent blocker : getAvailableBlockers(game)) {
-            boolean canBlockSomething = attackersById.values().stream().anyMatch(a -> blocker.canBlock(a.getId(), game));
-            if (!canBlockSomething) {
-                continue;
+            boolean canBlockSomething = false;
+            for (Permanent attacker : attackers.values()) {
+                if (blocker.canBlock(attacker.getId(), game)) {
+                    canBlockSomething = true;
+                    break;
+                }
             }
-            String blkId = "blk-" + blockersById.size();
-            blockersById.put(blkId, blocker);
-            blockersDesc.append(String.format("- %s: %s (%d/%d)%n",
-                    blkId, blocker.getName(), blocker.getPower().getValue(), blocker.getToughness().getValue()));
+            if (canBlockSomething) {
+                String id = "blk-" + blockers.size();
+                blockers.put(id, blocker);
+                blockerViews.add(CreatureView.from(id, blocker, game));
+            }
         }
-
-        if (blockersById.isEmpty()) {
-            logger.info("Kanna: no legal blockers available, taking the damage");
-            recordHistory(game, "block", "declared no blocks (nothing could legally block)");
+        if (blockers.isEmpty()) {
+            recordHistory(game, "block", "no legal blockers");
             return;
         }
 
-        String prompt = String.format(
-                "You are Kanna, playing Magic: The Gathering as %s. You're being attacked. Decide which of your "
-                        + "available creatures should block, and which attacker each one blocks. More than one of your "
-                        + "creatures can block the same attacker. It's fine to leave attackers unblocked if that's the "
-                        + "better play.%n%n%sAttacking you:%n%sYour available blockers:%n%s%n"
-                        + "Call declare_blockers using only the short ids listed above.",
-                getName(), historyBlock(), attackersDesc, blockersDesc
-        );
+        Player me = game.getPlayer(playerId);
+        int myLife = me == null ? 20 : me.getLife();
+        StringBuilder prompt = new StringBuilder();
+        prompt.append("You are Kanna, playing as ").append(getName())
+                .append(" (").append(myLife).append(" life). You are being attacked.")
+                .append(System.lineSeparator()).append(historyBlock())
+                .append(System.lineSeparator()).append("Attacking you:").append(System.lineSeparator())
+                .append(GameStateFormatter.attackOptions(attackerViews, blockerViews, myLife))
+                .append(System.lineSeparator()).append("Your available blockers: ")
+                .append(GameStateFormatter.describeCreatures(blockerViews))
+                .append(System.lineSeparator()).append(System.lineSeparator())
+                .append("Call declare_blockers using only the ids above. An empty list means block with nobody.");
 
-        JsonObject toolCall = callOllamaForDecision(
-                "declare_blockers", "Choose which of your creatures block, and which attacker each one blocks.",
-                pairArraySchema("blocks", "blocker_id", "attacker_id"), prompt
-        );
-        if (toolCall == null) {
-            logger.info("Kanna: model chose not to block this combat");
-            recordHistory(game, "block", "declared no blocks");
-            return;
-        }
+        KannaAgent agent = newAgent();
+        long start = System.nanoTime();
+        Decision decision = agent.choosePairs(prompt.toString(), "declare_blockers", "blocks",
+                "blocker_id", "attacker_id", new KannaAgent.PairValidator() {
+                    @Override
+                    public boolean isValid(String blockerId, String attackerId) {
+                        Permanent blocker = blockers.get(blockerId);
+                        Permanent attacker = attackers.get(attackerId);
+                        return blocker != null && attacker != null;
+                    }
+                });
+        recordLatency(start);
+        reportInvalid(agent);
 
-        JsonArray blocks = toolCall.getAsJsonArray("blocks");
-        if (blocks == null) {
-            logger.warn("Kanna: tool-call response had no 'blocks' array, declaring no blocks");
+        if (decision.fallback) {
+            logger.info("Kanna: deferring blocks to heuristics");
+            super.selectBlockers(source, game, defendingPlayerId);
             return;
         }
 
         Player defendingPlayer = game.getPlayer(defendingPlayerId);
-        List<UUID> usedBlockers = new ArrayList<>();
-        List<String> declaredSummary = new ArrayList<>();
-        for (JsonElement el : blocks) {
-            JsonObject pair = el.getAsJsonObject();
-            String blkId = pair.has("blocker_id") ? pair.get("blocker_id").getAsString() : null;
-            String atkId = pair.has("attacker_id") ? pair.get("attacker_id").getAsString() : null;
-            Permanent blocker = blkId == null ? null : blockersById.get(blkId);
-            Permanent attacker = atkId == null ? null : attackersById.get(atkId);
-            boolean legal = blocker != null && attacker != null && blocker.canBlock(attacker.getId(), game);
-            if (blocker == null || attacker == null || usedBlockers.contains(blocker.getId()) || !legal) {
-                logger.warn("Kanna: ignoring invalid/hallucinated block pair from LLM: " + blkId + " -> " + atkId);
-                // DARRELLBEST-FORK (keep on merge/rebase from upstream): same metrics hook as
-                // chooseAttackersWithKanna -- see the comment there.
-                if (metrics != null) {
-                    metrics.recordInvalidToolCall();
-                }
+        List<UUID> used = new ArrayList<UUID>();
+        List<String> summary = new ArrayList<String>();
+        for (String[] pair : decision.pairs) {
+            Permanent blocker = blockers.get(pair[0]);
+            Permanent attacker = attackers.get(pair[1]);
+            if (blocker == null || attacker == null || used.contains(blocker.getId())
+                    || !blocker.canBlock(attacker.getId(), game)) {
                 continue;
             }
             defendingPlayer.declareBlocker(defendingPlayerId, blocker.getId(), attacker.getId(), game, false);
-            usedBlockers.add(blocker.getId());
-            declaredSummary.add(blocker.getName() + " blocks " + attacker.getName());
+            used.add(blocker.getId());
+            summary.add(blocker.getName() + " blocks " + attacker.getName());
         }
-
-        logger.info("Kanna declared " + usedBlockers.size() + " blocker(s) via " + ollamaModel
-                + (declaredSummary.isEmpty() ? "" : ": " + String.join(", ", declaredSummary)));
-        recordHistory(game, "block", declaredSummary.isEmpty() ? "declared no blocks" : String.join(", ", declaredSummary));
+        logger.info("Kanna blocks with " + used.size() + " creature(s) via " + ollamaModel);
+        recordHistory(game, "block", summary.isEmpty() ? "no blocks" : join(summary));
     }
 
-    // ---------------------------------------------------------------- shared helpers
+    // ------------------------------------------------------------------ helpers
+
+    private static List<CreatureView> untappedCreaturesOf(UUID controllerId, Game game) {
+        List<CreatureView> views = new ArrayList<CreatureView>();
+        int index = 0;
+        for (Permanent permanent : game.getBattlefield().getAllActivePermanents(controllerId)) {
+            if (permanent.isCreature(game) && !permanent.isTapped()) {
+                views.add(CreatureView.from("blk-" + index++, permanent, game));
+            }
+        }
+        return views;
+    }
+
+    private void recordLatency(long startNanos) {
+        if (metrics != null) {
+            metrics.recordLlmCall((System.nanoTime() - startNanos) / 1_000_000L);
+        }
+    }
 
     private String historyBlock() {
-        // compact on purpose -- one line per past decision, no rationale/thinking text -- since
-        // this gets re-sent with every single prompt, not just paid for once
-        return combatHistory.isEmpty()
-                ? ""
-                : "Your recent combat decisions:\n" + String.join("\n", combatHistory) + "\n\n";
+        if (combatHistory.isEmpty()) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder("Your recent decisions:").append(System.lineSeparator());
+        for (String entry : combatHistory) {
+            sb.append("  ").append(entry).append(System.lineSeparator());
+        }
+        return sb.toString();
     }
 
     private void recordHistory(Game game, String kind, String summary) {
@@ -381,177 +546,14 @@ public class ComputerPlayerKanna extends ComputerPlayerMCTS {
         }
     }
 
-    /**
-     * Compact "what does this player actually have" block: their untapped creatures (i.e. their
-     * real possible blockers -- a tapped creature can't block, so there's no reason to list it
-     * and burn tokens on it) and any other permanents they control, so attack decisions aren't
-     * made blind to what's actually on the other side of the table.
-     */
-    private static String boardStateSummary(UUID controllerId, Game game) {
-        List<String> blockerLines = new ArrayList<>();
-        List<String> otherPermanents = new ArrayList<>();
-        for (Permanent permanent : game.getBattlefield().getAllActivePermanents(controllerId)) {
-            if (permanent.isCreature(game)) {
-                if (!permanent.isTapped()) {
-                    blockerLines.add(permanent.getName()
-                            + " (" + permanent.getPower().getValue() + "/" + permanent.getToughness().getValue() + ")"
-                            + keywordSummary(permanent, game));
-                }
-            } else {
-                otherPermanents.add(permanent.getName());
-            }
-        }
+    private static String join(List<String> items) {
         StringBuilder sb = new StringBuilder();
-        sb.append("  Possible blockers: ").append(blockerLines.isEmpty() ? "none" : String.join(", ", blockerLines)).append(System.lineSeparator());
-        if (!otherPermanents.isEmpty()) {
-            sb.append("  Other permanents: ").append(String.join(", ", otherPermanents)).append(System.lineSeparator());
+        for (String item : items) {
+            if (sb.length() > 0) {
+                sb.append(", ");
+            }
+            sb.append(item);
         }
         return sb.toString();
-    }
-
-    private static String keywordSummary(Permanent permanent, Game game) {
-        List<String> keywords = new ArrayList<>();
-        if (permanent.getAbilities(game).containsClass(FlyingAbility.class)) {
-            keywords.add("Flying");
-        }
-        if (permanent.getAbilities(game).containsClass(ReachAbility.class)) {
-            keywords.add("Reach");
-        }
-        if (permanent.getAbilities(game).containsClass(MenaceAbility.class)) {
-            keywords.add("Menace");
-        }
-        if (permanent.getAbilities(game).containsClass(DeathtouchAbility.class)) {
-            keywords.add("Deathtouch");
-        }
-        if (permanent.getAbilities(game).containsClass(FirstStrikeAbility.class)) {
-            keywords.add("First Strike");
-        }
-        if (permanent.getAbilities(game).containsClass(DoubleStrikeAbility.class)) {
-            keywords.add("Double Strike");
-        }
-        return keywords.isEmpty() ? "" : " [" + String.join(", ", keywords) + "]";
-    }
-
-    private static JsonObject pairArraySchema(String arrayName, String field1, String field2) {
-        JsonObject pairSchema = new JsonObject();
-        pairSchema.addProperty("type", "object");
-        JsonObject pairProps = new JsonObject();
-        pairProps.add(field1, jsonType("string"));
-        pairProps.add(field2, jsonType("string"));
-        pairSchema.add("properties", pairProps);
-        JsonArray pairRequired = new JsonArray();
-        pairRequired.add(field1);
-        pairRequired.add(field2);
-        pairSchema.add("required", pairRequired);
-
-        JsonObject arraySchema = new JsonObject();
-        arraySchema.addProperty("type", "array");
-        arraySchema.add("items", pairSchema);
-
-        JsonObject parameters = new JsonObject();
-        parameters.addProperty("type", "object");
-        JsonObject topProps = new JsonObject();
-        topProps.add(arrayName, arraySchema);
-        parameters.add("properties", topProps);
-        JsonArray topRequired = new JsonArray();
-        topRequired.add(arrayName);
-        parameters.add("required", topRequired);
-        return parameters;
-    }
-
-    /**
-     * @return the tool call's arguments object, or null if the model chose not
-     * to call the tool at all (treated as "do nothing" either way).
-     */
-    private JsonObject callOllamaForDecision(String toolName, String toolDescription, JsonObject parameters, String prompt) throws Exception {
-        JsonObject function = new JsonObject();
-        function.addProperty("name", toolName);
-        function.addProperty("description", toolDescription);
-        function.add("parameters", parameters);
-
-        JsonObject tool = new JsonObject();
-        tool.addProperty("type", "function");
-        tool.add("function", function);
-        JsonArray tools = new JsonArray();
-        tools.add(tool);
-
-        JsonObject message = new JsonObject();
-        message.addProperty("role", "user");
-        message.addProperty("content", prompt);
-        JsonArray messages = new JsonArray();
-        messages.add(message);
-
-        JsonObject body = new JsonObject();
-        body.addProperty("model", ollamaModel);
-        body.add("messages", messages);
-        body.add("tools", tools);
-        body.addProperty("stream", false);
-
-        logger.info("Kanna: prompt sent to " + ollamaModel + " for " + getName() + " (" + toolName + "):\n" + prompt);
-
-        // DARRELLBEST-FORK (keep on merge/rebase from upstream): latency timing new to this
-        // fork, feeding BenchMetrics.recordLlmCall so the benchmark harness can report LLM
-        // call latency percentiles per game.
-        long callStart = System.nanoTime();
-        String responseBody;
-        try {
-            responseBody = postJson(ollamaUrl, body.toString());
-        } finally {
-            if (metrics != null) {
-                metrics.recordLlmCall((System.nanoTime() - callStart) / 1_000_000L);
-            }
-        }
-        JsonObject responseJson = JsonParser.parseString(responseBody).getAsJsonObject();
-
-        int promptTokens = responseJson.has("prompt_eval_count") ? responseJson.get("prompt_eval_count").getAsInt() : -1;
-        int completionTokens = responseJson.has("eval_count") ? responseJson.get("eval_count").getAsInt() : -1;
-        logger.info("Kanna: token usage for " + toolName + " - prompt=" + promptTokens
-                + " completion=" + completionTokens + " total=" + (promptTokens + completionTokens));
-
-        JsonObject responseMessage = responseJson.getAsJsonObject("message");
-        String thinking = responseMessage.has("thinking") ? responseMessage.get("thinking").getAsString() : null;
-        if (thinking != null && !thinking.isEmpty()) {
-            logger.info("Kanna thinking: " + thinking);
-        }
-
-        JsonArray toolCalls = responseMessage.getAsJsonArray("tool_calls");
-        if (toolCalls == null || toolCalls.isEmpty()) {
-            return null; // model decided not to call the tool at all
-        }
-
-        JsonObject firstCall = toolCalls.get(0).getAsJsonObject().getAsJsonObject("function");
-        JsonObject arguments = firstCall.getAsJsonObject("arguments");
-        logger.info("Kanna: raw tool-call arguments: " + arguments);
-        return arguments;
-    }
-
-    private static String postJson(String url, String jsonBody) throws IOException {
-        HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
-        conn.setRequestMethod("POST");
-        conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
-        conn.setConnectTimeout(REQUEST_TIMEOUT_MS);
-        conn.setReadTimeout(REQUEST_TIMEOUT_MS);
-        conn.setDoOutput(true);
-        try (OutputStream out = conn.getOutputStream()) {
-            out.write(jsonBody.getBytes(StandardCharsets.UTF_8));
-        }
-
-        int status = conn.getResponseCode();
-        InputStream stream = status == 200 ? conn.getInputStream() : conn.getErrorStream();
-        String responseBody;
-        try (InputStream in = stream) {
-            responseBody = new java.io.BufferedReader(new java.io.InputStreamReader(in, StandardCharsets.UTF_8))
-                    .lines().collect(Collectors.joining("\n"));
-        }
-        if (status != 200) {
-            throw new IOException("Ollama returned HTTP " + status + ": " + responseBody);
-        }
-        return responseBody;
-    }
-
-    private static JsonObject jsonType(String type) {
-        JsonObject o = new JsonObject();
-        o.addProperty("type", type);
-        return o;
     }
 }
