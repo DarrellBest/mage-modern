@@ -57,6 +57,34 @@ in the prompt, and treat declining to act as a legitimate move. For
 `mistral-medium-3.5` it also displaces the stock "Le Chat assistant" persona,
 which biases toward conversational replies where a bare tool call is wanted.
 
+## Measured so far (2026-08-09)
+
+Probe: a realistic Kanna declare-attackers prompt (3 attackers, 1 defender with
+3 possible blockers) sent with the real `declare_attackers` tool schema.
+
+| Model | Clean tool calls | Mean latency | Output tokens |
+|---|---|---|---|
+| `qwen3.6:latest` (stock) | 3/3 | 45.7 s | 2,181–8,020 |
+| `kanna-qwen3.6` (tuned) | 5/6 | 5.6 s | 512–1,054 |
+
+The tuning is worth roughly an **8× latency reduction**, almost entirely by
+cutting runaway thinking — stock burned up to 8,020 output tokens on a single
+combat decision, one trial taking 108.6 s.
+
+**Unresolved: ~1 in 6 calls returns no tool call at all**, answering in prose
+instead ("Looking at the board state, I need to maximize damage..."). Tightening
+the system prompt to mandate a tool call reduced but did not eliminate this.
+
+This matters more than it looks. `ComputerPlayerKanna.callOllamaForDecision()`
+returns `null` when `tool_calls` is absent, and the caller logs "model chose not
+to attack this combat" — so a *failed* response is silently recorded as a
+deliberate decision to make no attacks. Roughly one in six combats would be a
+phantom pass. Fixing that belongs in Kanna (retry once, and count the miss as an
+invalid tool call), not in a Modelfile.
+
+The system prompt also costs ~330 extra prompt tokens per call (523 → 853 in the
+probe) — negligible per call, permanent per decision.
+
 ## Measuring whether a profile is actually better
 
 Tool-call reliability is a measurable property, not a matter of taste. Kanna
