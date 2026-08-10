@@ -22,7 +22,7 @@
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>mage-player-ai-mad</artifactId>
+            <artifactId>mage-player-ai-mcts</artifactId>
             <version>${project.version}</version>
         </dependency>
     </dependencies>

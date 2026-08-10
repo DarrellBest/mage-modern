@@ -15,7 +15,7 @@ import mage.constants.RangeOfInfluence;
 import mage.game.Game;
 import mage.game.events.GameEvent;
 import mage.game.permanent.Permanent;
-import mage.player.ai.ComputerPlayer7;
+import mage.player.ai.ComputerPlayerMCTS;
 import mage.players.Player;
 import org.apache.log4j.Logger;
 
@@ -35,22 +35,26 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * Proof-of-concept AI player: normal ComputerPlayer7 logic for everything,
+ * AI player: Monte Carlo Tree Search (ComputerPlayerMCTS) for everything,
  * except attack and block declaration, which are decided by an LLM (via
- * Ollama tool calling) instead of the built-in heuristics.
+ * Ollama tool calling) instead.
  * <p>
- * Extends ComputerPlayer7, not ComputerPlayer6 -- ComputerPlayer6 alone has no
- * priority() override and falls back to ComputerPlayer's "minimum
- * implementation for do nothing" (just passes every priority window).
- * ComputerPlayer7 is what actually wires the simulation/decision machinery up
- * to real play.
+ * Extends ComputerPlayerMCTS rather than ComputerPlayer6/7's exhaustive
+ * minimax. Minimax's cost is (branching factor)^depth -- even a capped
+ * branching factor still compounds exponentially across maxDepth (== skill,
+ * 6-8 for a "hard" AI), which is what pegged 18 of 24 CPU cores for 4+
+ * minutes straight on a 50-permanent board and made the server unresponsive
+ * to every client. MCTS instead runs a fixed time/iteration budget of
+ * sampled rollouts -- cost is bounded by that budget, not by how deep the
+ * tree could theoretically go, so a huge board just means cruder rollouts
+ * within the same budget instead of exponential blowup.
  * <p>
  * Isolated in its own plugin module on purpose -- never touches shared
  * engine files, so pulling from upstream never conflicts with this class.
  *
  * @author Darrell Best
  */
-public class ComputerPlayerKanna extends ComputerPlayer7 {
+public class ComputerPlayerKanna extends ComputerPlayerMCTS {
 
     private static final Logger logger = Logger.getLogger(ComputerPlayerKanna.class);
 
