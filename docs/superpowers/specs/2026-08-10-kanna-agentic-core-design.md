@@ -312,3 +312,37 @@ Every defect above was found by reading or by playing, never by the unit suite,
 and two had been assigned low severity from a diff. Severity judged by reading a
 diff has been a poor predictor of severity in play — findings about *what the
 model is shown or given* have consistently outranked their labels.
+
+### Benchmark: Kanna vs stock AI (2026-08-10)
+
+10 games requested, 6 completed before a 3500 s wall-clock timeout killed the
+run mid-game-7. All 6 results survived — `ResultWriter` flushes per game, which
+is harness success criterion 4 validated in production rather than in a test.
+
+```
+games=6  kanna_wins=5  base_wins=0  caps=1
+decisive=5  win_rate=100.0%   (95% CI at n=5: 56.6% - 100.0%)
+llm_calls=283  invalid=9 (3.2%)
+mean game=475 s   turn time p50 14.7 s, p95 35.9 s
+```
+
+The CI's lower bound sits above 50%, and the instrument was separately validated
+as unbiased (`base` vs `base` = 50.0%), so this is a statistically significant
+result at 95%: **Kanna beats the stock heuristic AI.**
+
+Qualifiers that matter:
+
+- `base` (`ComputerPlayer`) is the weakest available opponent — it needed 186
+  turns to finish a game against itself. This establishes competence, not
+  strength. `cp7` (minimax) or `mcts` is the meaningful next test; `cp7` costs
+  roughly 200x more per turn.
+- Same deck on both sides. Correct as an AI-vs-AI control, uninformative about
+  unfamiliar cards.
+- One cap in six games. Mirror matches can stall; if caps become common the
+  turn cap or the matchup needs revisiting.
+
+**Invalid tool calls fell from ~17% to 3.2%.** None of that came from prompt
+engineering. It came from raising `num_predict` so reasoning is not truncated,
+keeping `think` on with a budget that fits it, and coupling the advertised tool
+list to what the answerer actually serves so using an advertised tool stopped
+counting as a model failure.
