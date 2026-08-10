@@ -346,3 +346,42 @@ engineering. It came from raising `num_predict` so reasoning is not truncated,
 keeping `think` on with a budget that fits it, and coupling the advertised tool
 list to what the answerer actually serves so using an advertised tool stopped
 counting as a model failure.
+
+### Negative result: two fixes that did not work (2026-08-10)
+
+Kanna repeatedly sacrifices her entire board to Altar of Dementia
+(*"Sacrifice a creature: target player mills cards equal to its power"* — no
+mana cost, so legal at every priority window). Two hypotheses were built,
+tested and falsified.
+
+Behavioural test: `KannaAltarOfDementiaLiveModelAITest` — Altar plus a 1/1, a
+2/2 and a 6/4, six turns, real model, asserts at least one creature survives.
+
+| Build | Runs | Mean activations | Mean survivors |
+|---|---|---|---|
+| `ActionEvaluator` annotation only | 1 | 3.0 | 0.0 |
+| `+ turn-level strategist` | 5 | **3.0** | **0.0** |
+
+**Hypothesis 1 — she lacks computed context.** `ActionEvaluator` annotates the
+action with `sacrifices a creature -- you control 1 (Craw Wurm 6/4), board 1 -> 0`.
+Verified reaching the prompt by a content-asserting test. She activates anyway.
+
+**Hypothesis 2 — she lacks a plan.** The strategist sets one goal per turn and
+injects it into every decision prompt. Verified: plans are set, refreshed once
+per turn (not per decision), and quoted back in the model's own reasoning. She
+set `RACE` and sacrificed her attackers anyway.
+
+One run of the strategist build passed (2 activations, 1 survivor). Five repeats
+produced 3/0 every time. **That pass was noise**, and it is the reason single
+runs of a nondeterministic model are not evidence.
+
+**What this rules out:** the "she lacks computed context" pattern that correctly
+explained Jar of Eyeballs and the mana-tapping loop does not generalise to this.
+
+**What the evidence now suggests:** the activation is free, so it is available at
+every priority window, and the model appears to prefer taking an action with a
+stated upside over passing — independent of cost and independent of its own
+stated plan. Untested.
+
+Both mechanisms are retained: they are correct, tested, and cheap, and the
+annotation is information the model should have. Neither is claimed to fix this.
