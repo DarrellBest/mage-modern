@@ -49,6 +49,9 @@ public class ComputerPlayerKanna extends ComputerPlayer {
     private static final int MAX_TOOL_CALLS = 4;
     private static final int SHORTLIST_SIZE = 8;
     private static final int MAX_HISTORY_ENTRIES = 5;
+    // capped retries when activateAbility() fails, on top of the initial attempt -- see
+    // activateWithFallback
+    private static final int MAX_ACTIVATION_RETRIES = 2;
 
     /**
      * Instrumentation callback the benchmark harness supplies. Declared here rather
@@ -153,7 +156,7 @@ public class ComputerPlayerKanna extends ComputerPlayer {
 
         ActionCatalog catalog = new ActionCatalog();
         for (ActivatedAbility ability : catalogable) {
-            catalog.add(ability, ability.toString());
+            catalog.add(ability, labelFor(ability, game));
         }
         PassAbility passAbility = new PassAbility();
         catalog.add(passAbility, "Pass");
@@ -182,7 +185,12 @@ public class ComputerPlayerKanna extends ComputerPlayer {
 
         if (decision.fallback) {
             // Heuristics already ranked everything to build the prompt, so the fallback
-            // is free and strictly better than passing: take the top-ranked action.
+            // is free: take the top-ranked action. That is not always a real action any
+            // more (ActionRanker.SCORE_OTHER now scores below Pass -- see its own
+            // comment), and when it is Pass that is correct too: this bucket is
+            // unrecognised-to-the-ranker activated abilities, which are exactly as
+            // likely to be a wasted cost as a fine one, so defaulting to safe-and-inert
+            // beats guessing.
             RankedAction best = ranked.isEmpty() ? null : ranked.get(0);
             ActivatedAbility chosen = best == null ? null : catalog.resolve(best.id);
             if (chosen == null || chosen instanceof PassAbility) {
@@ -190,8 +198,7 @@ public class ComputerPlayerKanna extends ComputerPlayer {
                 return false;
             }
             logger.info("Kanna: heuristic fallback plays " + best.label);
-            activateAbility(chosen, game);
-            return true;
+            return activateWithFallback(chosen, best.id, ranked, catalog, game);
         }
 
         ActivatedAbility chosen = catalog.resolve(decision.chosenId);
@@ -200,8 +207,69 @@ public class ComputerPlayerKanna extends ComputerPlayer {
             return false;
         }
         logger.info("Kanna plays " + catalog.labelFor(decision.chosenId) + " via " + ollamaModel);
-        activateAbility(chosen, game);
-        return true;
+        return activateWithFallback(chosen, decision.chosenId, ranked, catalog, game);
+    }
+
+    // DARRELLBEST-FORK: activateAbility's boolean return used to be discarded here, with
+    // priority() returning true regardless. On failure that left getPlayable() offering
+    // the identical action on the very next pass through GameImpl.playPriority's inner
+    // loop (it re-invokes player.priority() as long as isPassed() is false, which a bare
+    // "return true" never sets), so ActionRanker ranked the same doomed action first
+    // again and the model paid a full round trip to re-pick it -- observed live as Grim
+    // Backwoods ({T}: Draw a card) activated 6 times in one game despite being a once-
+    // per-turn ability. Walking down the already-computed `ranked` list on failure costs
+    // nothing extra from the model (no new round trip, `ranked` was built once for the
+    // prompt) and actually terminates the loop: once every non-Pass candidate has either
+    // been tried or excluded, this passes -- which sets isPassed() and is what actually
+    // stops GameImpl from asking again immediately.
+    private boolean activateWithFallback(ActivatedAbility first, String firstId,
+                                         List<RankedAction> ranked, ActionCatalog catalog, Game game) {
+        Set<String> failed = new HashSet<String>();
+        ActivatedAbility candidate = first;
+        String candidateId = firstId;
+        for (int attempt = 0; candidate != null && attempt <= MAX_ACTIVATION_RETRIES; attempt++) {
+            if (activateAbility(candidate, game)) {
+                return true;
+            }
+            logger.warn("Kanna: activation failed for " + catalog.labelFor(candidateId)
+                    + (attempt < MAX_ACTIVATION_RETRIES ? ", trying the next best option" : ", giving up"));
+            if (metrics != null) {
+                metrics.recordInvalidToolCall();
+            }
+            failed.add(candidateId);
+            RankedAction next = nextNonPassCandidate(ranked, catalog, failed);
+            if (next == null) {
+                break;
+            }
+            candidateId = next.id;
+            candidate = catalog.resolve(candidateId);
+        }
+        pass(game);
+        return false;
+    }
+
+    private static RankedAction nextNonPassCandidate(List<RankedAction> ranked, ActionCatalog catalog,
+                                                      Set<String> excluded) {
+        for (RankedAction action : ranked) {
+            if (excluded.contains(action.id)) {
+                continue;
+            }
+            ActivatedAbility ability = catalog.resolve(action.id);
+            if (ability != null && !(ability instanceof PassAbility)) {
+                return action;
+            }
+        }
+        return null;
+    }
+
+    // DARRELLBEST-FORK: see GameStateFormatter.counterAnnotation's javadoc for why this
+    // is not folded into ability.toString() itself -- the annotation needs the source
+    // Permanent (for its current counters) and the Game (to read them), neither of
+    // which Ability.toString() has access to.
+    private String labelFor(ActivatedAbility ability, Game game) {
+        String label = ability.toString();
+        Permanent source = game.getPermanent(ability.getSourceId());
+        return label + GameStateFormatter.counterAnnotation(source, label, game);
     }
 
     private static boolean onlyPass(List<ActivatedAbility> playable) {
@@ -655,12 +723,52 @@ public class ComputerPlayerKanna extends ComputerPlayer {
                 }
                 continue;
             }
+            // Mirror image of the min-blocked-by check above, but with no "no legal
+            // configuration existed" escape hatch: CombatGroup.checkBlockRestrictions
+            // treats an over-max group as unconditionally illegal (unlike the min case,
+            // there is no equivalent of "if there aren't any possible blocker
+            // configuration then it's legal due mtg rules"), so this alone drives
+            // Combat.selectBlockers's retry loop up to 20 times, each retry re-firing
+            // DECLARE_BLOCKERS_STEP_PRE and re-invoking the LLM. Trimming to the max
+            // (rather than dropping the group outright, as the min case does) is
+            // preferred here: a legal smaller block beats no block, and unlike the min
+            // case there is always a legal subset to fall back to. getMaxBlockedBy() ==
+            // 0 means "no maximum", not "zero allowed" -- that is the ordinary case for
+            // almost every attacker and must not be misread as "block with nobody".
+            int max = attacker.getMaxBlockedBy();
+            if (max > 0 && group.size() > max) {
+                logger.warn("Kanna: model assigned " + group.size() + " blocker(s) to " + attacker.getName()
+                        + ", which allows at most " + max + " -- trimming to " + max
+                        + " rather than risking an illegal block");
+                if (metrics != null) {
+                    metrics.recordInvalidToolCall();
+                }
+                group = group.subList(0, max);
+            }
             for (Permanent blocker : group) {
                 defendingPlayer.declareBlocker(defendingPlayerId, blocker.getId(), attacker.getId(), game, false);
                 used.add(blocker.getId());
                 summary.add(blocker.getName() + " blocks " + attacker.getName());
             }
         }
+
+        // DARRELLBEST-FORK: every proposed group got dropped above (as opposed to the
+        // model legitimately proposing an empty blocks array, i.e. "block with
+        // nobody") is a decision the model failed to make usably, not one it made -- and
+        // this class's whole premise is that a model failure gets a real heuristic move,
+        // never a silent no-op. Reporting "not handled" here (the same false-return
+        // convention declareBlocksAgentically already uses for decision.fallback) lets
+        // selectAttackers/selectBlockers's existing, single call to heuristicBlocks --
+        // sitting OUTSIDE this try block -- run instead. Deliberately NOT calling
+        // heuristicBlocks directly from here: an earlier round of this exact method had
+        // a bug where the fallback could run twice (once from inside the try, once from
+        // the catch/caller) on fresh state; this return-a-bool convention is what fixed
+        // that, so it must not be re-introduced here for the max-group-dropped case.
+        if (used.isEmpty() && !decision.pairs.isEmpty()) {
+            logger.warn("Kanna: every proposed block group was rejected, deferring to heuristics");
+            return false;
+        }
+
         logger.info("Kanna blocks with " + used.size() + " creature(s) via " + ollamaModel);
         recordHistory(game, "block", summary.isEmpty() ? "no blocks" : join(summary));
         return true;

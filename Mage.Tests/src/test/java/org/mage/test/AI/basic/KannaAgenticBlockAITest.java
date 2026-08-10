@@ -13,6 +13,7 @@ import org.mage.test.player.TestPlayer;
 import org.mage.test.serverside.base.CardTestPlayerBaseAI;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -47,8 +48,28 @@ import java.util.List;
  * the LLM -- before throwing in test mode. Task 8 is a recorded real game with Ollama
  * reachable: precisely the configuration that executes this path, making this the
  * higher-probability version of the bug heuristicBlocks already had fixed for it.
+ * <p>
+ * DARRELLBEST-FORK (FIX 7): this scenario also doubles as FIX 7's guard. The model's
+ * only proposed pair is the undersized one above, so once it is dropped every group
+ * declareBlocksAgentically built is gone -- exactly the "proposed blocks, all rejected"
+ * case FIX 7 exists for, as opposed to the model legitimately choosing to block with
+ * nobody. Before FIX 7, that meant nothing was ever declared and Kanna took the full 3
+ * (assertLife used to read 20 - 3); now it defers to heuristicBlocks, which reruns on
+ * the whole board (both Wall of Stone are still fully available -- the dropped group
+ * was never committed to the engine) and finds the legal double-block menace requires,
+ * so no damage gets through at all. getFullSimulatedPlayers() now needs to include
+ * PlayerB for this reason too: a single attacker blocked by two blockers requires a
+ * real combat-damage-assignment-order choice from the attacking player, same as
+ * KannaFallbackAITest's own double-block menace test.
  */
 public class KannaAgenticBlockAITest extends CardTestPlayerBaseAI {
+
+    @Override
+    public List<String> getFullSimulatedPlayers() {
+        // see the FIX 7 addendum above -- the double-block this scenario now produces
+        // needs a real damage-assignment-order choice from PlayerB.
+        return Arrays.asList("PlayerA", "PlayerB");
+    }
 
     @Override
     protected TestPlayer createPlayer(String name, RangeOfInfluence rangeOfInfluence) {
@@ -101,15 +122,21 @@ public class KannaAgenticBlockAITest extends CardTestPlayerBaseAI {
         setStopAt(2, PhaseStep.END_TURN);
         execute();
 
-        // the model's undersized group was dropped outright -- neither wall blocks
-        // ("either both or neither, never exactly one") -- so the full 3 gets through.
-        // What actually matters here is what did NOT happen: no exception, no engine
-        // retry storm, no repeated LLM calls (the scripted client always returns the
-        // same single-blocker response, which KannaAgent.choosePairs only ever asks for
-        // once per declareBlocksAgentically call -- a real retry storm would mean this
-        // scripted client gets called far more than once, which it cannot meaningfully
-        // answer differently, but the point is the engine must never ask). execute()
-        // completing at all, with this exact life total, is the proof.
-        assertLife(playerA, 20 - 3);
+        // the model's undersized group was dropped outright -- neither wall blocks on
+        // the agentic path itself ("either both or neither, never exactly one"). What
+        // actually matters here is what did NOT happen along the way: no exception, no
+        // engine retry storm, no repeated LLM calls (the scripted client always returns
+        // the same single-blocker response, which KannaAgent.choosePairs only ever asks
+        // for once per declareBlocksAgentically call -- a real retry storm would mean
+        // this scripted client gets called far more than once, which it cannot
+        // meaningfully answer differently, but the point is the engine must never ask).
+        // execute() completing at all is a big part of the proof.
+        //
+        // The final life total is FIX 7's guard specifically: every group the model's
+        // response produced was dropped, which must defer to heuristicBlocks rather
+        // than declaring nothing -- and heuristicBlocks, given the whole board again
+        // (both Wall of Stone, never actually committed by the dropped group), finds
+        // the legal double-block. Full block, no damage through.
+        assertLife(playerA, 20);
     }
 }

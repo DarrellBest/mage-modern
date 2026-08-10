@@ -15,8 +15,14 @@ import mage.target.TargetCard;
 /**
  * DARRELLBEST-FORK: test-harness wrapper for ComputerPlayerKanna, mirroring
  * TestComputerPlayer7's pattern so it can be driven by TestPlayer.
+ * <p>
+ * Not final: KannaActivationRetryAITest subclasses this to override activateAbility()
+ * itself (forcing a deterministic activation failure, independent of any real game-rule
+ * reason one might fail), which needs every other bit of test-harness wiring here
+ * (choose/chooseTarget delegation, the scripted-client seam) rather than reimplementing
+ * it from ComputerPlayerKanna directly.
  */
-public final class TestComputerPlayerKanna extends ComputerPlayerKanna {
+public class TestComputerPlayerKanna extends ComputerPlayerKanna {
 
     private TestPlayer testPlayerLink;
     private OllamaClient scriptedOllamaClient;
