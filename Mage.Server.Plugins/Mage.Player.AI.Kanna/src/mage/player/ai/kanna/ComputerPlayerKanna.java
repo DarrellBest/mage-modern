@@ -3,6 +3,7 @@ package mage.player.ai.kanna;
 import mage.abilities.Ability;
 import mage.abilities.ActivatedAbility;
 import mage.abilities.common.PassAbility;
+import mage.abilities.mana.ManaAbility;
 import mage.constants.Outcome;
 import mage.constants.RangeOfInfluence;
 import mage.game.Game;
@@ -15,6 +16,8 @@ import org.apache.log4j.Logger;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
@@ -114,16 +117,33 @@ public class ComputerPlayerKanna extends ComputerPlayer {
     public boolean priority(Game game) {
         List<ActivatedAbility> playable = getPlayable(game, true);
 
+        // Mana abilities ({T}: Add {G}. and the like) are deliberately excluded from
+        // the catalog entirely, not merely ranked low. getPlayable() returns them as
+        // ordinary top-level actions, indistinguishable in shape from casting a spell,
+        // and offering "tap this land for mana" as its own choice invites exactly the
+        // failure this caused in testing: the model tapped a land for mana it had
+        // nothing to spend on, which permanently cost that land's availability for the
+        // rest of the turn and made the creature it should have cast unaffordable one
+        // priority window later. Casting/activating a real ability already auto-pays
+        // its cost by tapping producers as needed -- there is never a legitimate reason
+        // for Kanna to activate a mana ability as a standalone top-level choice.
+        List<ActivatedAbility> catalogable = new ArrayList<ActivatedAbility>();
+        for (ActivatedAbility ability : playable) {
+            if (!(ability instanceof ManaAbility)) {
+                catalogable.add(ability);
+            }
+        }
+
         // Trivial-decision bypass. Most priority windows in Magic offer nothing but
         // Pass; sending each to the model would cost a round trip per window and make
         // the player unusable. This is load-bearing, not an optimisation.
-        if (playable.isEmpty() || onlyPass(playable)) {
+        if (catalogable.isEmpty() || onlyPass(catalogable)) {
             pass(game);
             return false;
         }
 
         ActionCatalog catalog = new ActionCatalog();
-        for (ActivatedAbility ability : playable) {
+        for (ActivatedAbility ability : catalogable) {
             catalog.add(ability, ability.toString());
         }
         PassAbility passAbility = new PassAbility();
@@ -230,20 +250,63 @@ public class ComputerPlayerKanna extends ComputerPlayer {
 
     @Override
     public boolean chooseTarget(Outcome outcome, Target target, Ability source, Game game) {
-        List<UUID> possible = new ArrayList<UUID>(target.possibleTargets(getId(), source, game));
-        if (possible.size() <= 1) {
-            // no real choice to make -- do not spend a model round trip on it
-            return super.chooseTarget(outcome, target, source, game);
+        UUID abilityControllerId = target.getAffectedAbilityControllerId(getId());
+
+        // Loop rather than add-one-and-return: a target requiring more than one pick
+        // (e.g. "target two creatures") is not complete after a single addTarget, and
+        // ComputerPlayer.makeChoice re-checks isChoiceCompleted after every add for
+        // exactly this reason. Each iteration re-derives the possible-targets pool, since
+        // choosing one candidate can make it (and sometimes others) ineligible next time.
+        while (!target.isChoiceCompleted(abilityControllerId, source, game, null)) {
+            List<UUID> possible = new ArrayList<UUID>(target.possibleTargets(getId(), source, game));
+            if (possible.isEmpty()) {
+                break;
+            }
+
+            UUID chosen;
+            if (possible.size() == 1) {
+                // no real choice to make -- do not spend a model round trip on it
+                chosen = possible.get(0);
+            } else {
+                chosen = chooseOneTargetAgentically(outcome, target, source, game, possible);
+                if (chosen == null) {
+                    // model failed on this slot -- stop rather than loop forever
+                    break;
+                }
+            }
+            target.addTarget(chosen, source, game);
         }
 
-        Map<String, UUID> byId = new HashMap<String, UUID>();
+        if (target.isChoiceCompleted(abilityControllerId, source, game, null)) {
+            return true;
+        }
+        // Could not complete the target requirement (the model declined/failed on a
+        // remaining slot, or ran out of legal candidates). An incomplete target
+        // selection is worse than falling back, so let the heuristic player finish it
+        // from wherever this left off -- Target tracks what has already been chosen, so
+        // this picks up rather than starting over.
+        return super.chooseTarget(outcome, target, source, game);
+    }
+
+    /**
+     * One model round trip to pick a single target from a multi-candidate pool. Returns
+     * null on any model failure (fallback), never a Pass or an unresolvable id -- the ids
+     * offered to the model are the catalog's own real ids, not a separate synthetic
+     * scheme, so a committed choice always resolves.
+     */
+    private UUID chooseOneTargetAgentically(Outcome outcome, Target target, Ability source, Game game,
+                                            List<UUID> possible) {
         ActionCatalog catalog = new ActionCatalog();
-        StringBuilder options = new StringBuilder();
-        int index = 0;
         for (UUID candidate : possible) {
-            String id = "tgt-" + index++;
-            byId.put(id, candidate);
-            options.append("- ").append(id).append(": ").append(describeTarget(candidate, game))
+            catalog.add(new PassAbility(), describeTarget(candidate, game));
+        }
+        List<String> ids = catalog.ids();
+        final Map<String, UUID> byId = new HashMap<String, UUID>();
+        final StringBuilder options = new StringBuilder();
+        for (int i = 0; i < ids.size(); i++) {
+            String id = ids.get(i);
+            byId.put(id, possible.get(i));
+            options.append("- ").append(id).append(": ").append(catalog.labelFor(id))
                     .append(System.lineSeparator());
         }
 
@@ -255,11 +318,7 @@ public class ComputerPlayerKanna extends ComputerPlayer {
                 .append(System.lineSeparator()).append(System.lineSeparator())
                 .append("Possible targets:").append(System.lineSeparator()).append(options)
                 .append(System.lineSeparator())
-                .append("Call choose_action with exactly one tgt- id from the list above.");
-
-        for (Map.Entry<String, UUID> entry : byId.entrySet()) {
-            catalog.add(new PassAbility(), entry.getKey());
-        }
+                .append("Call choose_action with exactly one act- id from the list above.");
 
         KannaAgent agent = newAgent();
         long start = System.nanoTime();
@@ -274,16 +333,13 @@ public class ComputerPlayerKanna extends ComputerPlayer {
         reportInvalid(agent);
 
         if (decision.fallback) {
-            return super.chooseTarget(outcome, target, source, game);
+            return null;
         }
-        String chosenLabel = catalog.labelFor(decision.chosenId);
-        UUID chosen = byId.get(chosenLabel);
-        if (chosen == null) {
-            return super.chooseTarget(outcome, target, source, game);
+        UUID chosen = byId.get(decision.chosenId);
+        if (chosen != null) {
+            logger.info("Kanna targets " + describeTarget(chosen, game));
         }
-        target.addTarget(chosen, source, game);
-        logger.info("Kanna targets " + describeTarget(chosen, game));
-        return true;
+        return chosen;
     }
 
     private static String describeTarget(UUID id, Game game) {
@@ -301,6 +357,21 @@ public class ComputerPlayerKanna extends ComputerPlayer {
 
     // ------------------------------------------------------------------ attacks
 
+    // DARRELLBEST-FORK: do NOT fall back to super.selectAttackers()/super.selectBlockers()
+    // anywhere below. ComputerPlayer's own selectAttackers/selectBlockers are empty no-op
+    // stubs ("do nothing, parent class must implement it") -- ComputerPlayer6 implements
+    // real combat heuristics, ComputerPlayer does not, and Kanna deliberately does not
+    // extend ComputerPlayer6/7/MCTS. Falling back to super here would silently declare
+    // zero attackers/blockers on every model failure while logging "deferring to
+    // heuristics" -- the exact silent no-op this whole class exists to avoid.
+    // heuristicAttacks()/heuristicBlocks() below are the real fallback, driven by
+    // CombatEvaluator (the same arithmetic that already annotated the prompt).
+    //
+    // Also: heuristicAttacks()/heuristicBlocks() must NOT re-fire
+    // DECLARE_ATTACKERS_STEP_PRE / DECLARE_BLOCKERS_STEP_PRE or re-check replaceEvent --
+    // those already fired below, before the try block, and re-firing them from inside a
+    // fallback would double-trigger any "before combat" abilities. They declare directly.
+
     @Override
     public void selectAttackers(Game game, UUID attackingPlayerId) {
         game.fireEvent(new GameEvent(GameEvent.EventType.DECLARE_ATTACKERS_STEP_PRE, null, null, attackingPlayerId));
@@ -312,7 +383,7 @@ public class ComputerPlayerKanna extends ComputerPlayer {
             declareAttacksAgentically(game, attackingPlayerId);
         } catch (Throwable e) {
             logger.warn("Kanna: attack decision failed, deferring to heuristics - " + e, e);
-            super.selectAttackers(game, attackingPlayerId);
+            heuristicAttacks(game, attackingPlayerId);
         }
     }
 
@@ -378,7 +449,7 @@ public class ComputerPlayerKanna extends ComputerPlayer {
 
         if (decision.fallback) {
             logger.info("Kanna: deferring attacks to heuristics");
-            super.selectAttackers(game, attackingPlayerId);
+            heuristicAttacks(game, attackingPlayerId);
             return;
         }
 
@@ -413,7 +484,7 @@ public class ComputerPlayerKanna extends ComputerPlayer {
             declareBlocksAgentically(source, game, defendingPlayerId);
         } catch (Throwable e) {
             logger.warn("Kanna: block decision failed, deferring to heuristics - " + e, e);
-            super.selectBlockers(source, game, defendingPlayerId);
+            heuristicBlocks(source, game, defendingPlayerId);
         }
     }
 
@@ -487,7 +558,7 @@ public class ComputerPlayerKanna extends ComputerPlayer {
 
         if (decision.fallback) {
             logger.info("Kanna: deferring blocks to heuristics");
-            super.selectBlockers(source, game, defendingPlayerId);
+            heuristicBlocks(source, game, defendingPlayerId);
             return;
         }
 
@@ -507,6 +578,124 @@ public class ComputerPlayerKanna extends ComputerPlayer {
         }
         logger.info("Kanna blocks with " + used.size() + " creature(s) via " + ollamaModel);
         recordHistory(game, "block", summary.isEmpty() ? "no blocks" : join(summary));
+    }
+
+    // -------------------------------------------------------- heuristic combat fallback
+
+    /**
+     * Real fallback for selectAttackers, not a no-op: for each available attacker, reuse
+     * the same CombatEvaluator arithmetic that annotated the prompt to decide whether
+     * attacking is worthwhile, and declare directly. Simple on purpose -- this is a
+     * fallback, not the primary brain. See the double-fire warning above selectAttackers:
+     * this must never re-fire DECLARE_ATTACKERS_STEP_PRE or re-check replaceEvent.
+     */
+    private void heuristicAttacks(Game game, UUID attackingPlayerId) {
+        Player attackingPlayer = game.getPlayer(attackingPlayerId);
+        if (attackingPlayer == null) {
+            return;
+        }
+        List<UUID> declared = new ArrayList<UUID>();
+        for (UUID defenderId : game.getOpponents(playerId, true)) {
+            Player defender = game.getPlayer(defenderId);
+            if (defender == null || !defender.isInGame()) {
+                continue;
+            }
+            List<CreatureView> blockerViews = untappedCreaturesOf(defenderId, game);
+            for (Permanent attacker : getAvailableAttackers(defenderId, game)) {
+                if (declared.contains(attacker.getId())) {
+                    continue;
+                }
+                CreatureView attackerView = CreatureView.from("h-atk", attacker, game);
+                AttackOutcome outcome = CombatEvaluator.evaluateLikely(attackerView, blockerViews);
+                // attack unless it is a pure loss: the attacker surviving, killing a
+                // blocker (a trade), or simply being unblockable all make it worthwhile
+                boolean worthwhile = !outcome.attackerDies || !outcome.blockersThatDie.isEmpty()
+                        || outcome.unblocked;
+                if (worthwhile) {
+                    attackingPlayer.declareAttacker(attacker.getId(), defenderId, game, false);
+                    declared.add(attacker.getId());
+                }
+            }
+        }
+        logger.info("Kanna (heuristic): attacks with " + declared.size() + " creature(s)");
+    }
+
+    /**
+     * Real fallback for selectBlockers, not a no-op: block to survive when the incoming
+     * damage would otherwise be lethal (chumping if nothing better is available),
+     * otherwise block only when the block is favourable for the blocker. Simple on
+     * purpose -- this is a fallback, not the primary brain. See the double-fire warning
+     * above selectBlockers: this must never re-fire DECLARE_BLOCKERS_STEP_PRE or
+     * re-check replaceEvent.
+     */
+    private void heuristicBlocks(Ability source, Game game, UUID defendingPlayerId) {
+        Player defendingPlayer = game.getPlayer(defendingPlayerId);
+        if (defendingPlayer == null) {
+            return;
+        }
+        List<Permanent> attackers = new ArrayList<Permanent>();
+        for (UUID attackerId : game.getCombat().getAttackers()) {
+            if (!defendingPlayerId.equals(game.getCombat().getDefendingPlayerId(attackerId, game))) {
+                continue;
+            }
+            Permanent attacker = game.getPermanent(attackerId);
+            if (attacker != null) {
+                attackers.add(attacker);
+            }
+        }
+        if (attackers.isEmpty()) {
+            return;
+        }
+
+        Player me = game.getPlayer(playerId);
+        int myLife = me == null ? 20 : me.getLife();
+        int totalIfAllUnblocked = 0;
+        for (Permanent attacker : attackers) {
+            AttackOutcome unblocked = CombatEvaluator.evaluateUnblocked(CreatureView.from("h-atk", attacker, game));
+            totalIfAllUnblocked += unblocked.damageThrough;
+        }
+        boolean mustChumpToSurvive = totalIfAllUnblocked >= myLife;
+
+        // biggest threats first, so a forced chump goes to whichever attacker matters most
+        List<Permanent> byThreat = new ArrayList<Permanent>(attackers);
+        Collections.sort(byThreat, new Comparator<Permanent>() {
+            @Override
+            public int compare(Permanent a, Permanent b) {
+                return Integer.compare(b.getPower().getValue(), a.getPower().getValue());
+            }
+        });
+
+        List<Permanent> available = new ArrayList<Permanent>(getAvailableBlockers(game));
+        List<UUID> used = new ArrayList<UUID>();
+        int blockCount = 0;
+        for (Permanent attacker : byThreat) {
+            CreatureView attackerView = CreatureView.from("h-atk", attacker, game);
+            Permanent favourable = null;
+            Permanent chump = null;
+            for (Permanent candidate : available) {
+                if (used.contains(candidate.getId()) || !candidate.canBlock(attacker.getId(), game)) {
+                    continue;
+                }
+                List<CreatureView> single = new ArrayList<CreatureView>();
+                single.add(CreatureView.from("h-blk", candidate, game));
+                AttackOutcome outcome = CombatEvaluator.evaluateBlockedBy(attackerView, single);
+                boolean blockerSurvives = !outcome.blockersThatDie.contains(candidate.getName());
+                if (blockerSurvives || outcome.attackerDies) {
+                    favourable = candidate;
+                    break;
+                }
+                if (chump == null) {
+                    chump = candidate;
+                }
+            }
+            Permanent chosen = favourable != null ? favourable : (mustChumpToSurvive ? chump : null);
+            if (chosen != null) {
+                defendingPlayer.declareBlocker(defendingPlayerId, chosen.getId(), attacker.getId(), game, false);
+                used.add(chosen.getId());
+                blockCount++;
+            }
+        }
+        logger.info("Kanna (heuristic): blocks with " + blockCount + " creature(s)");
     }
 
     // ------------------------------------------------------------------ helpers
