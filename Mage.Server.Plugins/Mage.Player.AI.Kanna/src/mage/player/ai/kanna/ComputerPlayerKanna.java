@@ -4,6 +4,7 @@ import mage.abilities.Ability;
 import mage.abilities.ActivatedAbility;
 import mage.abilities.common.PassAbility;
 import mage.abilities.mana.ManaAbility;
+import mage.cards.Card;
 import mage.constants.Outcome;
 import mage.constants.RangeOfInfluence;
 import mage.game.Game;
@@ -16,6 +17,7 @@ import org.apache.log4j.Logger;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Deque;
@@ -63,6 +65,15 @@ public class ComputerPlayerKanna extends ComputerPlayer {
 
         void recordInvalidToolCall();
     }
+
+    // DARRELLBEST-FORK: both InspectionAnswerers below (priority()'s and
+    // chooseOneTargetAgentically()'s) handle every read-only inspection tool
+    // KannaAgent knows about -- this is the advertise/answer coupling described on
+    // KannaAgent.InspectionAnswerer.supportedTools(): declaring a tool here without
+    // handling it in answer() (or vice versa) is exactly the bug that made
+    // get_card_text advertised-but-unhandled in the targeting path.
+    private static final Set<String> ALL_INSPECTION_TOOLS = Collections.unmodifiableSet(new HashSet<String>(
+            Arrays.asList(KannaAgent.TOOL_GET_CARD_TEXT, KannaAgent.TOOL_SHOW_ALL_ACTIONS)));
 
     private String ollamaUrl = "http://localhost:11434";
     private String ollamaModel = "xmage-ai-qwen3.6:latest";
@@ -168,14 +179,19 @@ public class ComputerPlayerKanna extends ComputerPlayer {
         long start = System.nanoTime();
         Decision decision = agent.chooseAction(prompt, catalog, new KannaAgent.InspectionAnswerer() {
             @Override
+            public Set<String> supportedTools() {
+                return ALL_INSPECTION_TOOLS;
+            }
+
+            @Override
             public String answer(ToolCall call) {
-                if ("show_all_actions".equals(call.name)) {
+                if (KannaAgent.TOOL_SHOW_ALL_ACTIONS.equals(call.name)) {
                     return ActionRanker.render(ActionRanker.rank(catalog), catalog.size());
                 }
-                if ("get_card_text".equals(call.name)) {
-                    String id = call.arguments.has("id") ? call.arguments.get("id").getAsString() : null;
-                    String label = catalog.labelFor(id);
-                    return label == null ? "No such id." : label;
+                if (KannaAgent.TOOL_GET_CARD_TEXT.equals(call.name)) {
+                    String id = call.arguments != null && call.arguments.has("id")
+                            ? call.arguments.get("id").getAsString() : null;
+                    return describeActionCardText(id, catalog, game);
                 }
                 return null;
             }
@@ -270,6 +286,87 @@ public class ComputerPlayerKanna extends ComputerPlayer {
         String label = ability.toString();
         Permanent source = game.getPermanent(ability.getSourceId());
         return label + GameStateFormatter.counterAnnotation(source, label, game);
+    }
+
+    // DARRELLBEST-FORK: answers get_card_text in the priority path. This used to just
+    // return catalog.labelFor(id) -- the exact shortlist line the model already had --
+    // so a model asking for more detail got back nothing new, then asked again until it
+    // burned the whole call cap without ever committing (observed live: 3 of 12
+    // decisions in one game ended in cap exhaustion, all traced to this). Resolves the
+    // id to the real game object via the ability's source and returns its actual oracle
+    // text plus current counters instead.
+    private static String describeActionCardText(String id, ActionCatalog catalog, Game game) {
+        ActivatedAbility ability = catalog.resolve(id);
+        if (ability == null) {
+            return "No such id: " + id + ".";
+        }
+        UUID sourceId = ability.getSourceId();
+        Card card = resolveCard(sourceId, game);
+        if (card == null) {
+            // Genuinely unresolvable (e.g. Pass, or a source that has since left the
+            // game) -- say so plainly rather than returning null, which the agent would
+            // otherwise read as "unknown tool" and count as a model error it did not
+            // commit.
+            return "No further text available for " + id + ".";
+        }
+        return describeCardFully(card, game);
+    }
+
+    // DARRELLBEST-FORK: answers get_card_text in the targeting path (chooseTarget's
+    // chooseOneTargetAgentically). That answerer used to handle only show_all_actions
+    // and return null for everything else -- including get_card_text, which is
+    // advertised to the model by KannaAgent right alongside show_all_actions. A null
+    // answer to an advertised tool call reads as "unknown tool" one layer up: an
+    // immediate Decision.fallback() plus an invalidCount++ for using a tool the agent
+    // itself told the model existed, corrupting BenchMetrics' model-quality metric.
+    // byId here maps the synthetic per-call ids back to the real candidate UUID
+    // (permanent or player) -- targets are not ActivatedAbility-backed the way
+    // priority()'s catalog is (chooseOneTargetAgentically wraps each candidate in a
+    // throwaway PassAbility purely to reuse ActionCatalog's id bookkeeping), so
+    // resolution goes through that map rather than catalog.resolve(id)/getSourceId().
+    private static String describeTargetCardText(String id, Map<String, UUID> byId, Game game) {
+        UUID targetId = id == null ? null : byId.get(id);
+        if (targetId == null) {
+            return "No such id: " + id + ".";
+        }
+        Permanent permanent = game.getPermanent(targetId);
+        if (permanent != null) {
+            return describeCardFully(permanent, game);
+        }
+        Player player = game.getPlayer(targetId);
+        if (player != null) {
+            return "Player " + player.getName() + " (" + player.getLife() + " life).";
+        }
+        return "No further text available for " + id + ".";
+    }
+
+    private static Card resolveCard(UUID sourceId, Game game) {
+        if (sourceId == null) {
+            return null;
+        }
+        Permanent permanent = game.getPermanent(sourceId);
+        if (permanent != null) {
+            return permanent;
+        }
+        return game.getCard(sourceId);
+    }
+
+    // DARRELLBEST-FORK: the actual "more detail than the shortlist label" text -- oracle
+    // text via getRules(Game), which is the effect-modified/current text (not the
+    // static base text getRules() with no argument would give), plus counters via the
+    // same GameStateFormatter annotation the shortlist label uses. Counters matter here
+    // for the same reason GameStateFormatter.counterAnnotation's own javadoc gives: an
+    // ability's real value can depend on a counter count the label alone never showed
+    // (Jar of Eyeballs's X, for one).
+    private static String describeCardFully(Card card, Game game) {
+        StringBuilder sb = new StringBuilder(card.getName()).append(':');
+        for (String rule : card.getRules(game)) {
+            sb.append(' ').append(rule);
+        }
+        if (card instanceof Permanent) {
+            sb.append(GameStateFormatter.counterAnnotation((Permanent) card, sb.toString(), game));
+        }
+        return sb.toString();
     }
 
     private static boolean onlyPass(List<ActivatedAbility> playable) {
@@ -414,8 +511,21 @@ public class ComputerPlayerKanna extends ComputerPlayer {
         Decision decision = agent.chooseAction(prompt.toString(), catalog,
                 new KannaAgent.InspectionAnswerer() {
                     @Override
+                    public Set<String> supportedTools() {
+                        return ALL_INSPECTION_TOOLS;
+                    }
+
+                    @Override
                     public String answer(ToolCall call) {
-                        return "show_all_actions".equals(call.name) ? options.toString() : null;
+                        if (KannaAgent.TOOL_SHOW_ALL_ACTIONS.equals(call.name)) {
+                            return options.toString();
+                        }
+                        if (KannaAgent.TOOL_GET_CARD_TEXT.equals(call.name)) {
+                            String id = call.arguments != null && call.arguments.has("id")
+                                    ? call.arguments.get("id").getAsString() : null;
+                            return describeTargetCardText(id, byId, game);
+                        }
+                        return null;
                     }
                 });
         recordLatency(start);

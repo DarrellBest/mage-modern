@@ -6,7 +6,10 @@ import com.google.gson.JsonObject;
 import org.apache.log4j.Logger;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * The decision loop. The model may call read-only inspection tools to look
@@ -23,8 +26,56 @@ public final class KannaAgent {
 
     private static final Logger logger = Logger.getLogger(KannaAgent.class);
 
-    /** Answers a read-only inspection call, or returns null if this is not one. */
+    // DARRELLBEST-FORK: names, not the JsonObject schemas themselves -- see
+    // INSPECTION_TOOLS below for why the schemas stay centralised here rather than
+    // being duplicated at every InspectionAnswerer implementation.
+    public static final String TOOL_GET_CARD_TEXT = "get_card_text";
+    public static final String TOOL_SHOW_ALL_ACTIONS = "show_all_actions";
+
+    // DARRELLBEST-FORK: the root cause of the "advertised but unhandled tool" bug was
+    // that chooseAction() used to hardcode the full tool list while each call site
+    // supplied its own InspectionAnswerer with no way to say which of those tools it
+    // actually handled -- ComputerPlayerKanna.chooseTarget()'s answerer only ever
+    // handled show_all_actions, so a model calling the also-advertised get_card_text
+    // got a null answer, which chooseAction() below treats as "unknown tool": an
+    // immediate fallback() plus an invalidCount++ for a tool the agent itself told the
+    // model existed. Fixing that one call site is not enough -- nothing stopped the
+    // same drift from happening again at the next answerer. So the contract is now:
+    // InspectionAnswerer.supportedTools() declares which of the *known* inspection
+    // tools (the keys here) it answers, and chooseAction() advertises exactly that
+    // subset, in this canonical order, rather than a fixed list. A null from
+    // answerer.answer() therefore can only happen for a tool name the model invented
+    // that isn't even in this map -- a genuine model error, which is what invalidCount
+    // is meant to measure. Schemas live here, once, rather than at each answerer,
+    // because the wire shape (parameter name, type) is a property of the tool itself,
+    // not of who happens to be answering it this call.
+    private static final Map<String, JsonObject> INSPECTION_TOOLS = buildInspectionTools();
+
+    private static Map<String, JsonObject> buildInspectionTools() {
+        Map<String, JsonObject> tools = new LinkedHashMap<String, JsonObject>();
+        tools.put(TOOL_GET_CARD_TEXT, OllamaClient.tool(TOOL_GET_CARD_TEXT,
+                "Read the full oracle text and current state (e.g. counters) of a card by its short id.",
+                OllamaClient.stringFieldSchema("id")));
+        tools.put(TOOL_SHOW_ALL_ACTIONS, OllamaClient.tool(TOOL_SHOW_ALL_ACTIONS,
+                "List every legal action, not just the shortlist.",
+                OllamaClient.stringFieldSchema("unused")));
+        return tools;
+    }
+
+    /**
+     * Answers a read-only inspection call, or returns null if this is not one it
+     * recognises (which chooseAction() then treats as a genuine model error, not an
+     * advertising bug -- see supportedTools()).
+     */
     public interface InspectionAnswerer {
+        /**
+         * Which of KannaAgent's known inspection tools (the TOOL_* constants) this
+         * answerer actually handles. chooseAction() advertises exactly this subset to
+         * the model, so declaring a tool here and not handling it in answer() (or vice
+         * versa) is the bug this method exists to make impossible.
+         */
+        Set<String> supportedTools();
+
         String answer(ToolCall call);
     }
 
@@ -58,12 +109,12 @@ public final class KannaAgent {
         tools.add(OllamaClient.tool("choose_action",
                 "Commit to exactly one action, by its short id.",
                 OllamaClient.stringFieldSchema("action_id")));
-        tools.add(OllamaClient.tool("get_card_text",
-                "Read the full text of a card by its short id.",
-                OllamaClient.stringFieldSchema("id")));
-        tools.add(OllamaClient.tool("show_all_actions",
-                "List every legal action, not just the shortlist.",
-                OllamaClient.stringFieldSchema("unused")));
+        Set<String> supported = answerer.supportedTools();
+        for (Map.Entry<String, JsonObject> entry : INSPECTION_TOOLS.entrySet()) {
+            if (supported.contains(entry.getKey())) {
+                tools.add(entry.getValue());
+            }
+        }
 
         StringBuilder conversation = new StringBuilder(prompt);
         for (int i = 0; i < maxToolCalls; i++) {
