@@ -274,7 +274,19 @@ public class ComputerPlayerKanna extends ComputerPlayer {
                     break;
                 }
             }
+
+            // addTarget can be a silent no-op: TargetImpl.addTarget fires a TargetEvent
+            // that a replacement effect (e.g. Fiendslayer Paladin) can veto, in which case
+            // nothing is added, isChoiceCompleted stays false, and possibleTargets can
+            // return the exact same pool next iteration -- without this guard that is a
+            // tight infinite loop on the game thread, never reaching the LLM or a log
+            // line. ComputerPlayer's own equivalent loops (TargetImpl.java) carry the same
+            // "did the count actually change" guard for the same reason.
+            int beforeCount = target.getTargets().size();
             target.addTarget(chosen, source, game);
+            if (target.getTargets().size() == beforeCount) {
+                break;
+            }
         }
 
         if (target.isChoiceCompleted(abilityControllerId, source, game, null)) {
@@ -371,6 +383,16 @@ public class ComputerPlayerKanna extends ComputerPlayer {
     // DECLARE_ATTACKERS_STEP_PRE / DECLARE_BLOCKERS_STEP_PRE or re-check replaceEvent --
     // those already fired below, before the try block, and re-firing them from inside a
     // fallback would double-trigger any "before combat" abilities. They declare directly.
+    //
+    // Also: the heuristic call sits OUTSIDE the try block, exactly once, rather than
+    // being called both from within declareAttacksAgentically/declareBlocksAgentically
+    // (on decision.fallback) and again from the catch here. declareAttacksAgentically/
+    // declareBlocksAgentically instead return a boolean -- true once they have fully
+    // handled the decision (agentic or already-deferred-internally), false to ask the
+    // caller to run the heuristic. If heuristicAttacks/heuristicBlocks were called
+    // directly from inside declareAttacksAgentically/declareBlocksAgentically and then
+    // *that call itself* threw, the outer catch here would run the same heuristic a
+    // second time on fresh state -- e.g. a vigilance attacker declared twice.
 
     @Override
     public void selectAttackers(Game game, UUID attackingPlayerId) {
@@ -379,15 +401,23 @@ public class ComputerPlayerKanna extends ComputerPlayer {
                 GameEvent.EventType.DECLARING_ATTACKERS, attackingPlayerId, attackingPlayerId))) {
             return;
         }
+        boolean handled;
         try {
-            declareAttacksAgentically(game, attackingPlayerId);
+            handled = declareAttacksAgentically(game, attackingPlayerId);
         } catch (Throwable e) {
             logger.warn("Kanna: attack decision failed, deferring to heuristics - " + e, e);
+            handled = false;
+        }
+        if (!handled) {
             heuristicAttacks(game, attackingPlayerId);
         }
     }
 
-    private void declareAttacksAgentically(Game game, UUID attackingPlayerId) {
+    /**
+     * @return true if this call fully handled the decision (agentically, or there was
+     * nothing to decide), false if the caller must run heuristicAttacks itself.
+     */
+    private boolean declareAttacksAgentically(Game game, UUID attackingPlayerId) {
         final Map<String, Permanent> attackers = new HashMap<String, Permanent>();
         final Map<String, UUID> defenders = new HashMap<String, UUID>();
         List<CreatureView> attackerViews = new ArrayList<CreatureView>();
@@ -415,7 +445,7 @@ public class ComputerPlayerKanna extends ComputerPlayer {
         }
 
         if (attackers.isEmpty() || defenders.isEmpty()) {
-            return;
+            return true;
         }
 
         UUID firstDefenderId = defenders.values().iterator().next();
@@ -449,8 +479,7 @@ public class ComputerPlayerKanna extends ComputerPlayer {
 
         if (decision.fallback) {
             logger.info("Kanna: deferring attacks to heuristics");
-            heuristicAttacks(game, attackingPlayerId);
-            return;
+            return false;
         }
 
         Player attackingPlayer = game.getPlayer(attackingPlayerId);
@@ -469,6 +498,7 @@ public class ComputerPlayerKanna extends ComputerPlayer {
         logger.info("Kanna attacks with " + declared.size() + " creature(s) via " + ollamaModel
                 + (summary.isEmpty() ? "" : ": " + join(summary)));
         recordHistory(game, "attack", summary.isEmpty() ? "no attacks" : join(summary));
+        return true;
     }
 
     // ------------------------------------------------------------------ blocks
@@ -480,15 +510,23 @@ public class ComputerPlayerKanna extends ComputerPlayer {
                 GameEvent.EventType.DECLARING_BLOCKERS, defendingPlayerId, defendingPlayerId))) {
             return;
         }
+        boolean handled;
         try {
-            declareBlocksAgentically(source, game, defendingPlayerId);
+            handled = declareBlocksAgentically(source, game, defendingPlayerId);
         } catch (Throwable e) {
             logger.warn("Kanna: block decision failed, deferring to heuristics - " + e, e);
+            handled = false;
+        }
+        if (!handled) {
             heuristicBlocks(source, game, defendingPlayerId);
         }
     }
 
-    private void declareBlocksAgentically(Ability source, Game game, UUID defendingPlayerId) {
+    /**
+     * @return true if this call fully handled the decision (agentically, or there was
+     * nothing to decide), false if the caller must run heuristicBlocks itself.
+     */
+    private boolean declareBlocksAgentically(Ability source, Game game, UUID defendingPlayerId) {
         final Map<String, Permanent> attackers = new HashMap<String, Permanent>();
         final Map<String, Permanent> blockers = new HashMap<String, Permanent>();
         List<CreatureView> attackerViews = new ArrayList<CreatureView>();
@@ -507,7 +545,7 @@ public class ComputerPlayerKanna extends ComputerPlayer {
             attackerViews.add(CreatureView.from(id, attacker, game));
         }
         if (attackers.isEmpty()) {
-            return;
+            return true;
         }
 
         for (Permanent blocker : getAvailableBlockers(game)) {
@@ -526,7 +564,7 @@ public class ComputerPlayerKanna extends ComputerPlayer {
         }
         if (blockers.isEmpty()) {
             recordHistory(game, "block", "no legal blockers");
-            return;
+            return true;
         }
 
         Player me = game.getPlayer(playerId);
@@ -558,8 +596,7 @@ public class ComputerPlayerKanna extends ComputerPlayer {
 
         if (decision.fallback) {
             logger.info("Kanna: deferring blocks to heuristics");
-            heuristicBlocks(source, game, defendingPlayerId);
-            return;
+            return false;
         }
 
         Player defendingPlayer = game.getPlayer(defendingPlayerId);
@@ -578,6 +615,7 @@ public class ComputerPlayerKanna extends ComputerPlayer {
         }
         logger.info("Kanna blocks with " + used.size() + " creature(s) via " + ollamaModel);
         recordHistory(game, "block", summary.isEmpty() ? "no blocks" : join(summary));
+        return true;
     }
 
     // -------------------------------------------------------- heuristic combat fallback
@@ -649,12 +687,6 @@ public class ComputerPlayerKanna extends ComputerPlayer {
 
         Player me = game.getPlayer(playerId);
         int myLife = me == null ? 20 : me.getLife();
-        int totalIfAllUnblocked = 0;
-        for (Permanent attacker : attackers) {
-            AttackOutcome unblocked = CombatEvaluator.evaluateUnblocked(CreatureView.from("h-atk", attacker, game));
-            totalIfAllUnblocked += unblocked.damageThrough;
-        }
-        boolean mustChumpToSurvive = totalIfAllUnblocked >= myLife;
 
         // biggest threats first, so a forced chump goes to whichever attacker matters most
         List<Permanent> byThreat = new ArrayList<Permanent>(attackers);
@@ -665,35 +697,74 @@ public class ComputerPlayerKanna extends ComputerPlayer {
             }
         });
 
+        // Worst-case damage still to come from every attacker not yet decided in this
+        // pass. Re-derived per attacker rather than fixed from the opening total: once an
+        // earlier attacker is actually blocked, the damage it would have dealt is no
+        // longer coming, and treating the original alpha-strike total as fixed for the
+        // rest of the loop over-chumps every attacker after whichever one first made that
+        // total lethal, even after blocking has already brought the real total below life.
+        int pendingDamageIfUnblocked = 0;
+        for (Permanent attacker : byThreat) {
+            pendingDamageIfUnblocked += CombatEvaluator.evaluateUnblocked(CreatureView.from("h-atk", attacker, game)).damageThrough;
+        }
+        int committedDamage = 0;
+
         List<Permanent> available = new ArrayList<Permanent>(getAvailableBlockers(game));
         List<UUID> used = new ArrayList<UUID>();
         int blockCount = 0;
+
         for (Permanent attacker : byThreat) {
             CreatureView attackerView = CreatureView.from("h-atk", attacker, game);
-            Permanent favourable = null;
-            Permanent chump = null;
+            int unblockedDamage = CombatEvaluator.evaluateUnblocked(attackerView).damageThrough;
+            boolean mustChumpToSurvive = committedDamage + pendingDamageIfUnblocked >= myLife;
+
+            // A minimum-blockers restriction (menace's "can't be blocked except by two or
+            // more creatures", set via CantBeBlockedByOneEffect -> Permanent.minBlockedBy)
+            // requires that many legal blockers assigned AT ONCE, or the whole assignment
+            // is illegal: PermanentImpl.canBlock does not check this, so it passes the
+            // per-candidate check below, but CombatGroup.checkBlockRestrictions discards
+            // it later and Combat.selectBlockers re-invokes selectBlockers (up to 20
+            // times, re-firing DECLARE_BLOCKERS_STEP_PRE on every retry) trying to get a
+            // legal one. One blocker on a menace attacker is not a wasted block, it is a
+            // retry storm. If there are not enough legal, unused candidates to meet the
+            // requirement, leave this attacker unblocked entirely -- always legal --
+            // rather than risk an illegal assignment.
+            int required = Math.max(1, attacker.getMinBlockedBy());
+            List<Permanent> eligible = new ArrayList<Permanent>();
             for (Permanent candidate : available) {
-                if (used.contains(candidate.getId()) || !candidate.canBlock(attacker.getId(), game)) {
-                    continue;
-                }
-                List<CreatureView> single = new ArrayList<CreatureView>();
-                single.add(CreatureView.from("h-blk", candidate, game));
-                AttackOutcome outcome = CombatEvaluator.evaluateBlockedBy(attackerView, single);
-                boolean blockerSurvives = !outcome.blockersThatDie.contains(candidate.getName());
-                if (blockerSurvives || outcome.attackerDies) {
-                    favourable = candidate;
-                    break;
-                }
-                if (chump == null) {
-                    chump = candidate;
+                if (!used.contains(candidate.getId()) && candidate.canBlock(attacker.getId(), game)) {
+                    eligible.add(candidate);
                 }
             }
-            Permanent chosen = favourable != null ? favourable : (mustChumpToSurvive ? chump : null);
-            if (chosen != null) {
-                defendingPlayer.declareBlocker(defendingPlayerId, chosen.getId(), attacker.getId(), game, false);
-                used.add(chosen.getId());
-                blockCount++;
+
+            int actualDamage = unblockedDamage;
+            if (eligible.size() >= required) {
+                List<Permanent> assignment = new ArrayList<Permanent>(eligible.subList(0, required));
+                List<CreatureView> assignmentViews = new ArrayList<CreatureView>();
+                for (Permanent blocker : assignment) {
+                    assignmentViews.add(CreatureView.from("h-blk", blocker, game));
+                }
+                AttackOutcome outcome = CombatEvaluator.evaluateBlockedBy(attackerView, assignmentViews);
+                boolean anyAssignedDies = false;
+                for (Permanent blocker : assignment) {
+                    if (outcome.blockersThatDie.contains(blocker.getName())) {
+                        anyAssignedDies = true;
+                        break;
+                    }
+                }
+                boolean favourable = !anyAssignedDies || outcome.attackerDies;
+                if (favourable || mustChumpToSurvive) {
+                    for (Permanent blocker : assignment) {
+                        defendingPlayer.declareBlocker(defendingPlayerId, blocker.getId(), attacker.getId(), game, false);
+                        used.add(blocker.getId());
+                    }
+                    blockCount += assignment.size();
+                    actualDamage = outcome.damageThrough;
+                }
             }
+
+            committedDamage += actualDamage;
+            pendingDamageIfUnblocked -= unblockedDamage;
         }
         logger.info("Kanna (heuristic): blocks with " + blockCount + " creature(s)");
     }

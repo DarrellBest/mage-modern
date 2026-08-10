@@ -9,9 +9,18 @@ import java.util.List;
  * Orders legal actions so the model sees the few that matter first.
  * <p>
  * Deliberately coarse. Its job is to anchor attention and cut prompt size, not
- * to decide the game -- that is the model's half of the work. The full list
- * always stays reachable via show_all_actions, and the hidden count is always
- * stated, so the shortlist can never quietly bury the winning line.
+ * to decide the game -- that is the model's half of the work. The full
+ * catalog always stays reachable via show_all_actions, and the hidden count
+ * is always stated, so the shortlist can never quietly bury a winning line
+ * that is actually in the catalog.
+ * <p>
+ * DARRELLBEST-FORK: that invariant covers the catalog's contents, not every
+ * legal ability in the game -- ComputerPlayerKanna.priority() excludes mana
+ * abilities (tap-for-mana) from the catalog entirely, upstream of this class
+ * and upstream of ranking, so they are never listed by show_all_actions and
+ * never counted in the hidden total. That exclusion is a deliberate design
+ * choice made at the filter site (see the comment there), not something
+ * ActionRanker enforces or is even aware of.
  *
  * @author Darrell Best
  */
