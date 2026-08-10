@@ -135,7 +135,13 @@ public final class BenchGame {
             ComputerPlayerKanna kanna = (ComputerPlayerKanna) player;
             kanna.setBenchMetrics(metrics);
             kanna.setModel(config.model);
-            kanna.setOllamaUrl(config.ollamaUrl + "/api/chat");
+            // DARRELLBEST-FORK (keep on merge/rebase from upstream): pass the bare base
+            // URL. OllamaClient (Mage.Player.AI.Kanna) owns the "/api/chat" suffix itself
+            // now, so appending it again here doubled the path to ".../api/chat/api/chat"
+            // and 404'd every call -- silent, because Kanna's decision methods catch
+            // Throwable and fall back to heuristics, producing a complete-looking game in
+            // which the model was never actually consulted.
+            kanna.setOllamaUrl(config.ollamaUrl);
         }
 
         Deck deck = Deck.load(loadDeckList(config.deckDir, deckName), false, false);
