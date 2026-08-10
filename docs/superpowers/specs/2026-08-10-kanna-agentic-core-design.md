@@ -239,3 +239,76 @@ Everything except the integration test runs without Ollama — the whole computa
 7. The unit suite passes without Ollama running.
 
 **Deliberately not a criterion:** no baseline of the outgoing MCTS-based Kanna is captured. Because Kanna is rewritten in place, that comparison becomes impossible once the rewrite lands — this is a knowing, accepted loss. The agentic Kanna is judged against `base` and `cp7`, not against what it replaced.
+
+---
+
+## First agentic games (2026-08-10)
+
+Kanna played complete games of Magic against the stock `base` AI, driven by
+`xmage-ai-qwen3.6` running locally. Two runs, same seed and decks, before and
+after a fix wave.
+
+Command (from `Mage.Tests`, classpath via `mvn dependency:build-classpath`):
+
+```
+java -Dlog4j.configuration=file:<demo-log4j.properties> \
+  -cp target/classes:target/test-classes:$(cat cp.txt) mage.bench.BenchRunner \
+  --games=1 --playerA=kanna --playerB=base --deckDir=. \
+  --deckA="Power Hungry.dck" --deckB="Power Hungry.dck" --turnCap=20 \
+  --model=xmage-ai-qwen3.6:latest --out=<results.jsonl>
+```
+
+`exec:java` must NOT be used — it runs `main()` off a thread not named `"main"`,
+which breaks `ThreadUtils.ensureRunInGameThread()` and silently corrupts results.
+
+### Result
+
+| | Run 1 (pre-fix) | Run 2 (post-fix) |
+|---|---|---|
+| Model-driven plays | 18 | 8 |
+| Repeated-activation spins | 6 | **0** |
+| Jar of Eyeballs activated at X=0 | 5 | **0** |
+| Attacks declared | 5 | 4 |
+| Heuristic fallbacks | 1 | 4 |
+| Cap exhaustions | 0 | 3 |
+| Transport timeouts | 1 | 0 |
+| Outcome | killed (spinning) | **WIN, 17 turns, 141.8 s, 0 errors** |
+
+Run 2: `winner=kanna, turns=17, 141.8s, termination=WIN, llm_calls=25`.
+
+**This establishes that the machinery works end to end. It establishes nothing
+about strength.** n=1, and the harness correctly reports a 95% CI of
+20.7%–100%. Three of twelve decisions also went to the heuristic fallback, so
+the win is partly the fallback's — one of its picks (Curse of Shallow Graves)
+generated the Zombie tokens that did much of the damage.
+
+### Defects the first game found that 76 unit tests did not
+
+1. **`activateAbility`'s return was discarded**, so a failed activation left the
+   same action top-ranked and the model re-picked it — one LLM call per spin.
+   Observed six times in one game. *Had been flagged as Important in review and
+   dropped before reaching a fix round.*
+2. **30 s HTTP timeout became incoherent** once `num_predict` rose to 8192.
+3. **Prompt/thinking/token logging was lost in the rewrite**, so traces showed
+   what Kanna did and never why.
+4. **Activated abilities were rendered without the state that determines their
+   value** — Jar of Eyeballs shown without its counter count, so the model could
+   not tell X was 0.
+5. **`ActionRanker` scored unrecognised abilities above passing**, making a
+   valueless ability the top suggestion whenever nothing better existed.
+
+### Known-open at time of writing
+
+`get_card_text` is advertised to the model but returns the shortlist label it
+already has (priority path) and is unhandled entirely (targeting path, where it
+is treated as an unknown tool → immediate fallback plus a **false**
+`invalidToolCall`). This caused all three cap exhaustions in run 2 and corrupts
+the metric intended to measure model quality. Fix before trusting any benchmark
+run's invalid-call numbers.
+
+### Standing lesson
+
+Every defect above was found by reading or by playing, never by the unit suite,
+and two had been assigned low severity from a diff. Severity judged by reading a
+diff has been a poor predictor of severity in play — findings about *what the
+model is shown or given* have consistently outranked their labels.
