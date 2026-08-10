@@ -42,6 +42,29 @@ public class ActionRankerTest {
     }
 
     @Test
+    public void passOutranksAnUnrecognisedActivatedAbility() {
+        // FIX 5: an ability the ranker cannot classify (no "cast "/land/removal
+        // keyword) used to score above Pass, making it the top-ranked -- and therefore
+        // headline-recommended -- suggestion the instant no land or spell was on offer.
+        // That is exactly what drove the Jar of Eyeballs loop (T8 finding #5): a
+        // valueless ability activation was the model's only "confidently ranked"
+        // option every single turn.
+        List<RankedAction> ranked = ActionRanker.rank(
+                catalogOf("{3}, {T}, Remove all eyeball counters: look at X", "Pass"));
+        assertEquals("Pass", ranked.get(0).label);
+    }
+
+    @Test
+    public void unrecognisedActionsGetAnHonestNoOpinionReason() {
+        // The ranker used to render nothing at all for this bucket, which reads as "no
+        // objection" rather than "not evaluated" -- silence invited the model to trust
+        // the ranking anyway. It must say plainly that it has no opinion here.
+        List<RankedAction> ranked = ActionRanker.rank(catalogOf("Activate Grim Backwoods"));
+        assertFalse("must not stay silent about being unable to judge this action",
+                ranked.get(0).reason == null || ranked.get(0).reason.isEmpty());
+    }
+
+    @Test
     public void everyActionAppearsInTheRanking() {
         ActionCatalog catalog = catalogOf("A", "B", "C", "D", "E");
         assertEquals(5, ActionRanker.rank(catalog).size());

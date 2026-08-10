@@ -29,8 +29,21 @@ public final class ActionRanker {
     private static final int SCORE_LAND = 100;
     private static final int SCORE_REMOVAL = 90;
     private static final int SCORE_CREATURE = 80;
-    private static final int SCORE_OTHER = 50;
     private static final int SCORE_PASS = 0;
+    // DARRELLBEST-FORK: deliberately BELOW SCORE_PASS, not just below the recognised
+    // buckets above it. This ranker only recognises lands/removal/"cast " by substring
+    // match -- everything else (any activated ability whose label doesn't match one of
+    // those) lands here. With this above SCORE_PASS (it used to be 50), once no land or
+    // spell was on offer an arbitrary, unevaluated activated ability became the
+    // top-ranked suggestion every single turn, and the model took the headline
+    // recommendation -- this is what drove Kanna to activate Jar of Eyeballs with 0
+    // eyeball counters, burning {3}, five times in one game. A tie with SCORE_PASS is
+    // not enough either: Pass is always added to the catalog last, so a stable sort
+    // would keep the unrecognised ability sorted ahead of it on insertion order alone.
+    // Strictly negative is what actually makes "I have no opinion" rank behind "do
+    // nothing" by default, leaving the model to weigh it on the oracle text in the
+    // prompt rather than on its position in this list.
+    private static final int SCORE_OTHER = -10;
 
     private ActionRanker() {
     }
@@ -115,6 +128,13 @@ public final class ActionRanker {
         }
         if (score == SCORE_PASS) {
             return "take no action";
+        }
+        if (score == SCORE_OTHER) {
+            // Honest, not a real evaluation: this ranker cannot judge an arbitrary
+            // activated ability, so it says so rather than staying silent (silence read
+            // as "nothing to add" rather than "not evaluated", which invited the model
+            // to trust the ranking anyway).
+            return "unscored -- judge from the oracle text above, not this ranking";
         }
         return "";
     }
