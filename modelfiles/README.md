@@ -7,9 +7,9 @@ parameters and the system prompt.
 ## Building
 
 ```bash
-ollama create kanna-qwen3.6        -f modelfiles/kanna-qwen3.6.Modelfile
-ollama create kanna-mistral-medium -f modelfiles/kanna-mistral-medium.Modelfile
-ollama create kanna-qwen3.5-122b   -f modelfiles/kanna-qwen3.5-122b.Modelfile
+ollama create xmage-ai-qwen3.6        -f modelfiles/xmage-ai-qwen3.6.Modelfile
+ollama create xmage-ai-mistral-medium -f modelfiles/xmage-ai-mistral-medium.Modelfile
+ollama create xmage-ai-qwen3.5-122b   -f modelfiles/xmage-ai-qwen3.5-122b.Modelfile
 ```
 
 Creating a profile is cheap — the weight layers are already local, so `ollama
@@ -20,9 +20,9 @@ is reused, so the old profile is replaced.
 
 | Profile | Base | Size | num_ctx | Intended use |
 |---|---|---|---|---|
-| `kanna-qwen3.6` | `qwen3.6:latest` (36B MoE) | 23 GB | 32768 | Default. Fastest of the three; first choice if it holds up in an agentic loop. |
-| `kanna-mistral-medium` | `mistral-medium-3.5:latest` (127.7B) | 80 GB | 16384 | Capability ceiling comparison. |
-| `kanna-qwen3.5-122b` | `qwen3.5:122b` | 81 GB | 16384 | Capability ceiling comparison, Qwen family. |
+| `xmage-ai-qwen3.6` | `qwen3.6:latest` (36B MoE) | 23 GB | 32768 | Default. Fastest of the three; first choice if it holds up in an agentic loop. |
+| `xmage-ai-mistral-medium` | `mistral-medium-3.5:latest` (127.7B) | 80 GB | 16384 | Capability ceiling comparison. |
+| `xmage-ai-qwen3.5-122b` | `qwen3.5:122b` | 81 GB | 16384 | Capability ceiling comparison, Qwen family. |
 
 ## Why these parameters
 
@@ -65,7 +65,7 @@ Probe: a realistic Kanna declare-attackers prompt (3 attackers, 1 defender with
 | Model | Clean tool calls | Mean latency | Output tokens |
 |---|---|---|---|
 | `qwen3.6:latest` (stock) | 3/3 | 45.7 s | 2,181–8,020 |
-| `kanna-qwen3.6` (tuned) | 5/6 | 5.6 s | 512–1,054 |
+| `xmage-ai-qwen3.6` (tuned) | 5/6 | 5.6 s | 512–1,054 |
 
 The tuning is worth roughly an **8× latency reduction**, almost entirely by
 cutting runaway thinking — stock burned up to 8,020 output tokens on a single
@@ -98,7 +98,7 @@ mvn -q -DskipTests -pl Mage.Bench -am install
 cd Mage.Tests && mvn -q exec:java \
   -Dexec.mainClass=mage.bench.BenchRunner \
   -Dexec.classpathScope=test \
-  -Dexec.args="--games=20 --model=kanna-qwen3.6:latest --out=qwen36.jsonl"
+  -Dexec.args="--games=20 --model=xmage-ai-qwen3.6:latest --out=qwen36.jsonl"
 ```
 
 A profile that lowers `invalidToolCalls` without hurting win rate is a real
