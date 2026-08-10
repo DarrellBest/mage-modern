@@ -9,6 +9,7 @@ import mage.game.Game;
 import mage.player.ai.kanna.ComputerPlayerKanna;
 import mage.player.ai.kanna.KannaAgent;
 import mage.player.ai.kanna.OllamaClient;
+import mage.player.ai.kanna.Strategist;
 import mage.target.Target;
 import mage.target.TargetCard;
 
@@ -55,6 +56,15 @@ public class TestComputerPlayerKanna extends ComputerPlayerKanna {
     @Override
     protected KannaAgent newAgent() {
         return scriptedOllamaClient != null ? new KannaAgent(scriptedOllamaClient, 4) : super.newAgent();
+    }
+
+    // DARRELLBEST-FORK: same scriptedOllamaClient seam as newAgent() above, so a test
+    // driving the agentic decision path with a canned OllamaClient also gets a canned
+    // response for the once-per-turn planning call, instead of that call falling through
+    // to a real network request against ComputerPlayerKanna's default Ollama URL.
+    @Override
+    protected Strategist newStrategist() {
+        return scriptedOllamaClient != null ? new Strategist(scriptedOllamaClient) : super.newStrategist();
     }
 
     @Override

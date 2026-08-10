@@ -79,6 +79,11 @@ public class ComputerPlayerKanna extends ComputerPlayer {
     private String ollamaModel = "xmage-ai-qwen3.6:latest";
     private DecisionMetrics metrics;
     private final Deque<String> combatHistory = new ArrayDeque<String>();
+    // DARRELLBEST-FORK: the turn-level plan (see TurnPlan/Strategist). Starts as a default
+    // plan for turn 0 -- a turn number no real game reaches -- purely so render() always
+    // has something to inject even before the first refresh, rather than every prompt
+    // builder needing a null check. refreshPlanIfNeeded() replaces it once per turn.
+    private TurnPlan currentPlan = TurnPlan.defaultPlan(0);
 
     public ComputerPlayerKanna(String name, RangeOfInfluence range, int skill) {
         // skill is accepted and ignored: it meant search depth/think time, and there
@@ -92,6 +97,7 @@ public class ComputerPlayerKanna extends ComputerPlayer {
         this.ollamaModel = player.ollamaModel;
         this.metrics = player.metrics;
         this.combatHistory.addAll(player.combatHistory);
+        this.currentPlan = player.currentPlan;
     }
 
     @Override
@@ -125,6 +131,13 @@ public class ComputerPlayerKanna extends ComputerPlayer {
         return new KannaAgent(new OllamaClient(ollamaUrl, ollamaModel), MAX_TOOL_CALLS);
     }
 
+    // DARRELLBEST-FORK: same test seam as newAgent() above, one layer up -- lets a test
+    // supply a scripted OllamaClient for the planning call too (see
+    // TestComputerPlayerKanna.setScriptedOllamaClient, which now backs both).
+    protected Strategist newStrategist() {
+        return new Strategist(new OllamaClient(ollamaUrl, ollamaModel));
+    }
+
     private void reportInvalid(KannaAgent agent) {
         if (metrics == null) {
             return;
@@ -134,10 +147,96 @@ public class ComputerPlayerKanna extends ComputerPlayer {
         }
     }
 
+    private void reportInvalid(Strategist strategist) {
+        if (metrics == null) {
+            return;
+        }
+        for (int i = 0; i < strategist.getInvalidCount(); i++) {
+            metrics.recordInvalidToolCall();
+        }
+    }
+
+    // ------------------------------------------------------------------ turn plan
+
+    // DARRELLBEST-FORK: the ONE extra LLM call this feature adds, guarded so it fires at
+    // most once per turn regardless of how many of priority()/chooseTarget()/
+    // declareAttacksAgentically()/declareBlocksAgentically() call this first -- each of
+    // them does, so whichever decision point is reached first in a turn performs the
+    // refresh and every later one this same turn is a cheap no-op (two field reads).
+    // Restricted to Kanna's own turn (game.isActivePlayer(playerId)): blocking happens on
+    // an opponent's turn, and re-planning there would be a second call per turn, exactly
+    // what "one extra call per turn, not per decision" rules out. currentPlan simply
+    // stays whatever it was set to on Kanna's last own turn, which is still useful context
+    // for a block decision made mid-opponent's-turn.
+    private void refreshPlanIfNeeded(Game game) {
+        int turn = game.getTurnNum();
+        if (!game.isActivePlayer(playerId)) {
+            return;
+        }
+        if (currentPlan != null && currentPlan.turnNumber == turn) {
+            return;
+        }
+        String prompt = buildPlanningPrompt(game, turn);
+        Strategist strategist = newStrategist();
+        long start = System.nanoTime();
+        TurnPlan plan = strategist.plan(prompt, turn);
+        recordLatency(start);
+        reportInvalid(strategist);
+        currentPlan = plan;
+        logger.info("Kanna: turn " + turn + " plan -- " + plan.render());
+    }
+
+    // DARRELLBEST-FORK: the whole point of this prompt -- see TurnPlan's class javadoc.
+    // Per-decision prompts (buildPriorityPrompt, the targeting/attack/block prompts below)
+    // show board state and computed consequences for THIS decision only; none of them
+    // carry library size, because a per-decision prompt has no natural place for "is this
+    // win condition even reachable" and stuffing it into every decision would repeat the
+    // same static fact at recurring token cost for no benefit. This prompt exists
+    // precisely to carry that scale once per turn: both life totals, both library sizes
+    // (the number that makes "is milling viable?" answerable -- Altar of Dementia mills
+    // roughly a creature's power in cards per activation against a Commander-sized ~90-99
+    // card library, not a fact the model can see from "board 1 -> 0" alone), both boards,
+    // and Kanna's hand size.
+    private String buildPlanningPrompt(Game game, int turn) {
+        Player me = game.getPlayer(playerId);
+        StringBuilder sb = new StringBuilder();
+        sb.append("You are Kanna, planning turn ").append(turn).append(" as ").append(getName())
+                .append(" before making any individual decision this turn.")
+                .append(System.lineSeparator());
+        sb.append("You: ").append(me == null ? 0 : me.getLife()).append(" life, ")
+                .append(me == null ? 0 : me.getLibrary().size()).append(" cards left in library, ")
+                .append(me == null ? 0 : me.getHand().size()).append(" cards in hand.")
+                .append(System.lineSeparator());
+        sb.append("Your creatures: ").append(GameStateFormatter.describeCreatures(myCreatures(game)))
+                .append(System.lineSeparator());
+        for (UUID opponentId : game.getOpponents(playerId, true)) {
+            Player opponent = game.getPlayer(opponentId);
+            if (opponent == null) {
+                continue;
+            }
+            sb.append(opponent.getName()).append(": ").append(opponent.getLife())
+                    .append(" life, ").append(opponent.getLibrary().size())
+                    .append(" cards left in library.").append(System.lineSeparator());
+            sb.append(opponent.getName()).append("'s creatures: ")
+                    .append(GameStateFormatter.describeCreatures(creaturesOf(opponentId, game)))
+                    .append(System.lineSeparator());
+        }
+        sb.append(System.lineSeparator())
+                .append("Pick the single goal that best fits this turn: RACE (win on damage, faster than "
+                        + "they can kill you), STABILIZE (you are behind or under pressure -- survive first), "
+                        + "DEVELOP (no urgent plan -- build board and mana), CONTROL (deny or answer their "
+                        + "board/threats), or MILL (win by emptying an opponent's library -- only choose this "
+                        + "if the library size above makes that plausible to actually finish, not merely make "
+                        + "some progress toward).").append(System.lineSeparator())
+                .append("Call commit_plan with your goal and a one-sentence rationale.");
+        return sb.toString();
+    }
+
     // ------------------------------------------------------------------ priority
 
     @Override
     public boolean priority(Game game) {
+        refreshPlanIfNeeded(game);
         List<ActivatedAbility> playable = getPlayable(game, true);
 
         // Mana abilities ({T}: Add {G}. and the like) are deliberately excluded from
@@ -387,7 +486,8 @@ public class ComputerPlayerKanna extends ComputerPlayer {
                 .append(" (").append(me == null ? 0 : me.getLife()).append(" life).")
                 .append(System.lineSeparator());
         sb.append("Turn ").append(game.getTurnNum()).append(", ").append(game.getStep().getType())
-                .append('.').append(System.lineSeparator()).append(System.lineSeparator());
+                .append('.').append(System.lineSeparator()).append(currentPlan.render())
+                .append(System.lineSeparator()).append(System.lineSeparator());
         sb.append("Your creatures: ").append(GameStateFormatter.describeCreatures(myCreatures(game)))
                 .append(System.lineSeparator());
         for (UUID opponentId : game.getOpponents(playerId, true)) {
@@ -426,6 +526,7 @@ public class ComputerPlayerKanna extends ComputerPlayer {
 
     @Override
     public boolean chooseTarget(Outcome outcome, Target target, Ability source, Game game) {
+        refreshPlanIfNeeded(game);
         UUID abilityControllerId = target.getAffectedAbilityControllerId(getId());
 
         // Loop rather than add-one-and-return: a target requiring more than one pick
@@ -503,6 +604,7 @@ public class ComputerPlayerKanna extends ComputerPlayer {
                 .append(source == null ? "an effect" : source.toString())
                 .append(System.lineSeparator())
                 .append("Outcome is ").append(outcome).append('.')
+                .append(System.lineSeparator()).append(currentPlan.render())
                 .append(System.lineSeparator()).append(System.lineSeparator())
                 .append("Possible targets:").append(System.lineSeparator()).append(options)
                 .append(System.lineSeparator())
@@ -607,6 +709,7 @@ public class ComputerPlayerKanna extends ComputerPlayer {
      * nothing to decide), false if the caller must run heuristicAttacks itself.
      */
     private boolean declareAttacksAgentically(Game game, UUID attackingPlayerId) {
+        refreshPlanIfNeeded(game);
         final Map<String, Permanent> attackers = new HashMap<String, Permanent>();
         final Map<String, UUID> defenders = new HashMap<String, UUID>();
         List<CreatureView> attackerViews = new ArrayList<CreatureView>();
@@ -647,6 +750,7 @@ public class ComputerPlayerKanna extends ComputerPlayer {
         Player me = game.getPlayer(playerId);
         prompt.append("You are Kanna, playing as ").append(getName())
                 .append(" (").append(me == null ? 0 : me.getLife()).append(" life). It is your combat step.")
+                .append(System.lineSeparator()).append(currentPlan.render())
                 .append(System.lineSeparator()).append(historyBlock())
                 .append(System.lineSeparator()).append("Your possible attacks, with computed outcomes:")
                 .append(System.lineSeparator()).append(optionText)
@@ -716,6 +820,7 @@ public class ComputerPlayerKanna extends ComputerPlayer {
      * nothing to decide), false if the caller must run heuristicBlocks itself.
      */
     private boolean declareBlocksAgentically(Ability source, Game game, UUID defendingPlayerId) {
+        refreshPlanIfNeeded(game);
         final Map<String, Permanent> attackers = new HashMap<String, Permanent>();
         final Map<String, Permanent> blockers = new HashMap<String, Permanent>();
         List<CreatureView> attackerViews = new ArrayList<CreatureView>();
@@ -761,6 +866,7 @@ public class ComputerPlayerKanna extends ComputerPlayer {
         StringBuilder prompt = new StringBuilder();
         prompt.append("You are Kanna, playing as ").append(getName())
                 .append(" (").append(myLife).append(" life). You are being attacked.")
+                .append(System.lineSeparator()).append(currentPlan.render())
                 .append(System.lineSeparator()).append(historyBlock())
                 .append(System.lineSeparator()).append("Attacking you:").append(System.lineSeparator())
                 .append(GameStateFormatter.attackOptions(attackerViews, blockerViews, myLife))

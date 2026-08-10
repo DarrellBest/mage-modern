@@ -209,10 +209,22 @@ public class OllamaClient {
     }
 
     public static JsonObject stringFieldSchema(String fieldName) {
+        return stringFieldSchema(new String[]{fieldName});
+    }
+
+    // DARRELLBEST-FORK: Strategist's commit_plan tool needs two required string fields
+    // (goal, rationale), not one -- rather than a second, near-duplicate schema builder
+    // living in Strategist itself, this widens the existing helper to any number of
+    // fields. The single-arg overload above delegates here rather than duplicating the
+    // body; Java resolves a one-argument call to the non-varargs overload first; so every
+    // existing call site (stringFieldSchema("action_id"), etc.) is unaffected.
+    public static JsonObject stringFieldSchema(String... fieldNames) {
         JsonObject properties = new JsonObject();
-        properties.add(fieldName, typeObject("string"));
         JsonArray required = new JsonArray();
-        required.add(fieldName);
+        for (String fieldName : fieldNames) {
+            properties.add(fieldName, typeObject("string"));
+            required.add(fieldName);
+        }
         JsonObject schema = new JsonObject();
         schema.addProperty("type", "object");
         schema.add("properties", properties);
