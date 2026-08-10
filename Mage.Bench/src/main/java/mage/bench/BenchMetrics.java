@@ -14,15 +14,17 @@ import java.util.List;
  *
  * @author Darrell Best
  */
-public final class BenchMetrics {
+public final class BenchMetrics implements mage.player.ai.kanna.ComputerPlayerKanna.DecisionMetrics {
 
     private final List<Long> latenciesMs = new ArrayList<>();
     private int invalidToolCalls = 0;
 
+    @Override
     public synchronized void recordLlmCall(long latencyMs) {
         latenciesMs.add(latencyMs);
     }
 
+    @Override
     public synchronized void recordInvalidToolCall() {
         invalidToolCalls++;
     }

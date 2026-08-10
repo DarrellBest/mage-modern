@@ -58,9 +58,39 @@ public class ComputerPlayerKanna extends ComputerPlayerMCTS {
 
     private static final Logger logger = Logger.getLogger(ComputerPlayerKanna.class);
 
-    private static final String OLLAMA_URL = "http://localhost:11434/api/chat";
-    private static final String OLLAMA_MODEL = "deepseek-v4-pro:cloud";
     private static final int REQUEST_TIMEOUT_MS = 30_000;
+
+    // DARRELLBEST-FORK (keep on merge/rebase from upstream): url/model are instance fields
+    // rather than constants so the benchmark harness can point a run at a specific local
+    // model without rebuilding. Defaults match the previous hardcoded values' intent.
+    private String ollamaUrl = "http://localhost:11434/api/chat";
+    private String ollamaModel = "qwen3.6:latest";
+
+    /**
+     * Instrumentation callback the benchmark harness supplies. Declared here rather than
+     * imported from the bench module because Mage.Bench depends on this module, not the
+     * other way round -- the reverse would be a dependency cycle. No-ops when unset, so
+     * the plugin stays usable on the live server.
+     */
+    public interface DecisionMetrics {
+        void recordLlmCall(long latencyMs);
+
+        void recordInvalidToolCall();
+    }
+
+    private DecisionMetrics metrics;
+
+    public void setOllamaUrl(String ollamaUrl) {
+        this.ollamaUrl = ollamaUrl;
+    }
+
+    public void setModel(String model) {
+        this.ollamaModel = model;
+    }
+
+    public void setBenchMetrics(DecisionMetrics metrics) {
+        this.metrics = metrics;
+    }
 
     // kept small on purpose: this gets re-sent in full with every prompt, so history length
     // is a direct, ongoing token cost, not a one-time one. Shared between attacks and blocks
@@ -75,6 +105,9 @@ public class ComputerPlayerKanna extends ComputerPlayerMCTS {
     public ComputerPlayerKanna(final ComputerPlayerKanna player) {
         super(player);
         this.combatHistory.addAll(player.combatHistory);
+        this.ollamaUrl = player.ollamaUrl;
+        this.ollamaModel = player.ollamaModel;
+        this.metrics = player.metrics;
     }
 
     @Override
@@ -185,6 +218,9 @@ public class ComputerPlayerKanna extends ComputerPlayerMCTS {
                     && getAvailableAttackers(defenderId, game).stream().anyMatch(p -> p.getId().equals(attacker.getId()));
             if (attacker == null || defenderId == null || declared.contains(attacker.getId()) || !legalAgainstThisDefender) {
                 logger.warn("Kanna: ignoring invalid/hallucinated attack pair from LLM: " + atkId + " -> " + defId);
+                if (metrics != null) {
+                    metrics.recordInvalidToolCall();
+                }
                 continue;
             }
             attackingPlayer.declareAttacker(attacker.getId(), defenderId, game, false);
@@ -193,7 +229,7 @@ public class ComputerPlayerKanna extends ComputerPlayerMCTS {
             declaredSummary.add(attacker.getName() + " -> " + (defenderPlayer == null ? defId : defenderPlayer.getName()));
         }
 
-        logger.info("Kanna declared " + declared.size() + " attacker(s) via " + OLLAMA_MODEL
+        logger.info("Kanna declared " + declared.size() + " attacker(s) via " + ollamaModel
                 + (declaredSummary.isEmpty() ? "" : ": " + String.join(", ", declaredSummary)));
         recordHistory(game, "attack", declaredSummary.isEmpty() ? "declared no attacks" : String.join(", ", declaredSummary));
     }
@@ -296,6 +332,9 @@ public class ComputerPlayerKanna extends ComputerPlayerMCTS {
             boolean legal = blocker != null && attacker != null && blocker.canBlock(attacker.getId(), game);
             if (blocker == null || attacker == null || usedBlockers.contains(blocker.getId()) || !legal) {
                 logger.warn("Kanna: ignoring invalid/hallucinated block pair from LLM: " + blkId + " -> " + atkId);
+                if (metrics != null) {
+                    metrics.recordInvalidToolCall();
+                }
                 continue;
             }
             defendingPlayer.declareBlocker(defendingPlayerId, blocker.getId(), attacker.getId(), game, false);
@@ -303,7 +342,7 @@ public class ComputerPlayerKanna extends ComputerPlayerMCTS {
             declaredSummary.add(blocker.getName() + " blocks " + attacker.getName());
         }
 
-        logger.info("Kanna declared " + usedBlockers.size() + " blocker(s) via " + OLLAMA_MODEL
+        logger.info("Kanna declared " + usedBlockers.size() + " blocker(s) via " + ollamaModel
                 + (declaredSummary.isEmpty() ? "" : ": " + String.join(", ", declaredSummary)));
         recordHistory(game, "block", declaredSummary.isEmpty() ? "declared no blocks" : String.join(", ", declaredSummary));
     }
@@ -426,14 +465,22 @@ public class ComputerPlayerKanna extends ComputerPlayerMCTS {
         messages.add(message);
 
         JsonObject body = new JsonObject();
-        body.addProperty("model", OLLAMA_MODEL);
+        body.addProperty("model", ollamaModel);
         body.add("messages", messages);
         body.add("tools", tools);
         body.addProperty("stream", false);
 
-        logger.info("Kanna: prompt sent to " + OLLAMA_MODEL + " for " + getName() + " (" + toolName + "):\n" + prompt);
+        logger.info("Kanna: prompt sent to " + ollamaModel + " for " + getName() + " (" + toolName + "):\n" + prompt);
 
-        String responseBody = postJson(OLLAMA_URL, body.toString());
+        long callStart = System.nanoTime();
+        String responseBody;
+        try {
+            responseBody = postJson(ollamaUrl, body.toString());
+        } finally {
+            if (metrics != null) {
+                metrics.recordLlmCall((System.nanoTime() - callStart) / 1_000_000L);
+            }
+        }
         JsonObject responseJson = JsonParser.parseString(responseBody).getAsJsonObject();
 
         int promptTokens = responseJson.has("prompt_eval_count") ? responseJson.get("prompt_eval_count").getAsInt() : -1;
