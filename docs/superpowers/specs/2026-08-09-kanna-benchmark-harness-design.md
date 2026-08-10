@@ -156,3 +156,159 @@ Deliberately excluded to keep this to one implementation cycle:
 3. Re-running the same seed and config produces identical results for LLM-free matchups.
 4. Results survive a mid-run kill: the JSONL contains every game completed before the kill.
 5. The smoke test runs in CI without Ollama.
+
+---
+
+## Baseline runs (2026-08-09)
+
+Task 9 was the first time the harness played real games, and it surfaced two
+engine-level issues that no unit test could have caught:
+
+**Card database never populated.** `BenchGame` ran standalone (no
+`TestPlayer`/JUnit base class), and nothing in that path called
+`CardScanner.scan()`. `CardTestPlayerAPIImpl` does this in its constructor
+for the JUnit test base classes, but `BenchGame` had no equivalent, so
+`CardRepository` stayed empty and every deck import failed to find any
+card at all, including basic lands. Fixed by adding a guarded (idempotent)
+`CardScanner.scan()` call at the top of `BenchGame.run()`.
+
+**`exec:java` breaks the harness's own thread-identity assumption.**
+`BenchRunner`'s Javadoc already documents that the engine's
+`ThreadUtils.ensureRunInGameThread()` allowlists the thread named `"main"`.
+The Maven `exec:java` goal (non-forked) runs the target `main()` method on
+a plugin-created thread named after the class, not literally `"main"`, so
+every `checkConcede()` call throws, the game accumulates errors, and ends
+after a handful of turns with a spurious winner rather than a real result.
+Control runs below were therefore run as plain `java -cp <classpath>
+mage.bench.BenchRunner ...` (classpath built via `mvn -q
+dependency:build-classpath` from `Mage.Tests`), which puts `main()` on the
+JVM's actual main thread and produced clean runs with zero `ERROR`
+terminations.
+
+**Default deck (`RB Aggro.dck`) is a broken stub.** `Mage.Tests/RB
+Aggro.dck` (the default for `--deckA`/`--deckB`) contains a single line —
+`71 [SOM:242] Mountain` — 71 Mountains and no spells. Two players holding
+only Mountains can never win or lose, so every game runs to the turn cap
+regardless of AI quality or harness fairness. `BenchSmokeTest` still uses
+this default (unchanged from the brief) because it only asserts
+non-`ERROR` termination, which a cap-every-time deck still satisfies. The
+control runs below instead pass `--deckA`/`--deckB` explicitly, pointing
+at `Mage.Tests/Power Hungry.dck`, a real 90-card constructed deck already
+present in the repo (confirmed to actually decide games, see below). No
+default in `BenchConfig` was changed — this is a per-invocation CLI
+override.
+
+Both control runs below used the harness's stock 2-player-duel setup and a
+generous turn cap once the default cap (50) turned out too low for `base`
+vs `base` to ever decide (see next paragraph).
+
+### (a) Primary control: `base` vs `base`, 20 games — the acceptance gate
+
+`base` (`ComputerPlayer`) turned out to need far more turns to close out a
+game than expected — XMage's basic heuristic AI is known to be passive.
+A single trial game at `--turnCap=300` finished at turn 186; `--turnCap=350`
+was used for the full run for margin.
+
+Classpath built once via:
+```
+cd Mage.Tests && mvn -q dependency:build-classpath -Dmdep.outputFile=cp.txt -Dmdep.includeScope=test
+```
+
+Command run from `Mage.Tests` (`db/` dir removed first so the card DB
+rebuilds cleanly):
+```
+java -cp target/classes:target/test-classes:$(cat cp.txt) mage.bench.BenchRunner \
+  --games=20 --playerA=base --playerB=base --deckDir=. \
+  --deckA="Power Hungry.dck" --deckB="Power Hungry.dck" --turnCap=350 \
+  --out=control-a-base-vs-base.jsonl
+```
+
+Result:
+```
+Games:        20 total, 20 decisive, 0 cap, 0 draw, 0 error
+base:        11 wins
+base:        9 wins
+Win rate:     55.0% for base  (95% CI 34.2% - 74.2%)
+Turn time:    p50 3 ms, p95 5 ms
+```
+
+Wall clock: 21.8s for all 20 games (`real 0m21.834s`), dominated by one-time
+JVM/deck-scan startup (~7s for game 1, then 600-1050ms/game).
+
+**95% CI [34.2%, 74.2%] contains 50% — acceptance gate PASSES.** All 20
+games were decisive (no cap/draw/error), confirming the harness's seat
+swap correctly cancels play/draw advantage for a symmetric matchup.
+
+### (b) Secondary sanity check: `cp7` vs `cp7`, 4 games, `--turnCap=15`
+
+Purpose only: prove the heavier minimax AI path runs end to end without
+error. Not a statistically meaningful win-rate sample.
+
+Two earlier attempts at this run were lost to the harness process being
+killed mid-run for reasons external to `BenchRunner` itself (background
+shell teardown, not a `BenchRunner`/engine fault) — one died silently
+after 2 of 4 games with no exit code captured, the next after 1 of 4. Both
+partial `.jsonl` files were consistent with the final run below (same
+per-game CAP termination, similar per-game wall time), so they're not
+treated as a separate finding beyond "run this in the foreground with an
+explicit timeout," which the final run below did.
+
+Command actually run (foreground, bounded so a hang cannot silently
+consume the session):
+```
+timeout 420 java -cp target/classes:target/test-classes:$(cat cp.txt) mage.bench.BenchRunner \
+  --games=4 --playerA=cp7 --playerB=cp7 --deckDir=. \
+  --deckA="Power Hungry.dck" --deckB="Power Hungry.dck" --turnCap=15 \
+  --out=control-b-final.jsonl
+echo "EXIT=$?"
+```
+
+Result — completed cleanly, exit code 0:
+```
+Games:        4 total, 0 decisive, 4 cap, 0 draw, 0 error
+cp7:         0 wins
+cp7:         0 wins
+Win rate:     0.0% for cp7  (95% CI 0.0% - 0.0%)
+Turn time:    p50 751 ms, p95 2339 ms
+LLM:          0 calls, 0 invalid tool calls
+```
+
+Per-game wall time: game 1 = 35.1s, game 2 = 20.6s, game 3 = 8.8s,
+game 4 = 11.3s (all reaching the 15-turn cap, 0 errors). Total wall clock
+for all 4 games: 77s.
+
+**Interpretation, explicitly not a win-rate result:** all 4 games hit the
+turn cap with 0 decisive games, so the reported 0% win rate / degenerate
+CI is meaningless and expected — this run's only job was to prove `cp7`
+runs end to end without `ERROR`, which it did. The more informative number
+is turn cost: `cp7`'s p50 was 751ms **per turn**, against `base`'s p50 of
+3-4ms per turn in control (a) — roughly 200x more expensive per decision.
+`base` finished a full 186-turn decisive game in well under a second of
+decision time; `cp7` spent up to 35s just to grind through 15 turns
+without deciding anything. This matches the task brief's warning that
+`cp7`'s exhaustive minimax cost is (branching factor)^depth and has been
+observed pegging most of the machine's cores for 4+ minutes on a single
+decision — at `Power Hungry.dck`'s complexity even a 15-turn cap already
+shows multi-second-per-turn cost. **`cp7` is confirmed functionally usable
+as a benchmark opponent (no `ERROR`s), but a full 20-game `cp7` vs `cp7`
+run at a realistic turn cap (e.g. 350, as needed for `base` to decide)
+would very plausibly run for hours, exactly as the task guidance warned.**
+Any future use of `cp7` as a benchmark opponent should budget for this —
+either a much smaller game count, a much lower turn cap accepting mostly
+`CAP` outcomes, or accepting multi-hour wall time.
+
+### Recommendation: change `BenchConfig`'s default deck
+
+`BenchConfig.parse()`'s hardcoded default for `--deckA`/`--deckB` is
+`"RB Aggro.dck"`, which resolves to `Mage.Tests/RB Aggro.dck` — a 71-card
+stub of nothing but Mountains (see above). This means **any run of
+`BenchRunner` that doesn't explicitly pass `--deckA`/`--deckB` can never
+produce a decisive game**, silently degrading every such run to 100% `CAP`
+regardless of which AI is playing or how fair the harness is. This is a
+defect in the plan's chosen default, not in the Task 9 implementation —
+`BenchConfig.java` was out of this task's file scope, so it was not
+changed here. Recommend changing the default to `"Power Hungry.dck"` (a
+real 90-card constructed deck already present in `Mage.Tests`, confirmed
+above to let `base` vs `base` decide in ~186 turns and `cp7` vs `cp7` run
+without error). That change should be made deliberately, in its own task,
+by whoever owns `BenchConfig.java`.

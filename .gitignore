@@ -33,6 +33,9 @@ Mage.Verify/*.json
 __pycache__
 Utils/data
 
+# Mage.Bench: generated result files from benchmark runs, never tracked
+*.jsonl
+
 # dev environments, IDE and OS
 # IntelliJ IDEA
 .idea
