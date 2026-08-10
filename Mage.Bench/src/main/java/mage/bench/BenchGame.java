@@ -43,6 +43,9 @@ public final class BenchGame {
     }
 
     public static GameResult run(BenchConfig config, int gameIndex, long seed, boolean seatSwapped) {
+        // placeholder value in case CardScanner.scan() itself throws below, so the catch
+        // block always has a valid startNanos to compute wallMs from -- reset immediately
+        // after a successful scan, before any real game work begins
         long startNanos = System.nanoTime();
         // shared by both seats: correct for a mismatched matchup (kanna vs cp7), but a
         // kanna-vs-kanna run merges both players' LLM stats into one BenchMetrics instance
@@ -54,8 +57,13 @@ public final class BenchGame {
             // test base classes. Without this, every deck import fails to find any card
             // (including basic lands) because CardRepository is empty. CardScanner.scan()
             // is idempotent (guarded by its own static "scanned" flag), so calling it once
-            // per game is cheap after the first.
+            // per process is cheap after the first -- but its first call does a one-time
+            // multi-second card-DB build, so startNanos is reset right after it returns:
+            // folding that build cost into game 0's wallTimeMs would corrupt every
+            // turn-time percentile SummaryReporter computes from it.
             CardScanner.scan();
+            startNanos = System.nanoTime();
+
             RandomUtil.setSeed(seed);
 
             game = new TwoPlayerDuel(MultiplayerAttackOption.LEFT, RangeOfInfluence.ONE,

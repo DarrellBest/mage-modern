@@ -14,6 +14,16 @@ import static org.junit.Assert.assertTrue;
  * DARRELLBEST-FORK: smoke test for the Mage.Bench harness. Uses stock
  * ComputerPlayer on both seats so it needs no Ollama and runs in CI.
  * Exercises the harness, not the LLM path.
+ * <p>
+ * Limitation: this test relies on {@link BenchConfig}'s default deck
+ * ("RB Aggro.dck", intentionally left unmodified here since changing it
+ * is out of this test's scope), which is a 71-Mountain stub with no
+ * spells. Every game therefore runs to the turn cap -- neither test here
+ * ever observes a {@code Termination.WIN} or exercises the winner/
+ * winnerSeat attribution path. A future reader should not read the green
+ * check here as proof that a real game has ever been won or lost by
+ * either side; it only proves the harness plumbing (deck load, player
+ * setup, turn loop, result recording) runs without error.
  */
 public class BenchSmokeTest {
 
