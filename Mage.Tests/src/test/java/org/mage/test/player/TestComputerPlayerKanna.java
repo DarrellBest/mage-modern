@@ -7,6 +7,8 @@ import mage.constants.Outcome;
 import mage.constants.RangeOfInfluence;
 import mage.game.Game;
 import mage.player.ai.kanna.ComputerPlayerKanna;
+import mage.player.ai.kanna.KannaAgent;
+import mage.player.ai.kanna.OllamaClient;
 import mage.target.Target;
 import mage.target.TargetCard;
 
@@ -17,6 +19,7 @@ import mage.target.TargetCard;
 public final class TestComputerPlayerKanna extends ComputerPlayerKanna {
 
     private TestPlayer testPlayerLink;
+    private OllamaClient scriptedOllamaClient;
 
     public TestComputerPlayerKanna(String name, RangeOfInfluence range, int skill) {
         super(name, range, skill);
@@ -24,6 +27,28 @@ public final class TestComputerPlayerKanna extends ComputerPlayerKanna {
 
     public void setTestPlayerLink(TestPlayer testPlayerLink) {
         this.testPlayerLink = testPlayerLink;
+    }
+
+    /**
+     * DARRELLBEST-FORK: lets a test supply an OllamaClient that returns scripted
+     * responses (e.g. a subclass overriding call(), the same pattern KannaAgentTest's
+     * ScriptedClient uses one layer down) instead of making a real network call, so a
+     * test can drive ComputerPlayerKanna's real decision code -- priority(),
+     * chooseTarget(), declareAttacksAgentically(), declareBlocksAgentically() -- with a
+     * canned model response. Unset (null) by default, in which case newAgent() behaves
+     * exactly as ComputerPlayerKanna's own implementation (a real OllamaClient against
+     * the configured ollamaUrl). A fresh KannaAgent is still constructed per call, same
+     * as the real implementation, so KannaAgent.getInvalidCount() stays scoped to a
+     * single decision rather than accumulating across however many decisions a test's
+     * scripted client ends up answering.
+     */
+    public void setScriptedOllamaClient(OllamaClient scriptedOllamaClient) {
+        this.scriptedOllamaClient = scriptedOllamaClient;
+    }
+
+    @Override
+    protected KannaAgent newAgent() {
+        return scriptedOllamaClient != null ? new KannaAgent(scriptedOllamaClient, 4) : super.newAgent();
     }
 
     @Override

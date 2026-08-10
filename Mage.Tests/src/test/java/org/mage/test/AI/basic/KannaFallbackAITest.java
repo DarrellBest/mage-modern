@@ -182,4 +182,37 @@ public class KannaFallbackAITest extends CardTestPlayerBaseAI {
         assertLife(playerA, 5 - 3);
         assertPermanentCount(playerA, "Kobolds of Kher Keep", 1);
     }
+
+    @Test
+    public void test_Kanna_PicksFavourableBlockerNotJustFirstListed_WhenOllamaIsUnreachable() {
+        // Kobolds of Kher Keep (0/1) added before Wall of Stone (0/8) on purpose -- an
+        // earlier version of heuristicBlocks took eligible.subList(0, required)
+        // unconditionally, so for the required == 1 case only the first-listed
+        // available blocker was ever considered. Here that is the kobold: it dies to
+        // Grizzly Bears' 2 power without killing it back (unfavourable), and with
+        // Kanna at full life there's no lethal pressure forcing a chump, so the old
+        // code declined to block at all and let 2 damage through while the wall --
+        // objectively the better blocker, 8 toughness easily survives -- sat idle.
+        // Block quality was a function of battlefield ordering rather than which
+        // blocker was actually good. The fix searches every eligible candidate for a
+        // favourable one before settling for a chump.
+        addCard(Zone.BATTLEFIELD, playerA, "Kobolds of Kher Keep", 1); // 0/1, listed first
+        addCard(Zone.BATTLEFIELD, playerA, "Wall of Stone", 1); // 0/8, listed second, the better blocker
+        addCard(Zone.BATTLEFIELD, playerB, "Grizzly Bears", 1); // 2/2, no menace, no lethal pressure
+        addCard(Zone.BATTLEFIELD, playerB, "Forest", 1);
+
+        attack(2, playerB, "Grizzly Bears");
+
+        setStrictChooseMode(true);
+        setStopAt(2, PhaseStep.END_TURN);
+        execute();
+
+        // blocked, no damage through -- and specifically blocked with the wall, not the
+        // kobold: if the search settled for the first (unfavourable) candidate instead
+        // of continuing to find the favourable one, the kobold would have chumped and
+        // died instead
+        assertLife(playerA, 20);
+        assertPermanentCount(playerA, "Kobolds of Kher Keep", 1);
+    }
+
 }

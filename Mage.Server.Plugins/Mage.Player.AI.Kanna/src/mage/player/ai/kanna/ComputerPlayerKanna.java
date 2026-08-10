@@ -20,8 +20,11 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -98,7 +101,13 @@ public class ComputerPlayerKanna extends ComputerPlayer {
         this.metrics = metrics;
     }
 
-    private KannaAgent newAgent() {
+    // DARRELLBEST-FORK: protected rather than private specifically as a test seam --
+    // lets a test subclass override this to hand back a KannaAgent wired to a scripted
+    // OllamaClient instead of a real one (see KannaAgentTest's ScriptedClient for the
+    // same pattern one layer down), exercising the real decision code in
+    // priority()/chooseTarget()/declareAttacksAgentically()/declareBlocksAgentically()
+    // without any network call. No behavior change for real (non-test) use.
+    protected KannaAgent newAgent() {
         return new KannaAgent(new OllamaClient(ollamaUrl, ollamaModel), MAX_TOOL_CALLS);
     }
 
@@ -600,18 +609,57 @@ public class ComputerPlayerKanna extends ComputerPlayer {
         }
 
         Player defendingPlayer = game.getPlayer(defendingPlayerId);
-        List<UUID> used = new ArrayList<UUID>();
-        List<String> summary = new ArrayList<String>();
+
+        // First pass: validate each pair (blocker/attacker exist, blocker not already
+        // claimed by an earlier pair, legally able to block) and group the survivors by
+        // attacker. This does not yet check a minimum-blockers restriction (menace and
+        // the like, Permanent.getMinBlockedBy()) -- blocker.canBlock() doesn't either --
+        // so a model can legally-per-pair assign a single blocker to a menace attacker.
+        // That would reach CombatGroup.checkBlockRestrictions, which rejects a too-small
+        // group, and Combat.selectBlockers re-invokes selectBlockers up to 20 times --
+        // each retry re-firing DECLARE_BLOCKERS_STEP_PRE and, on this path, re-invoking
+        // the LLM -- before throwing IllegalArgumentException in test mode. Grouping
+        // first and dropping short groups below catches this for free, before it ever
+        // reaches the engine, instead of paying for it in up to 20 wasted model calls.
+        Map<String, List<Permanent>> byAttacker = new LinkedHashMap<String, List<Permanent>>();
+        Set<UUID> claimed = new HashSet<UUID>();
         for (String[] pair : decision.pairs) {
             Permanent blocker = blockers.get(pair[0]);
             Permanent attacker = attackers.get(pair[1]);
-            if (blocker == null || attacker == null || used.contains(blocker.getId())
+            if (blocker == null || attacker == null || claimed.contains(blocker.getId())
                     || !blocker.canBlock(attacker.getId(), game)) {
                 continue;
             }
-            defendingPlayer.declareBlocker(defendingPlayerId, blocker.getId(), attacker.getId(), game, false);
-            used.add(blocker.getId());
-            summary.add(blocker.getName() + " blocks " + attacker.getName());
+            claimed.add(blocker.getId());
+            List<Permanent> group = byAttacker.get(pair[1]);
+            if (group == null) {
+                group = new ArrayList<Permanent>();
+                byAttacker.put(pair[1], group);
+            }
+            group.add(blocker);
+        }
+
+        List<UUID> used = new ArrayList<UUID>();
+        List<String> summary = new ArrayList<String>();
+        for (Map.Entry<String, List<Permanent>> entry : byAttacker.entrySet()) {
+            Permanent attacker = attackers.get(entry.getKey());
+            List<Permanent> group = entry.getValue();
+            int required = Math.max(1, attacker.getMinBlockedBy());
+            if (group.size() < required) {
+                logger.warn("Kanna: model assigned " + group.size() + " blocker(s) to " + attacker.getName()
+                        + ", which needs at least " + required
+                        + " at once (menace or similar) -- dropping the whole group rather than risking"
+                        + " an illegal block");
+                if (metrics != null) {
+                    metrics.recordInvalidToolCall();
+                }
+                continue;
+            }
+            for (Permanent blocker : group) {
+                defendingPlayer.declareBlocker(defendingPlayerId, blocker.getId(), attacker.getId(), game, false);
+                used.add(blocker.getId());
+                summary.add(blocker.getName() + " blocks " + attacker.getName());
+            }
         }
         logger.info("Kanna blocks with " + used.size() + " creature(s) via " + ollamaModel);
         recordHistory(game, "block", summary.isEmpty() ? "no blocks" : join(summary));
@@ -739,27 +787,57 @@ public class ComputerPlayerKanna extends ComputerPlayer {
 
             int actualDamage = unblockedDamage;
             if (eligible.size() >= required) {
-                List<Permanent> assignment = new ArrayList<Permanent>(eligible.subList(0, required));
-                List<CreatureView> assignmentViews = new ArrayList<CreatureView>();
-                for (Permanent blocker : assignment) {
-                    assignmentViews.add(CreatureView.from("h-blk", blocker, game));
-                }
-                AttackOutcome outcome = CombatEvaluator.evaluateBlockedBy(attackerView, assignmentViews);
-                boolean anyAssignedDies = false;
-                for (Permanent blocker : assignment) {
-                    if (outcome.blockersThatDie.contains(blocker.getName())) {
-                        anyAssignedDies = true;
+                // Search for a favourable assignment rather than always taking the first
+                // `required` eligible candidates -- with required == 1 that meant only
+                // ever considering the first-listed blocker, so which blocker got tried
+                // (and therefore whether a block happened at all) was a function of
+                // battlefield ordering rather than which one was actually good. Slides a
+                // required-sized window across the eligible list; the first favourable
+                // window wins outright (this is a fallback, not a search for the
+                // optimum -- it does not keep looking for a better one after finding a
+                // good one), and the first window overall is kept as the chump of last
+                // resort if none turn out favourable.
+                List<Permanent> favourableAssignment = null;
+                AttackOutcome favourableOutcome = null;
+                List<Permanent> chumpAssignment = null;
+                AttackOutcome chumpOutcome = null;
+                for (int i = 0; i + required <= eligible.size(); i++) {
+                    List<Permanent> window = eligible.subList(i, i + required);
+                    List<CreatureView> windowViews = new ArrayList<CreatureView>();
+                    for (Permanent blocker : window) {
+                        windowViews.add(CreatureView.from("h-blk", blocker, game));
+                    }
+                    AttackOutcome outcome = CombatEvaluator.evaluateBlockedBy(attackerView, windowViews);
+                    boolean anyAssignedDies = false;
+                    for (Permanent blocker : window) {
+                        if (outcome.blockersThatDie.contains(blocker.getName())) {
+                            anyAssignedDies = true;
+                            break;
+                        }
+                    }
+                    boolean favourable = !anyAssignedDies || outcome.attackerDies;
+                    if (favourable) {
+                        favourableAssignment = new ArrayList<Permanent>(window);
+                        favourableOutcome = outcome;
                         break;
                     }
+                    if (chumpAssignment == null) {
+                        chumpAssignment = new ArrayList<Permanent>(window);
+                        chumpOutcome = outcome;
+                    }
                 }
-                boolean favourable = !anyAssignedDies || outcome.attackerDies;
-                if (favourable || mustChumpToSurvive) {
+
+                List<Permanent> assignment = favourableAssignment != null ? favourableAssignment
+                        : (mustChumpToSurvive ? chumpAssignment : null);
+                AttackOutcome chosenOutcome = favourableAssignment != null ? favourableOutcome : chumpOutcome;
+
+                if (assignment != null) {
                     for (Permanent blocker : assignment) {
                         defendingPlayer.declareBlocker(defendingPlayerId, blocker.getId(), attacker.getId(), game, false);
                         used.add(blocker.getId());
                     }
                     blockCount += assignment.size();
-                    actualDamage = outcome.damageThrough;
+                    actualDamage = chosenOutcome.damageThrough;
                 }
             }
 
