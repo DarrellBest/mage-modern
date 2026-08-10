@@ -12,6 +12,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class ActionRankerTest {
@@ -54,6 +55,26 @@ public class ActionRankerTest {
         for (int i = 0; i < first.size(); i++) {
             assertEquals(first.get(i).id, second.get(i).id);
         }
+    }
+
+    @Test
+    public void equalScoringActionsKeepCatalogInsertionOrder() {
+        // all four score the same, so a stable sort must return them in insertion order
+        ActionCatalog catalog = catalogOf("Cast Alpha", "Cast Beta", "Cast Gamma", "Cast Delta");
+        List<RankedAction> ranked = ActionRanker.rank(catalog);
+        assertEquals("Cast Alpha", ranked.get(0).label);
+        assertEquals("Cast Beta", ranked.get(1).label);
+        assertEquals("Cast Gamma", ranked.get(2).label);
+        assertEquals("Cast Delta", ranked.get(3).label);
+    }
+
+    @Test
+    public void emptyCatalogRanksShortlistsAndRendersCleanly() {
+        ActionCatalog empty = new ActionCatalog();
+        List<RankedAction> ranked = ActionRanker.rank(empty);
+        assertTrue(ranked.isEmpty());
+        assertTrue(ActionRanker.shortlist(ranked, 5).isEmpty());
+        assertEquals("", ActionRanker.render(ActionRanker.shortlist(ranked, 5), 0));
     }
 
     @Test
@@ -121,5 +142,15 @@ public class ActionRankerTest {
         String text = GameStateFormatter.attackOptions(Arrays.asList(angel),
                 new java.util.ArrayList<CreatureView>(), 4);
         assertTrue("4 damage into 4 life is lethal", text.toLowerCase().contains("lethal"));
+    }
+
+    @Test
+    public void attackOptionsDoNotFlagLethalWhenDamageIsNotLethal() {
+        CreatureView angel = new CreatureView("atk-0", "Serra Angel", 4, 4,
+                true, false, false, false, false, false, false, false);
+        String text = GameStateFormatter.attackOptions(Arrays.asList(angel),
+                new java.util.ArrayList<CreatureView>(), 12);
+        assertFalse("4 damage into 12 life is not lethal",
+                text.toUpperCase().contains("LETHAL"));
     }
 }
