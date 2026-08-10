@@ -1,5 +1,7 @@
 package mage.player.ai.kanna;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.apache.log4j.Logger;
 
@@ -14,9 +16,9 @@ import java.util.List;
  * rather than inventing a second way for a model call to fail -- see getInvalidCount()
  * below for the same caveat KannaAgent.getInvalidCount() documents.
  * <p>
- * Never returns null: a failed, timed-out, tool-call-less, or invalid-goal response all
- * degrade to {@link TurnPlan#defaultPlan(int)}, exactly like KannaAgent.chooseAction never
- * returning "do nothing" as a way of failing.
+ * Never returns null: a failed, timed-out, tool-call-less, invalid-goal, or malformed-shape
+ * response all degrade to {@link TurnPlan#defaultPlan(int)}, exactly like KannaAgent.chooseAction
+ * never returning "do nothing" as a way of failing.
  *
  * @author Darrell Best
  */
@@ -35,9 +37,10 @@ public final class Strategist {
 
     /**
      * @return how many times the model gave a genuinely bad answer for the planning call
-     * (no tool call, wrong tool, missing/invalid goal). Deliberately excludes the
-     * transport-exception path, same reasoning as KannaAgent.getInvalidCount(): that is
-     * infrastructure failure, not the model answering badly.
+     * (no tool call, wrong tool, missing/invalid goal, or a malformed conditionals/prohibitions
+     * shape). Deliberately excludes the transport-exception path, same reasoning as
+     * KannaAgent.getInvalidCount(): that is infrastructure failure, not the model answering
+     * badly.
      */
     public int getInvalidCount() {
         return invalidCount;
@@ -46,8 +49,10 @@ public final class Strategist {
     public TurnPlan plan(String prompt, int turnNumber) {
         List<JsonObject> tools = new ArrayList<JsonObject>();
         tools.add(OllamaClient.tool(TOOL_COMMIT_PLAN,
-                "Commit to this turn's single strategic goal.",
-                OllamaClient.stringFieldSchema("goal", "rationale")));
+                "Commit to this turn's goal, pre-committed contingencies, and prohibitions.",
+                OllamaClient.stringAndArrayFieldSchema(
+                        new String[]{"goal", "rationale"},
+                        new String[]{"conditionals", "prohibitions"})));
 
         ToolCall call;
         try {
@@ -68,7 +73,22 @@ public final class Strategist {
         }
         String goal = optString(call.arguments, "goal");
         String rationale = optString(call.arguments, "rationale");
-        TurnPlan plan = TurnPlan.of(goal, rationale, turnNumber);
+        List<String> conditionals;
+        List<String> prohibitions;
+        try {
+            conditionals = optStringArray(call.arguments, "conditionals");
+            prohibitions = optStringArray(call.arguments, "prohibitions");
+        } catch (RuntimeException e) {
+            // conditionals/prohibitions present but not an array of strings (e.g. the model
+            // sent a bare string, or an array of objects) -- a malformed shape, not a
+            // transport problem, so it counts toward invalidCount same as any other genuine
+            // model error rather than escaping as an exception.
+            logger.warn("Kanna: strategist returned malformed conditionals/prohibitions, "
+                    + "defaulting the turn plan - " + e);
+            invalidCount++;
+            return TurnPlan.defaultPlan(turnNumber);
+        }
+        TurnPlan plan = TurnPlan.of(goal, rationale, conditionals, prohibitions, turnNumber);
         if (plan == null) {
             logger.warn("Kanna: strategist chose an invalid goal '" + goal + "', defaulting the turn plan");
             invalidCount++;
@@ -82,5 +102,24 @@ public final class Strategist {
             return null;
         }
         return object.get(field).getAsString();
+    }
+
+    // DARRELLBEST-FORK: returns an empty list (not null) whenever the field is simply absent
+    // or null -- a turn with no live contingencies/prohibitions is a legitimate answer, see
+    // stringAndArrayFieldSchema's comment on why these fields are not marked required. Throws
+    // (uncaught here, deliberately -- see the try/catch in plan() above) only when the field
+    // is PRESENT but the wrong shape, which is the genuine malformed-response case.
+    private static List<String> optStringArray(JsonObject object, String field) {
+        List<String> result = new ArrayList<String>();
+        if (object == null || !object.has(field) || object.get(field).isJsonNull()) {
+            return result;
+        }
+        JsonArray array = object.get(field).getAsJsonArray();
+        for (JsonElement element : array) {
+            if (element != null && !element.isJsonNull() && element.isJsonPrimitive()) {
+                result.add(element.getAsString());
+            }
+        }
+        return result;
     }
 }

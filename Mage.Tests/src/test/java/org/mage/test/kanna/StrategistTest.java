@@ -1,5 +1,6 @@
 package org.mage.test.kanna;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import mage.player.ai.kanna.OllamaClient;
 import mage.player.ai.kanna.Strategist;
@@ -20,10 +21,20 @@ import static org.junit.Assert.assertTrue;
  */
 public class StrategistTest {
 
-    private static ToolCall commitPlan(String goal, String rationale) {
+    private static JsonArray stringArray(String... values) {
+        JsonArray array = new JsonArray();
+        for (String value : values) {
+            array.add(value);
+        }
+        return array;
+    }
+
+    private static ToolCall commitPlan(String goal, String rationale, String[] conditionals, String[] prohibitions) {
         JsonObject args = new JsonObject();
         args.addProperty("goal", goal);
         args.addProperty("rationale", rationale);
+        args.add("conditionals", stringArray(conditionals));
+        args.add("prohibitions", stringArray(prohibitions));
         return new ToolCall("commit_plan", args);
     }
 
@@ -38,17 +49,57 @@ public class StrategistTest {
 
     @Test
     public void validGoalIsAcceptedAndNotCountedAsInvalid() {
-        Strategist strategist = new Strategist(scripted(commitPlan("STABILIZE", "behind on board")));
+        Strategist strategist = new Strategist(scripted(commitPlan("STABILIZE", "behind on board",
+                new String[]{"If they sweep, hold back."}, new String[]{"Do NOT overextend."})));
         TurnPlan plan = strategist.plan("prompt", 4);
         assertEquals("STABILIZE", plan.goal);
         assertEquals("behind on board", plan.rationale);
         assertEquals(4, plan.turnNumber);
+        assertEquals(1, plan.conditionals.size());
+        assertEquals("If they sweep, hold back.", plan.conditionals.get(0));
+        assertEquals(1, plan.prohibitions.size());
+        assertEquals("Do NOT overextend.", plan.prohibitions.get(0));
+        assertEquals(0, strategist.getInvalidCount());
+    }
+
+    @Test
+    public void missingConditionalsAndProhibitionsFieldsYieldEmptyListsNotInvalid() {
+        // absent arrays are a legitimate answer (a turn with nothing to pre-commit to) --
+        // see stringAndArrayFieldSchema's comment on why they are not required fields.
+        JsonObject args = new JsonObject();
+        args.addProperty("goal", "DEVELOP");
+        args.addProperty("rationale", "steady");
+        Strategist strategist = new Strategist(scripted(new ToolCall("commit_plan", args)));
+        TurnPlan plan = strategist.plan("prompt", 4);
+        assertEquals("DEVELOP", plan.goal);
+        assertTrue(plan.conditionals.isEmpty());
+        assertTrue(plan.prohibitions.isEmpty());
+        assertEquals(0, strategist.getInvalidCount());
+    }
+
+    @Test
+    public void overLimitConditionalsAreTrimmedAndNotCountedAsInvalid() {
+        Strategist strategist = new Strategist(scripted(commitPlan("DEVELOP", "steady",
+                new String[]{"If A.", "If B.", "If C.", "If D."}, new String[]{})));
+        TurnPlan plan = strategist.plan("prompt", 4);
+        assertEquals(3, plan.conditionals.size());
+        assertEquals("too many conditionals is a model being over-eager, not a genuine error",
+                0, strategist.getInvalidCount());
+    }
+
+    @Test
+    public void overLimitProhibitionsAreTrimmedAndNotCountedAsInvalid() {
+        Strategist strategist = new Strategist(scripted(commitPlan("DEVELOP", "steady",
+                new String[]{}, new String[]{"Do NOT A.", "Do NOT B.", "Do NOT C."})));
+        TurnPlan plan = strategist.plan("prompt", 4);
+        assertEquals(2, plan.prohibitions.size());
         assertEquals(0, strategist.getInvalidCount());
     }
 
     @Test
     public void invalidGoalFallsBackToDefaultPlanAndIsCounted() {
-        Strategist strategist = new Strategist(scripted(commitPlan("WIN_NOW", "go fast")));
+        Strategist strategist = new Strategist(scripted(commitPlan("WIN_NOW", "go fast",
+                new String[]{}, new String[]{})));
         TurnPlan plan = strategist.plan("prompt", 4);
         assertEquals("DEVELOP", plan.goal);
         assertEquals(4, plan.turnNumber);
@@ -118,6 +169,24 @@ public class StrategistTest {
         assertEquals(1, strategist.getInvalidCount());
     }
 
+    /**
+     * Malformed shape: conditionals sent back as a bare string instead of an array. Must not
+     * throw out of plan() -- it must degrade to the default plan exactly like any other
+     * genuinely bad answer, and count toward invalidCount the same way.
+     */
+    @Test
+    public void malformedConditionalsShapeFallsBackToDefaultPlanAndIsCounted() {
+        JsonObject args = new JsonObject();
+        args.addProperty("goal", "RACE");
+        args.addProperty("rationale", "closing fast");
+        args.addProperty("conditionals", "If they block, trade."); // wrong shape: string, not array
+        Strategist strategist = new Strategist(scripted(new ToolCall("commit_plan", args)));
+        TurnPlan plan = strategist.plan("prompt", 5);
+        assertEquals("DEVELOP", plan.goal);
+        assertEquals(5, plan.turnNumber);
+        assertEquals(1, strategist.getInvalidCount());
+    }
+
     @Test
     public void promptIsSentThroughUnmodified() {
         final StringBuilder captured = new StringBuilder();
@@ -125,7 +194,7 @@ public class StrategistTest {
             @Override
             public ToolCall call(String prompt, List<JsonObject> tools) throws IOException {
                 captured.append(prompt);
-                return commitPlan("DEVELOP", "steady");
+                return commitPlan("DEVELOP", "steady", new String[]{}, new String[]{});
             }
         };
         new Strategist(client).plan("the exact planning prompt", 1);

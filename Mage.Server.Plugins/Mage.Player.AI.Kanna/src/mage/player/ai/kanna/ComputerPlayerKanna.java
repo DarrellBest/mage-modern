@@ -228,7 +228,17 @@ public class ComputerPlayerKanna extends ComputerPlayer {
                         + "board/threats), or MILL (win by emptying an opponent's library -- only choose this "
                         + "if the library size above makes that plausible to actually finish, not merely make "
                         + "some progress toward).").append(System.lineSeparator())
-                .append("Call commit_plan with your goal and a one-sentence rationale.");
+                // DARRELLBEST-FORK: a goal word alone was measured to not change behaviour -- the
+                // model read its own prior plan as a hint, not a commitment. Conditionals and
+                // prohibitions are pre-committed answers a later decision prompt can be checked
+                // against, not more mood. Kept to the same counts TurnPlan enforces in code (3/2)
+                // so this ask matches what actually survives validation.
+                .append("Commit to it: call commit_plan with goal, a one-sentence rationale, up to 3 "
+                        + "conditionals (\"If X, then Y.\" -- a specific in-game trigger and what you'll "
+                        + "do about it), and up to 2 prohibitions (\"Do NOT X.\" -- something this turn's "
+                        + "decisions must not do even if a later prompt makes it look fine in isolation, "
+                        + "such as feeding creatures to a free sacrifice outlet one at a time). Leave "
+                        + "conditionals or prohibitions empty if none genuinely apply -- do not pad them.");
         return sb.toString();
     }
 

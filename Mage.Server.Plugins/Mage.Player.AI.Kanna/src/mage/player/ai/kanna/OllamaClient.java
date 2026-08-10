@@ -232,6 +232,34 @@ public class OllamaClient {
         return schema;
     }
 
+    // DARRELLBEST-FORK: commit_plan's schema needs two plain required string fields (goal,
+    // rationale) plus two optional array-of-string fields (conditionals, prohibitions) on the
+    // same object -- a shape neither stringFieldSchema (all-required-string) nor
+    // pairArraySchema (array of two-field objects) covers. Kept generic here (caller supplies
+    // which field names go in which group) rather than a Strategist-only one-off, same
+    // "shared helper over a near-duplicate" reasoning the stringFieldSchema varargs widening
+    // above already used. Array fields are deliberately NOT marked required: a turn with zero
+    // live contingencies or zero prohibitions is a legitimate answer, not a malformed one.
+    public static JsonObject stringAndArrayFieldSchema(String[] stringFields, String[] arrayFields) {
+        JsonObject properties = new JsonObject();
+        JsonArray required = new JsonArray();
+        for (String fieldName : stringFields) {
+            properties.add(fieldName, typeObject("string"));
+            required.add(fieldName);
+        }
+        for (String fieldName : arrayFields) {
+            JsonObject array = new JsonObject();
+            array.addProperty("type", "array");
+            array.add("items", typeObject("string"));
+            properties.add(fieldName, array);
+        }
+        JsonObject schema = new JsonObject();
+        schema.addProperty("type", "object");
+        schema.add("properties", properties);
+        schema.add("required", required);
+        return schema;
+    }
+
     public static JsonObject pairArraySchema(String arrayName, String field1, String field2) {
         JsonObject itemProps = new JsonObject();
         itemProps.add(field1, typeObject("string"));
