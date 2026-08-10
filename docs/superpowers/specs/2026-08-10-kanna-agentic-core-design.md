@@ -237,4 +237,5 @@ Everything except the integration test runs without Ollama — the whole computa
 5. `CombatEvaluator`'s math is verified against hand-worked board states covering every keyword it reads.
 6. The heuristic fallback alone (Ollama deliberately stopped) plays a complete game and beats base `ComputerPlayer` head to head — proving the computation side is a real player, not a stub.
 7. The unit suite passes without Ollama running.
-8. A baseline harness run of the **current MCTS-based Kanna** is recorded *before* the rewrite begins. Because Kanna is rewritten in place, the old implementation stops existing the moment the rewrite lands — capture it first or it is lost permanently. The comparison is recorded whichever way it falls.
+
+**Deliberately not a criterion:** no baseline of the outgoing MCTS-based Kanna is captured. Because Kanna is rewritten in place, that comparison becomes impossible once the rewrite lands — this is a knowing, accepted loss. The agentic Kanna is judged against `base` and `cp7`, not against what it replaced.
