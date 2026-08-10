@@ -67,6 +67,10 @@ public class ComputerPlayerKanna extends ComputerPlayerMCTS {
     private String ollamaUrl = "http://localhost:11434/api/chat";
     private String ollamaModel = "xmage-ai-qwen3.6:latest";
 
+    // DARRELLBEST-FORK (keep on merge/rebase from upstream): new interface + field, not
+    // present upstream -- lets the benchmark harness observe LLM latency and invalid tool
+    // calls per decision (see the Javadoc below for why the interface is declared here
+    // instead of in Mage.Bench).
     /**
      * Instrumentation callback the benchmark harness supplies. Declared here rather than
      * imported from the bench module because Mage.Bench depends on this module, not the
@@ -81,6 +85,9 @@ public class ComputerPlayerKanna extends ComputerPlayerMCTS {
 
     private DecisionMetrics metrics;
 
+    // DARRELLBEST-FORK (keep on merge/rebase from upstream): setters new to this fork, giving
+    // the benchmark harness a way to configure a Kanna instance (model, Ollama URL, metrics
+    // sink) per run instead of only via the constants this class used to hardcode.
     public void setOllamaUrl(String ollamaUrl) {
         this.ollamaUrl = ollamaUrl;
     }
@@ -106,6 +113,10 @@ public class ComputerPlayerKanna extends ComputerPlayerMCTS {
     public ComputerPlayerKanna(final ComputerPlayerKanna player) {
         super(player);
         this.combatHistory.addAll(player.combatHistory);
+        // DARRELLBEST-FORK (keep on merge/rebase from upstream): carry the fork-added
+        // ollamaUrl/ollamaModel/metrics fields through copy() too, or every MCTS rollout
+        // clone of a Kanna player would silently fall back to the hardcoded defaults and
+        // lose its harness-configured model/metrics mid-simulation.
         this.ollamaUrl = player.ollamaUrl;
         this.ollamaModel = player.ollamaModel;
         this.metrics = player.metrics;
@@ -219,6 +230,9 @@ public class ComputerPlayerKanna extends ComputerPlayerMCTS {
                     && getAvailableAttackers(defenderId, game).stream().anyMatch(p -> p.getId().equals(attacker.getId()));
             if (attacker == null || defenderId == null || declared.contains(attacker.getId()) || !legalAgainstThisDefender) {
                 logger.warn("Kanna: ignoring invalid/hallucinated attack pair from LLM: " + atkId + " -> " + defId);
+                // DARRELLBEST-FORK (keep on merge/rebase from upstream): feeds
+                // BenchMetrics.recordInvalidToolCall, the benchmark harness's signal for how
+                // often a Modelfile hallucinates tool-call arguments.
                 if (metrics != null) {
                     metrics.recordInvalidToolCall();
                 }
@@ -333,6 +347,8 @@ public class ComputerPlayerKanna extends ComputerPlayerMCTS {
             boolean legal = blocker != null && attacker != null && blocker.canBlock(attacker.getId(), game);
             if (blocker == null || attacker == null || usedBlockers.contains(blocker.getId()) || !legal) {
                 logger.warn("Kanna: ignoring invalid/hallucinated block pair from LLM: " + blkId + " -> " + atkId);
+                // DARRELLBEST-FORK (keep on merge/rebase from upstream): same metrics hook as
+                // chooseAttackersWithKanna -- see the comment there.
                 if (metrics != null) {
                     metrics.recordInvalidToolCall();
                 }
@@ -473,6 +489,9 @@ public class ComputerPlayerKanna extends ComputerPlayerMCTS {
 
         logger.info("Kanna: prompt sent to " + ollamaModel + " for " + getName() + " (" + toolName + "):\n" + prompt);
 
+        // DARRELLBEST-FORK (keep on merge/rebase from upstream): latency timing new to this
+        // fork, feeding BenchMetrics.recordLlmCall so the benchmark harness can report LLM
+        // call latency percentiles per game.
         long callStart = System.nanoTime();
         String responseBody;
         try {

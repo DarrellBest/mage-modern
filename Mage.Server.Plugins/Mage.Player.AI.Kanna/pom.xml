@@ -20,6 +20,11 @@
             <artifactId>mage</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <!-- DARRELLBEST-FORK (keep on merge/rebase from upstream): swapped from
+             mage-player-ai-mad to mage-player-ai-mcts. ComputerPlayerKanna extends
+             ComputerPlayerMCTS (see that class's Javadoc for why: bounded rollout budget
+             instead of MAD's exponential minimax), not the MAD player, so mage-player-ai-mcts
+             is the dependency this module actually needs to compile against. -->
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>mage-player-ai-mcts</artifactId>

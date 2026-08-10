@@ -248,6 +248,10 @@
         <module>Mage.Server.Plugins</module>
         <module>Mage.Server.Console</module>
         <module>Mage.Tests</module>
+        <!-- DARRELLBEST-FORK (keep on merge/rebase from upstream): new module, no upstream
+             counterpart. Headless AI-vs-AI benchmark harness built for this fork's Kanna
+             player. Upstream will keep editing this module list independently, so re-add
+             this line if a merge/rebase drops it. -->
         <module>Mage.Bench</module>
         <module>Mage.Verify</module>
         <module>Mage.Reports</module>
