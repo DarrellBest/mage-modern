@@ -20,6 +20,7 @@ public class BenchConfigTest {
         assertEquals("xmage-ai-qwen3.6:latest", config.model);
         assertEquals(50, config.turnCap);
         assertEquals("bench-results.jsonl", config.out);
+        assertEquals("twoplayer", config.gameType);
     }
 
     @Test
@@ -27,7 +28,7 @@ public class BenchConfigTest {
         BenchConfig config = BenchConfig.parse(new String[]{
                 "--games=5", "--seed=99", "--playerA=cp7", "--playerB=mcts",
                 "--turnCap=10", "--out=x.jsonl", "--model=m", "--skill=4",
-                "--deckA=UW Control.dck", "--deckB=Power Hungry.dck"
+                "--deckA=UW Control.dck", "--deckB=Power Hungry.dck", "--gameType=commander"
         });
         assertEquals(5, config.games);
         assertEquals(99L, config.baseSeed);
@@ -39,6 +40,18 @@ public class BenchConfigTest {
         assertEquals(4, config.skill);
         assertEquals("UW Control.dck", config.deckA);
         assertEquals("Power Hungry.dck", config.deckB);
+        assertEquals("commander", config.gameType);
+    }
+
+    @Test
+    public void unknownGameType_failsClearly() {
+        try {
+            BenchConfig.parse(new String[]{"--gameType=freeforall"});
+            fail("expected IllegalArgumentException");
+        } catch (IllegalArgumentException e) {
+            assertEquals(true, e.getMessage().contains("--gameType"));
+            assertEquals(true, e.getMessage().contains("freeforall"));
+        }
     }
 
     @Test

@@ -7,10 +7,13 @@ import mage.cards.repository.CardScanner;
 import mage.constants.MultiplayerAttackOption;
 import mage.constants.PhaseStep;
 import mage.constants.RangeOfInfluence;
+import mage.game.CommanderDuel;
+import mage.game.CommanderDuelMatch;
 import mage.game.Game;
 import mage.game.GameOptions;
 import mage.game.TwoPlayerDuel;
 import mage.game.TwoPlayerMatch;
+import mage.game.match.Match;
 import mage.game.match.MatchOptions;
 import mage.game.mulligan.MulliganType;
 import mage.player.ai.kanna.ComputerPlayerKanna;
@@ -39,6 +42,15 @@ public final class BenchGame {
 
     private static final Map<String, DeckCardLists> DECK_CACHE = new HashMap<>();
 
+    // Sanity floor for the loaded maindeck size, so a deck that failed to import most of
+    // its list (bad card names, encoding issues, etc.) fails loudly instead of silently
+    // being benchmarked as if it were a legal, functioning deck -- the exact failure this
+    // harness exists to avoid. Two-player constructed decks run ~60 cards; Commander
+    // maindecks run 99 (the 100th card, the commander, lives in the deck's sideboard and
+    // is loaded separately -- see addPlayer below).
+    private static final int MIN_MAINDECK_TWOPLAYER = 40;
+    private static final int MIN_MAINDECK_COMMANDER = 90;
+
     private BenchGame() {
     }
 
@@ -66,11 +78,22 @@ public final class BenchGame {
 
             RandomUtil.setSeed(seed);
 
-            game = new TwoPlayerDuel(MultiplayerAttackOption.LEFT, RangeOfInfluence.ONE,
-                    MulliganType.GAME_DEFAULT.getMulligan(0), 60, 20, 7);
-
-            TwoPlayerMatch match = new TwoPlayerMatch(
-                    new MatchOptions("bench match", "bench game type", false));
+            Match match;
+            if (BenchConfig.GAME_TYPE_COMMANDER.equals(config.gameType)) {
+                // Commander life/hand size per the test framework's own Commander base
+                // (CardTestCommanderDuelBase): 40 life, 7 cards. CommanderDuel's
+                // constructor takes no minimum-deck-size argument -- its super
+                // (GameCommanderImpl) hardcodes 100, unlike TwoPlayerDuel below.
+                game = new CommanderDuel(MultiplayerAttackOption.LEFT, RangeOfInfluence.ONE,
+                        MulliganType.GAME_DEFAULT.getMulligan(0), 40, 7);
+                match = new CommanderDuelMatch(
+                        new MatchOptions("bench match", "bench game type", false));
+            } else {
+                game = new TwoPlayerDuel(MultiplayerAttackOption.LEFT, RangeOfInfluence.ONE,
+                        MulliganType.GAME_DEFAULT.getMulligan(0), 60, 20, 7);
+                match = new TwoPlayerMatch(
+                        new MatchOptions("bench match", "bench game type", false));
+            }
 
             // seat 1 / seat 2 assignment, swapped on odd games so play/draw advantage cancels
             String seat1Key = seatSwapped ? config.playerB : config.playerA;
@@ -127,7 +150,7 @@ public final class BenchGame {
         }
     }
 
-    private static Player addPlayer(Game game, TwoPlayerMatch match, BenchConfig config,
+    private static Player addPlayer(Game game, Match match, BenchConfig config,
                                     String typeKey, String name, String deckName,
                                     BenchMetrics metrics) throws Exception {
         Player player = PlayerFactory.create(typeKey, name, RangeOfInfluence.ONE, config.skill);
@@ -145,9 +168,12 @@ public final class BenchGame {
         }
 
         Deck deck = Deck.load(loadDeckList(config.deckDir, deckName), false, false);
-        if (deck.getMaindeckCards().size() < 40) {
+        int minMaindeck = BenchConfig.GAME_TYPE_COMMANDER.equals(config.gameType)
+                ? MIN_MAINDECK_COMMANDER : MIN_MAINDECK_TWOPLAYER;
+        if (deck.getMaindeckCards().size() < minMaindeck) {
             throw new IllegalArgumentException("Deck '" + deckName + "' loaded only "
-                    + deck.getMaindeckCards().size() + " cards");
+                    + deck.getMaindeckCards().size() + " cards (minimum " + minMaindeck
+                    + " for gameType '" + config.gameType + "')");
         }
 
         game.loadCards(deck.getCards(), player.getId());

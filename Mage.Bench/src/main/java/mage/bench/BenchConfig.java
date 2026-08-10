@@ -7,6 +7,9 @@ package mage.bench;
  */
 public final class BenchConfig {
 
+    public static final String GAME_TYPE_TWOPLAYER = "twoplayer";
+    public static final String GAME_TYPE_COMMANDER = "commander";
+
     public final int games;
     public final long baseSeed;
     public final String deckA;
@@ -19,10 +22,12 @@ public final class BenchConfig {
     public final String out;
     public final String deckDir;
     public final String ollamaUrl;
+    public final String gameType;
 
     public BenchConfig(int games, long baseSeed, String deckA, String deckB,
                        String playerA, String playerB, int skill, String model,
-                       int turnCap, String out, String deckDir, String ollamaUrl) {
+                       int turnCap, String out, String deckDir, String ollamaUrl,
+                       String gameType) {
         this.games = games;
         this.baseSeed = baseSeed;
         this.deckA = deckA;
@@ -35,6 +40,7 @@ public final class BenchConfig {
         this.out = out;
         this.deckDir = deckDir;
         this.ollamaUrl = ollamaUrl;
+        this.gameType = gameType;
     }
 
     public static BenchConfig parse(String[] args) {
@@ -50,6 +56,7 @@ public final class BenchConfig {
         String out = "bench-results.jsonl";
         String deckDir = "Mage.Tests";
         String ollamaUrl = "http://localhost:11434";
+        String gameType = GAME_TYPE_TWOPLAYER;
 
         for (String arg : args) {
             int eq = arg.indexOf('=');
@@ -82,12 +89,14 @@ public final class BenchConfig {
                 deckDir = value;
             } else if ("ollamaUrl".equals(key)) {
                 ollamaUrl = value;
+            } else if ("gameType".equals(key)) {
+                gameType = parseGameType(value);
             } else {
                 throw new IllegalArgumentException("Unknown argument '--" + key + "'");
             }
         }
         return new BenchConfig(games, baseSeed, deckA, deckB, playerA, playerB,
-                skill, model, turnCap, out, deckDir, ollamaUrl);
+                skill, model, turnCap, out, deckDir, ollamaUrl, gameType);
     }
 
     private static int parseInt(String key, String value) {
@@ -104,6 +113,14 @@ public final class BenchConfig {
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("--" + key + " must be an integer, got '" + value + "'");
         }
+    }
+
+    private static String parseGameType(String value) {
+        if (GAME_TYPE_TWOPLAYER.equals(value) || GAME_TYPE_COMMANDER.equals(value)) {
+            return value;
+        }
+        throw new IllegalArgumentException("--gameType must be one of: "
+                + GAME_TYPE_TWOPLAYER + ", " + GAME_TYPE_COMMANDER + "; got '" + value + "'");
     }
 
     /**
