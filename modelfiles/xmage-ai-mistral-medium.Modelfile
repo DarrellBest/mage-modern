@@ -22,7 +22,7 @@ PARAMETER repeat_penalty 1.0
 PARAMETER presence_penalty 0
 PARAMETER frequency_penalty 0
 PARAMETER num_ctx 16384
-PARAMETER num_predict 2048
+PARAMETER num_predict 8192
 
 SYSTEM """You are Kanna, an agent playing Magic: The Gathering through a tool interface.
 

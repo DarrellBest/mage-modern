@@ -57,6 +57,36 @@ in the prompt, and treat declining to act as a legitimate move. For
 `mistral-medium-3.5` it also displaces the stock "Le Chat assistant" persona,
 which biases toward conversational replies where a bare tool call is wanted.
 
+## The truncation bug (2026-08-10) — read this before touching `num_predict`
+
+These profiles originally set `num_predict 2048`. That is **too small for a reasoning
+model** and it silently broke tool calling roughly half the time.
+
+Measured on `xmage-ai-qwen3.6`, 5 trials per variant, identical Kanna combat prompt
+and tool schema, recording `done_reason` on every trial:
+
+| Variant | Clean tool calls | Stopped on `length` | Mean latency |
+|---|---|---|---|
+| `num_predict 2048`, thinking on | 2/5 | **3** | ~9 s |
+| `num_predict 4096`, thinking on | 4/5 | 1 | ~10 s |
+| `num_predict 8192`, thinking on | **5/5** | 0 | ~10 s |
+| `think: false` | **5/5** | 0 | **1.05 s** |
+
+Every failure came back `done_reason=length` with `eval_count` exactly at the cap. The
+model was cut off mid-thought and never reached the tool call — `message.content` was
+empty, not prose. Thinking on this prompt consumes 1,858–17,406 characters, so 2048
+tokens truncates it about half the time.
+
+This was originally misdiagnosed as the model "answering in prose instead of calling
+the tool", and the shared `SYSTEM` prompt below was tightened to compensate. That
+paragraph is treating a symptom; the cause was the budget.
+
+**`think` is a request parameter, not a Modelfile parameter** — it lives in
+`OllamaClient`, not here. With the budget fixed, thinking-on and thinking-off both
+reach 100% clean tool calls and, on this position, the same decision. Thinking costs
+about 10x the latency. Which default is better is a question for the benchmark
+harness, not for taste.
+
 ## Measured so far (2026-08-09)
 
 Probe: a realistic Kanna declare-attackers prompt (3 attackers, 1 defender with
