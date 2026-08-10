@@ -281,11 +281,13 @@ public class ComputerPlayerKanna extends ComputerPlayer {
     // DARRELLBEST-FORK: see GameStateFormatter.counterAnnotation's javadoc for why this
     // is not folded into ability.toString() itself -- the annotation needs the source
     // Permanent (for its current counters) and the Game (to read them), neither of
-    // which Ability.toString() has access to.
+    // which Ability.toString() has access to. ActionEvaluator.annotate() is the single
+    // consolidated place that decides the rest of this suffix too (counters plus cost
+    // consequences -- sacrifice/life/discard) rather than this method calling
+    // GameStateFormatter directly and a second, separate place computing cost math.
     private String labelFor(ActivatedAbility ability, Game game) {
         String label = ability.toString();
-        Permanent source = game.getPermanent(ability.getSourceId());
-        return label + GameStateFormatter.counterAnnotation(source, label, game);
+        return label + ActionEvaluator.annotate(ability, game, playerId);
     }
 
     // DARRELLBEST-FORK: answers get_card_text in the priority path. This used to just
