@@ -51,7 +51,22 @@ public class ComputerPlayer6 extends ComputerPlayer {
 
     // TODO: add and research maxNodes logs, is it good to increase from 5000 to 50000 for better results?
     // TODO: increase maxNodes due AI skill level like max depth?
-    private static final int MAX_SIMULATED_NODES_PER_CALC = 5000;
+    // DARRELLBEST-FORK (keep on merge/rebase from upstream): lowered from 5000 to 1500.
+    // Observed on the live production server: MAD bots in a 4-player Commander game timed
+    // out on every decision -- turns advanced at exactly 54s, with a timeout warning every
+    // 6.0s and no game actions logged in between. At skill 2, maxThinkTimeSecs = skill * 3
+    // = 6s (the observed cadence) and maxDepth is already floored at 4 (see the
+    // "skill < 4" branch above -- lowering skill further cannot raise it), so neither knob
+    // was available to fix this. That leaves node count as the only remaining lever: with
+    // 5000, search ran out the clock (maxThinkTimeSecs) before ever reaching
+    // MAX_SIMULATED_NODES_PER_CALC, so every decision was an abandoned mid-search read
+    // rather than a completed one. Cutting the node cap makes the search far more likely
+    // to terminate on node count before the clock, trading search breadth for actually
+    // returning a real (if shallower) answer instead of a timed-out one. 1500 is a
+    // starting point, not a validated optimum -- see the cp7-vs-cp7 bench numbers in
+    // commander-bench-report.md for the one measurement taken so far; retune by
+    // measurement if turn times or play quality still look wrong.
+    private static final int MAX_SIMULATED_NODES_PER_CALC = 1500;
     private static final int MAX_SIMULATED_NODES_PER_ERROR = 5100; // TODO: debug only, set low value to find big calculations
 
     // same params as Executors.newFixedThreadPool
