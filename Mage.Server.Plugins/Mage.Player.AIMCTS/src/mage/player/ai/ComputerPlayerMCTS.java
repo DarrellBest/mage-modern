@@ -301,7 +301,11 @@ public class ComputerPlayerMCTS extends ComputerPlayer {
         for (Player copyPlayer : mcts.getState().getPlayers().values()) {
             Player origPlayer = game.getState().getPlayers().get(copyPlayer.getId());
             MCTSPlayer newPlayer = new MCTSPlayer(copyPlayer.getId());
-            newPlayer.restore(origPlayer);
+            // DARRELLBEST-FORK (keep on merge/rebase from upstream): restore() rejects anything
+            // that isn't a PlayerImpl. In test games players are wrapped in TestPlayer, which
+            // isn't one -- getRealPlayer() unwraps that (a no-op passthrough for real players),
+            // same idiom SimulatedPlayer2/TestPlayer already use for this exact restore() call.
+            newPlayer.restore(origPlayer.getRealPlayer());
             newPlayer.setMatchPlayer(origPlayer.getMatchPlayer());
             if (!newPlayer.getId().equals(playerId)) {
                 int handSize = newPlayer.getHand().size();

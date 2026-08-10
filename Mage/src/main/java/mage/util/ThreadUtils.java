@@ -108,6 +108,14 @@ public final class ThreadUtils {
         } else if (name.startsWith(THREAD_PREFIX_AI_SIMULATION_MAD)) {
             // ai simulation
             return true;
+        } else if (name.startsWith(THREAD_PREFIX_AI_SIMULATION_MCTS)) {
+            // DARRELLBEST-FORK (keep on merge/rebase from upstream): THREAD_PREFIX_AI_SIMULATION_MCTS
+            // was already defined and used to name MCTS's own simulation threads, but never actually
+            // allowlisted here -- every MCTS rollout was silently failing ensureRunInGameThread()
+            // and aborting mid-simulation. Confirmed via ComputerPlayerKanna testing: MCTS decisions
+            // were completing almost all of their rollouts as immediate errors (few real games
+            // simulated, tiny resulting search trees) purely because of this.
+            return true;
         } else if (name.equals("main")) {
             // unit test
             return true;
