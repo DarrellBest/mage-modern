@@ -3,6 +3,7 @@ package mage.bench;
 import mage.cards.decks.Deck;
 import mage.cards.decks.DeckCardLists;
 import mage.cards.decks.importer.DeckImporter;
+import mage.cards.repository.CardScanner;
 import mage.constants.MultiplayerAttackOption;
 import mage.constants.PhaseStep;
 import mage.constants.RangeOfInfluence;
@@ -48,6 +49,13 @@ public final class BenchGame {
         BenchMetrics metrics = new BenchMetrics();
         Game game = null;
         try {
+            // DARRELLBEST-FORK: nothing else in this standalone-process code path scans
+            // Mage.Sets into the card DB the way CardTestPlayerAPIImpl does for the JUnit
+            // test base classes. Without this, every deck import fails to find any card
+            // (including basic lands) because CardRepository is empty. CardScanner.scan()
+            // is idempotent (guarded by its own static "scanned" flag), so calling it once
+            // per game is cheap after the first.
+            CardScanner.scan();
             RandomUtil.setSeed(seed);
 
             game = new TwoPlayerDuel(MultiplayerAttackOption.LEFT, RangeOfInfluence.ONE,

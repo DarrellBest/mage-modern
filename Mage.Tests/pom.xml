@@ -54,6 +54,17 @@
             <scope>compile</scope>
         </dependency>
 
+        <!-- DARRELLBEST-FORK (keep on merge/rebase from upstream): new module, no upstream
+             counterpart. Lets BenchSmokeTest and BenchRunner (run via exec:java from this
+             module) resolve the harness classes; upstream will keep editing this dependency
+             list independently, so re-add this block if a merge/rebase drops it. -->
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>mage-bench</artifactId>
+            <version>${project.version}</version>
+            <scope>compile</scope>
+        </dependency>
+
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>mage-game-freeforall</artifactId>
