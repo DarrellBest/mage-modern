@@ -22,8 +22,12 @@ import mage.util.RandomUtil;
 import org.apache.log4j.Logger;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Scanner;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Runs exactly one benchmark game. Knows nothing about runs, files or
@@ -50,6 +54,13 @@ public final class BenchGame {
     // is loaded separately -- see addPlayer below).
     private static final int MIN_MAINDECK_TWOPLAYER = 40;
     private static final int MIN_MAINDECK_COMMANDER = 90;
+
+    // Mirrors DckDeckImporter's own card-line grammar (group 1 = "SB:" prefix, group 2 =
+    // declared quantity), so parseDeclaredCounts below counts a line as a card line under
+    // exactly the same rule the importer used to decide whether to try resolving it -- not a
+    // second, potentially-drifting definition of "card line".
+    private static final Pattern DECK_LINE_PATTERN =
+            Pattern.compile("(SB:)?\\s*(\\d+)\\s*\\[([^]:]+):([^]:]+)\\]\\s*(.*)\\s*$");
 
     private BenchGame() {
     }
@@ -185,7 +196,7 @@ public final class BenchGame {
         return player;
     }
 
-    private static DeckCardLists loadDeckList(String deckDir, String deckName) {
+    static DeckCardLists loadDeckList(String deckDir, String deckName) {
         String key = deckDir + "/" + deckName;
         DeckCardLists cached = DECK_CACHE.get(key);
         if (cached != null) {
@@ -203,10 +214,70 @@ public final class BenchGame {
         // reading them.
         StringBuilder errors = new StringBuilder();
         DeckCardLists list = DeckImporter.importDeckFromFile(file.getAbsolutePath(), errors, false);
-        if (errors.length() > 0) {
-            throw new IllegalArgumentException("Deck '" + deckName + "' failed to import: " + errors);
+
+        // The importer also emits a message for benign auto-fixes -- e.g. a Secret Lair
+        // collector number missing from this build's card database gets silently swapped for
+        // another printing of the same card, and the game plays fine either way. Rejecting on
+        // "the importer said anything at all" (the old behavior here) treated that exactly
+        // like a card that failed to resolve at all, which is wrong: it blocked the vast
+        // majority of real decks over messages that were never fatal. The invariant that
+        // actually matters is whether every declared card made it into the parsed list, so
+        // compare the file's own declared quantities against what DeckCardLists actually
+        // holds instead of keying off message presence.
+        int[] declaredCounts = parseDeclaredCounts(file);
+        int declaredMain = declaredCounts[0];
+        int declaredSideboard = declaredCounts[1];
+        int actualMain = list.getCards().size();
+        int actualSideboard = list.getSideboard().size();
+        if (actualMain != declaredMain || actualSideboard != declaredSideboard) {
+            throw new IllegalArgumentException("Deck '" + deckName + "' failed to import: expected "
+                    + declaredMain + " maindeck / " + declaredSideboard + " sideboard cards from the file, "
+                    + "but only " + actualMain + " maindeck / " + actualSideboard + " sideboard cards actually "
+                    + "loaded (some card(s) could not be resolved at all). Importer messages: " + errors);
         }
+        if (errors.length() > 0) {
+            // counts matched, so nothing here is fatal -- typically printing substitutions
+            // (e.g. a Secret Lair collector number resolved to a different printing of the
+            // same card) -- but still worth surfacing so the cause of any behavior difference
+            // between the substituted printing and the original is visible if ever needed.
+            logger.info("Deck '" + deckName + "' imported with " + declaredMain + " maindeck / "
+                    + declaredSideboard + " sideboard cards (all accounted for) after auto-fixes: " + errors);
+        }
+
         DECK_CACHE.put(key, list);
         return list;
+    }
+
+    /**
+     * Sums the leading quantity declared on each card line of a .dck file, split into
+     * maindeck and sideboard totals. A line counts as a card line under exactly the grammar
+     * DckDeckImporter itself uses to recognize one (DECK_LINE_PATTERN); everything else --
+     * NAME:, AUTHOR:, LAYOUT, blank lines, comments -- contributes to neither total, which is
+     * just another way of saying those lines declare zero cards.
+     */
+    private static int[] parseDeclaredCounts(File file) {
+        int mainTotal = 0;
+        int sideboardTotal = 0;
+        try (Scanner scanner = new Scanner(file)) {
+            while (scanner.hasNextLine()) {
+                String line = scanner.nextLine().trim();
+                Matcher m = DECK_LINE_PATTERN.matcher(line);
+                if (!m.matches()) {
+                    continue;
+                }
+                int count = Integer.parseInt(m.group(2));
+                if ("SB:".equals(m.group(1))) {
+                    sideboardTotal += count;
+                } else {
+                    mainTotal += count;
+                }
+            }
+        } catch (FileNotFoundException e) {
+            // loadDeckList already checked file.exists() immediately before calling this, so
+            // this can only happen from a racing external deletion; surface it the same way
+            // the earlier existence check would have.
+            throw new IllegalArgumentException("Deck file not found: " + file.getAbsolutePath(), e);
+        }
+        return new int[]{mainTotal, sideboardTotal};
     }
 }
