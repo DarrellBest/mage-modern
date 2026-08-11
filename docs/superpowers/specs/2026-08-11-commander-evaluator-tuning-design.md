@@ -349,6 +349,26 @@ longer games, so the excluded set may be systematically enriched for one side. A
 this timeout rate carries the same caveat, which is an argument for raising the budget rather than
 adding games.
 
+### Board value and the sacrificing behaviour (hypothesis tested, NULL)
+
+Hypothesis: the bot sacrifices creatures too readily because it undervalues having permanents on
+the battlefield, so raising `permanentOnBattlefieldBonus` should curb it.
+
+| Parameter | Decisive | W–L | Win rate | 95% CI |
+|---|---|---|---|---|
+| `permanentOnBattlefieldBonus` 300 → 900 | 65/100 | 32–33 | 49.2% | [37.5%, 61.1%] |
+
+**Null.** Which matches what the code already said: sacrificing a 1/1 token already costs ~1,120
+(300 on-battlefield + ~320 card definition + 500 dynamic) while the payoff — milling — scores **0**,
+because library, graveyard and exile carry no value at all. The evaluator was never rating sacrifice
+as good, so tripling the deterrent changes nothing.
+
+This rules out the whole "the bot undervalues its board" family of explanations. The sacrifice loop
+is structural: the search re-derives the same action after each state change
+(`need re-calculation (game state changed between actions)`), which is what the priority budget and
+chained-activation cap exist to catch — and what the signature bug documented below was silently
+undermining.
+
 ### Correction: the combined result does NOT mean each part is null
 
 The combined run bundled three changes. A null (or negative) combination is consistent with one
