@@ -142,18 +142,30 @@ import re, sys, os, shutil
 block_file, *cfgs = sys.argv[1:]
 if not os.path.exists(block_file):
     print("   !! no staged playerTypes block; skipping"); sys.exit(0)
-block = open(block_file).read()
+# newline="" everywhere: the deployed config.xml is CRLF while the repo template is LF, and
+# Python's text mode would silently translate on read and write back LF -- rewriting all 215
+# lines of a boot-critical file as a side effect of changing six of them, and making the .bak
+# diff useless for seeing what actually changed.
+with open(block_file, newline="") as fh:
+    block_raw = fh.read()
 for cfg in cfgs:
     if not os.path.exists(cfg):
         continue
-    text = open(cfg).read()
+    with open(cfg, newline="") as fh:
+        text = fh.read()
     if not re.search(r"[ \t]*<playerTypes>.*?</playerTypes>", text, re.S):
         print("   !! no <playerTypes> block in", cfg, "-- leaving alone"); continue
+    # match the target file's own line endings rather than imposing the template's
+    crlf = text.count("\r\n") > text.count("\n") - text.count("\r\n")
+    block = block_raw.replace("\r\n", "\n")
+    if crlf:
+        block = block.replace("\n", "\r\n")
     new = re.sub(r"[ \t]*<playerTypes>.*?</playerTypes>", lambda _: block, text, count=1, flags=re.S)
     if new == text:
         print("   = already current:", cfg); continue
     shutil.copy2(cfg, cfg + ".bak")     # boot-critical file; keep a rollback
-    open(cfg, "w").write(new)
+    with open(cfg, "w", newline="") as fh:
+        fh.write(new)
     was = len(re.findall(r"<playerType ", text)); now = len(re.findall(r"<playerType ", block))
     print("   updated %s (%d -> %d player types, backup at %s.bak)" % (cfg, was, now, cfg))
 PY
