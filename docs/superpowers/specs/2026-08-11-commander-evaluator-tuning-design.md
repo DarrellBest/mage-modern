@@ -299,7 +299,18 @@ Protocol: `commander`(tuned, side A) vs `commander`(default, side B), Krenko mir
 
 | Parameter | Value | Decisive | Win rate (tuned) | 95% CI | G1 |
 |---|---|---|---|---|---|
-| `handCardScore` | 150 (from 5) | 59/80 | 57.6% (34–25) | [44.9%, 69.4%] | **no** — lower bound below 50% |
+| `handCardScore` | 150 (from 5) | 59/80 | 57.6% (34–25) | [44.9%, 69.4%] | no |
+| `lifeScores` | 41-entry 40-life curve | 43/80 | 60.5% (26–17) | [45.6%, 73.6%] | no |
+| `commanderDamageWeight` | 8000 (from 0) | 42/79 | 57.1% (24–18) | [42.2%, 70.9%] | no |
+| `manaValuePenaltyPerPip` | 5 (from 20) | 45/80 | 48.9% (22–23) | [35.0%, 63.0%] | no — null, dropped |
+
+**No arm clears G1.** Three cluster at 57–60%; `manaValuePenaltyPerPip` is flat and was dropped.
+
+**Do not read interim results from these runs.** `commanderDamageWeight` measured 38.1% at n=21
+decisive and finished at 57.1% at n=42 — a full reversal from "looks harmful" to "looks promising"
+on doubling the sample. `lifeScores` likewise fell from 70.0% to 60.5%. At n≈20 the interval is
+roughly ±20 points and conveys essentially nothing; peeking actively misleads. Screening conclusions
+belong at the end of a run, not during it.
 
 Suggestive but not established. Screening's question is "does this move at all?", and 57.6% is
 enough to justify refinement; it is *not* enough to claim an improvement. Reaching a lower bound
