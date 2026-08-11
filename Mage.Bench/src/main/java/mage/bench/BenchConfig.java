@@ -38,11 +38,21 @@ public final class BenchConfig {
      * (the default): off by default, and BenchRunner/BenchGame register no extra instrumentation
      * at all when this is null, so an ordinary run pays zero cost for this feature. */
     public final String trackCards;
+    /**
+     * DARRELLBEST-FORK: path to a {@link EvalParamsLoader} properties file giving side A's evaluator
+     * weights, or null (the default) for {@code CommanderEvalParams.DEFAULT}. Side A means the same
+     * side as {@link #deckA}/{@link #playerA} -- BenchGame carries all three across the seat swap
+     * together.
+     */
+    public final String paramsA;
+    /** DARRELLBEST-FORK: side B's evaluator weights; see {@link #paramsA}. */
+    public final String paramsB;
 
     public BenchConfig(int games, long baseSeed, String deckA, String deckB,
                        String playerA, String playerB, int skill, String model,
                        int turnCap, int maxGameSeconds, String out, String deckDir,
-                       String ollamaUrl, String gameType, String trackCards) {
+                       String ollamaUrl, String gameType, String trackCards,
+                       String paramsA, String paramsB) {
         this.games = games;
         this.baseSeed = baseSeed;
         this.deckA = deckA;
@@ -58,6 +68,8 @@ public final class BenchConfig {
         this.ollamaUrl = ollamaUrl;
         this.gameType = gameType;
         this.trackCards = trackCards;
+        this.paramsA = paramsA;
+        this.paramsB = paramsB;
     }
 
     public static BenchConfig parse(String[] args) {
@@ -76,6 +88,8 @@ public final class BenchConfig {
         String ollamaUrl = "http://localhost:11434";
         String gameType = GAME_TYPE_TWOPLAYER;
         String trackCards = null;
+        String paramsA = null; // null = CommanderEvalParams.DEFAULT
+        String paramsB = null;
 
         for (String arg : args) {
             int eq = arg.indexOf('=');
@@ -117,12 +131,17 @@ public final class BenchConfig {
                 gameType = parseGameType(value);
             } else if ("trackCards".equals(key)) {
                 trackCards = value;
+            } else if ("paramsA".equals(key)) {
+                paramsA = value;
+            } else if ("paramsB".equals(key)) {
+                paramsB = value;
             } else {
                 throw new IllegalArgumentException("Unknown argument '--" + key + "'");
             }
         }
         return new BenchConfig(games, baseSeed, deckA, deckB, playerA, playerB,
-                skill, model, turnCap, maxGameSeconds, out, deckDir, ollamaUrl, gameType, trackCards);
+                skill, model, turnCap, maxGameSeconds, out, deckDir, ollamaUrl, gameType, trackCards,
+                paramsA, paramsB);
     }
 
     private static int parseInt(String key, String value) {

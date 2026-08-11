@@ -22,6 +22,37 @@ public class BenchConfigTest {
         assertEquals("bench-results.jsonl", config.out);
         assertEquals("twoplayer", config.gameType);
         assertEquals(null, config.trackCards);
+        assertEquals(null, config.paramsA);
+        assertEquals(null, config.paramsB);
+    }
+
+    @Test
+    public void paramsAB_areNullByDefault_andSetIndependentlyWhenGiven() {
+        // both optional, and independently so: the common sweep shape is one tuned side against the
+        // stock baseline, which means exactly one of these is given
+        BenchConfig both = BenchConfig.parse(new String[]{
+                "--paramsA=/tmp/a.properties", "--paramsB=/tmp/b.properties"});
+        assertEquals("/tmp/a.properties", both.paramsA);
+        assertEquals("/tmp/b.properties", both.paramsB);
+
+        BenchConfig onlyA = BenchConfig.parse(new String[]{"--paramsA=/tmp/a.properties"});
+        assertEquals("/tmp/a.properties", onlyA.paramsA);
+        assertEquals(null, onlyA.paramsB);
+
+        BenchConfig onlyB = BenchConfig.parse(new String[]{"--paramsB=/tmp/b.properties"});
+        assertEquals(null, onlyB.paramsA);
+        assertEquals("/tmp/b.properties", onlyB.paramsB);
+    }
+
+    @Test
+    public void misspeltParamsOption_failsClearly() {
+        // --params=... (no side) is the likely typo, and it must not be swallowed
+        try {
+            BenchConfig.parse(new String[]{"--params=/tmp/a.properties"});
+            fail("expected IllegalArgumentException");
+        } catch (IllegalArgumentException e) {
+            assertEquals(true, e.getMessage().contains("params"));
+        }
     }
 
     @Test

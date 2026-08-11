@@ -24,6 +24,17 @@ public final class BenchRunner {
     public static void main(String[] args) throws Exception {
         BenchConfig config = BenchConfig.parse(args);
 
+        // DARRELLBEST-FORK: resolve the params files BEFORE anything slow (Ollama preflight, the
+        // multi-second card-DB scan, the first game). A typo in a weight name is fatal by design --
+        // see EvalParamsLoader -- and the whole point of that is undone if the operator only finds
+        // out 40 minutes into a sweep. The loader caches, so the per-game lookups that follow are
+        // free. Printing the resolved paths and the overrides here also puts them in the worker
+        // log, where the JSONL rows' own paramsA/paramsB can be cross-checked against them.
+        EvalParamsLoader.paramsFor(config.paramsA);
+        EvalParamsLoader.paramsFor(config.paramsB);
+        System.out.println("Eval params A: " + EvalParamsLoader.describeVerbose(config.paramsA));
+        System.out.println("Eval params B: " + EvalParamsLoader.describeVerbose(config.paramsB));
+
         if (config.usesLlm()) {
             OllamaPreflight.check(config.ollamaUrl, config.model);
             System.out.println("Ollama preflight OK: " + config.model + " at " + config.ollamaUrl);

@@ -17,6 +17,7 @@ import mage.game.TwoPlayerMatch;
 import mage.game.match.Match;
 import mage.game.match.MatchOptions;
 import mage.game.mulligan.MulliganType;
+import mage.player.ai.commander.score.CommanderEvalParams;
 import mage.player.ai.kanna.ComputerPlayerKanna;
 import mage.players.Player;
 import mage.util.RandomUtil;
@@ -78,6 +79,64 @@ public final class BenchGame {
     private static final String SEAT1_LABEL = "Seat1";
     private static final String SEAT2_LABEL = "Seat2";
 
+    /**
+     * DARRELLBEST-FORK: who sits where for ONE game, after the odd-game seat swap.
+     * <p>
+     * <b>Why a type instead of the four ternaries this replaced.</b> A matchup has two SIDES, A and
+     * B, and a side is a triple: a player key, a deck, and (now) a set of evaluator weights. The
+     * swap reorders the two sides between seat 1 and seat 2; it must never reorder the contents of a
+     * side. When each element was computed by its own {@code seatSwapped ? b : a} ternary, "params
+     * follow their deck" was an invariant maintained by three expressions agreeing with each other
+     * -- and a single inverted ternary (or a fourth element added later without one) would attribute
+     * half the games of every sweep to the wrong parameter set. Nothing would look wrong: both
+     * bots would still play, the run would still finish, and the win rate would be a blend of the
+     * two parameter sets rather than a comparison of them.
+     * <p>
+     * Binding the triple into one object and swapping the OBJECTS makes that bug unrepresentable:
+     * there is exactly one ternary ({@link #assignSeats}), and it moves whole sides. Everything
+     * downstream -- deck loading, player construction, card-play attribution, winner keys -- reads
+     * from the same Seat, so a deck and the weights it was benchmarked with cannot come apart.
+     */
+    static final class SeatPlan {
+
+        final Seat seat1;
+        final Seat seat2;
+
+        SeatPlan(Seat seat1, Seat seat2) {
+            this.seat1 = seat1;
+            this.seat2 = seat2;
+        }
+
+        /** One side of the matchup, and everything that defines it. */
+        static final class Seat {
+            /** "A" or "B": which config side this is, independent of which seat it is sitting in. */
+            final String side;
+            final String playerKey;
+            final String deck;
+            /** Tuned weights for this side, or null for the bot's stock evaluation. */
+            final CommanderEvalParams evalParams;
+
+            Seat(String side, String playerKey, String deck, CommanderEvalParams evalParams) {
+                this.side = side;
+                this.playerKey = playerKey;
+                this.deck = deck;
+                this.evalParams = evalParams;
+            }
+        }
+    }
+
+    /**
+     * Builds the two sides, then chooses which sits in which seat. The only place the seat swap is
+     * expressed.
+     */
+    static SeatPlan assignSeats(BenchConfig config, boolean seatSwapped) {
+        SeatPlan.Seat sideA = new SeatPlan.Seat("A", config.playerA, config.deckA,
+                EvalParamsLoader.paramsFor(config.paramsA));
+        SeatPlan.Seat sideB = new SeatPlan.Seat("B", config.playerB, config.deckB,
+                EvalParamsLoader.paramsFor(config.paramsB));
+        return seatSwapped ? new SeatPlan(sideB, sideA) : new SeatPlan(sideA, sideB);
+    }
+
     public static GameResult run(BenchConfig config, int gameIndex, long seed, boolean seatSwapped) {
         return run(config, gameIndex, seed, seatSwapped, null);
     }
@@ -105,10 +164,7 @@ public final class BenchGame {
         // up front (not inside the try below) purely from config/seatSwapped, so it's available to
         // the catch block too for best-effort card-play recording on a game that errored out
         // partway through
-        String seat1Key = seatSwapped ? config.playerB : config.playerA;
-        String seat2Key = seatSwapped ? config.playerA : config.playerB;
-        String seat1Deck = seatSwapped ? config.deckB : config.deckA;
-        String seat2Deck = seatSwapped ? config.deckA : config.deckB;
+        SeatPlan seats = assignSeats(config, seatSwapped);
         Game game = null;
         CardPlayCollector cardPlayCollector = cardTracker == null ? null : new CardPlayCollector();
         if (cardPlayCollector != null) {
@@ -146,8 +202,9 @@ public final class BenchGame {
                         new MatchOptions("bench match", "bench game type", false));
             }
 
-            Player seat1 = addPlayer(game, match, config, seat1Key, SEAT1_LABEL, seat1Deck, metrics);
-            Player seat2 = addPlayer(game, match, config, seat2Key, SEAT2_LABEL, seat2Deck, metrics);
+            Player[] players = addPlayers(game, match, config, seats, metrics);
+            Player seat1 = players[0];
+            Player seat2 = players[1];
 
             GameOptions options = new GameOptions();
             options.testMode = false;
@@ -187,10 +244,10 @@ public final class BenchGame {
             String winnerKey = null;
             int winnerSeat = 0;
             if (seat1.hasWon()) {
-                winnerKey = seat1Key;
+                winnerKey = seats.seat1.playerKey;
                 winnerSeat = 1;
             } else if (seat2.hasWon()) {
-                winnerKey = seat2Key;
+                winnerKey = seats.seat2.playerKey;
                 winnerSeat = 2;
             }
 
@@ -210,16 +267,17 @@ public final class BenchGame {
                 termination = Termination.DRAW;
             }
 
-            recordCardPlays(cardTracker, cardPlayCollector, seat1Deck, seat2Deck);
+            recordCardPlays(cardTracker, cardPlayCollector, seats.seat1.deck, seats.seat2.deck);
 
             long wallMs = (System.nanoTime() - startNanos) / 1_000_000L;
             return new GameResult(gameIndex, seed, winnerKey, winnerSeat, turns, wallMs,
-                    termination, null, seatSwapped, metrics.snapshot());
+                    termination, null, seatSwapped, metrics.snapshot(),
+                    EvalParamsLoader.describe(config.paramsA), EvalParamsLoader.describe(config.paramsB));
 
         } catch (Throwable e) {
             // best-effort: whatever was cast before the error is still useful signal for a
             // never-cast list, so record it here too rather than only on the success path
-            recordCardPlays(cardTracker, cardPlayCollector, seat1Deck, seat2Deck);
+            recordCardPlays(cardTracker, cardPlayCollector, seats.seat1.deck, seats.seat2.deck);
 
             long wallMs = (System.nanoTime() - startNanos) / 1_000_000L;
             int turns = game == null ? 0 : game.getState().getTurnNum();
@@ -227,8 +285,12 @@ public final class BenchGame {
             // full stack trace, not just the message: an ERROR row with only "NullPointerException:
             // null" leaves nothing to debug once the game state that caused it is gone
             logger.error("Bench game " + gameIndex + " (seed " + seed + ") failed: " + message, e);
+            // paramsA/paramsB describe the CONFIG, not this game's outcome, so an errored game still
+            // records which weights it was asked to run with -- that is what makes an ERROR row
+            // attributable to a sweep leg after the fact.
             return new GameResult(gameIndex, seed, null, 0, turns, wallMs,
-                    Termination.ERROR, message, seatSwapped, metrics.snapshot());
+                    Termination.ERROR, message, seatSwapped, metrics.snapshot(),
+                    describeQuietly(config.paramsA), describeQuietly(config.paramsB));
         } finally {
             if (cardPlayCollector != null) {
                 DataCollectorServices.unregister(cardPlayCollector);
@@ -314,6 +376,22 @@ public final class BenchGame {
     }
 
     /**
+     * {@link EvalParamsLoader#describe} that never throws, for the error path only.
+     * <p>
+     * The normal path cannot fail here (the params were already resolved by {@link #assignSeats}
+     * before the game started, and the loader caches), but the error path must not turn a game's
+     * recorded failure into a second, different exception thrown out of {@code run()} -- the
+     * original error is the one worth keeping.
+     */
+    private static String describeQuietly(String paramsPath) {
+        try {
+            return EvalParamsLoader.describe(paramsPath);
+        } catch (RuntimeException e) {
+            return "unresolved:" + paramsPath;
+        }
+    }
+
+    /**
      * Folds one finished (or errored-out) game's per-seat cast counts into {@code cardTracker},
      * translating the raw "Seat1"/"Seat2" log labels to the deck that was actually on each seat
      * for this game. No-op when card tracking isn't enabled for this run.
@@ -333,10 +411,32 @@ public final class BenchGame {
         }
     }
 
+    /**
+     * Builds both seats, in seat order, from one {@link SeatPlan}.
+     * <p>
+     * Package-private and returning the real {@link Player} objects so that BenchGameTest can drive
+     * the exact call {@code run()} makes and inspect what each seat actually received -- see
+     * {@link SeatPlan} for why that test is the one guarding the seat swap.
+     *
+     * @return {@code [seat1, seat2]}
+     */
+    static Player[] addPlayers(Game game, Match match, BenchConfig config, SeatPlan seats,
+                               BenchMetrics metrics) throws Exception {
+        Player seat1 = addPlayer(game, match, config, seats.seat1, SEAT1_LABEL, metrics);
+        Player seat2 = addPlayer(game, match, config, seats.seat2, SEAT2_LABEL, metrics);
+        return new Player[]{seat1, seat2};
+    }
+
     private static Player addPlayer(Game game, Match match, BenchConfig config,
-                                    String typeKey, String name, String deckName,
+                                    SeatPlan.Seat seat, String name,
                                     BenchMetrics metrics) throws Exception {
-        Player player = PlayerFactory.create(typeKey, name, RangeOfInfluence.ONE, config.skill);
+        String typeKey = seat.playerKey;
+        String deckName = seat.deck;
+        // The player key, the deck and the weights all come off the SAME Seat object, so this
+        // method cannot pair one side's deck with the other side's weights however the seats were
+        // assigned -- see SeatPlan.
+        Player player = PlayerFactory.create(typeKey, name, RangeOfInfluence.ONE, config.skill,
+                seat.evalParams);
         if (player instanceof ComputerPlayerKanna) {
             ComputerPlayerKanna kanna = (ComputerPlayerKanna) player;
             kanna.setBenchMetrics(metrics);

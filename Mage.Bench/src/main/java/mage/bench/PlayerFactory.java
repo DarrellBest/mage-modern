@@ -6,6 +6,7 @@ import mage.player.ai.ComputerPlayer7;
 import mage.player.ai.ComputerPlayerMCTS;
 import mage.player.ai.commander.ComputerPlayerCommander;
 import mage.player.ai.commander.ComputerPlayerLearner;
+import mage.player.ai.commander.score.CommanderEvalParams;
 import mage.player.ai.kanna.ComputerPlayerKanna;
 import mage.players.Player;
 
@@ -91,33 +92,81 @@ public final class PlayerFactory {
     private PlayerFactory() {
     }
 
+    /** Stock weights: equivalent to {@code create(type, name, range, skill, null)}. */
     public static Player create(String type, String name, RangeOfInfluence range, int skill) {
+        return create(type, name, range, skill, null);
+    }
+
+    /**
+     * DARRELLBEST-FORK: builds one bench player, optionally with tuned evaluator weights.
+     *
+     * @param evalParams weights for this seat, or null for the bot's stock evaluation. Only
+     *                   {@link #COMMANDER} and {@link #LEARNER} can accept them; passing non-null
+     *                   for any other type is an ERROR, not a no-op -- see below.
+     * @throws IllegalArgumentException if {@code type} is unknown, or if {@code evalParams} is
+     *                                  non-null for a bot that cannot use it
+     */
+    public static Player create(String type, String name, RangeOfInfluence range, int skill,
+                                CommanderEvalParams evalParams) {
         if (KANNA.equals(type)) {
+            requireNoEvalParams(type, evalParams);
             return new ComputerPlayerKanna(name, range, skill);
         } else if (CP7.equals(type)) {
+            // NOT a candidate for eval params, despite the fork's ComputerPlayer7 having a params
+            // constructor: this key builds mage.player.ai.ComputerPlayer7 from the MAD plugin, a
+            // SEPARATE class from mage.player.ai.commander.ComputerPlayer7. MAD carries its own copy
+            // of the scoring code (mage.player.ai.util.*) whose weights were never hoisted into
+            // CommanderEvalParams, so there is nothing here for a params file to reach. Wiring the
+            // commander bot's params object into MAD would be a lie: it would compile and change
+            // nothing. Use --playerA=commander to tune this search's weights.
+            requireNoEvalParams(type, evalParams);
             ComputerPlayer7 cp7 = new ComputerPlayer7(name, range, skill);
             if (thinkTimeOverride() > 0) {
                 cp7.setMaxThinkTimeSecs(thinkTimeOverride());
             }
             return cp7;
         } else if (COMMANDER.equals(type)) {
-            ComputerPlayerCommander cmd = new ComputerPlayerCommander(name, range, skill);
+            ComputerPlayerCommander cmd = evalParams == null
+                    ? new ComputerPlayerCommander(name, range, skill)
+                    : new ComputerPlayerCommander(name, range, skill, evalParams);
             if (thinkTimeOverride() > 0) {
                 cmd.setMaxThinkTimeSecs(thinkTimeOverride());
             }
             return cmd;
         } else if (LEARNER.equals(type)) {
-            ComputerPlayerLearner learner = new ComputerPlayerLearner(name, range, skill);
+            ComputerPlayerLearner learner = evalParams == null
+                    ? new ComputerPlayerLearner(name, range, skill)
+                    : new ComputerPlayerLearner(name, range, skill, evalParams);
             if (thinkTimeOverride() > 0) {
                 learner.setMaxThinkTimeSecs(thinkTimeOverride());
             }
             return learner;
         } else if (MCTS.equals(type)) {
+            requireNoEvalParams(type, evalParams);
             return new ComputerPlayerMCTS(name, range, skill);
         } else if (BASE.equals(type)) {
+            requireNoEvalParams(type, evalParams);
             return new ComputerPlayer(name, range);
         }
         throw new IllegalArgumentException("Unknown player type '" + type
                 + "', expected one of: " + KANNA + ", " + CP7 + ", " + MCTS + ", " + BASE + ", " + COMMANDER + ", " + LEARNER);
+    }
+
+    /**
+     * Rejects tuned weights handed to a bot that does not score positions with a
+     * {@link CommanderEvalParams}.
+     * <p>
+     * Loud rather than ignored, for the same reason {@link EvalParamsLoader} refuses an unknown key:
+     * a run asked to give one side tuned weights, but silently gave it stock ones, produces a
+     * complete-looking result set that answers a different question than the one asked -- and
+     * nothing in the output would say so.
+     */
+    private static void requireNoEvalParams(String type, CommanderEvalParams evalParams) {
+        if (evalParams != null) {
+            throw new IllegalArgumentException("Player type '" + type + "' does not use "
+                    + "CommanderEvalParams, so the eval params given for this seat would be silently "
+                    + "ignored. Only '" + COMMANDER + "' and '" + LEARNER + "' accept tuned weights; "
+                    + "drop the params option for this seat, or put a bot that uses them on it.");
+        }
     }
 }
