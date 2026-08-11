@@ -18,7 +18,7 @@
         DARRELLBEST-FORK: a source fork of Mage.Player.AI.MAD, not a subclass of it.
 
         Wrapping MAD by subclassing is not possible: ComputerPlayer6.addActions calls
-        GameStateEvaluator2.evaluate(...) as a static at three sites, and GameStateEvaluator2 is a
+        GameStateEvaluator2.evaluate(...) as a static at 13 sites, and GameStateEvaluator2 is a
         public FINAL class, so there is no hook to override the evaluation function. Refactoring MAD
         to add one would change behaviour for every bot on the live server at once MAD, cp7 and
         the base ComputerPlayer including the MAD bot people are currently playing against, whose

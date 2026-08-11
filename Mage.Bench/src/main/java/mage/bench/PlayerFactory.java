@@ -34,10 +34,28 @@ public final class PlayerFactory {
      * TimeUnit.SECONDS)} at ComputerPlayer6:469). With a 6s clock, how deep the AI searched depended
      * on what else the machine happened to be doing, so measured play strength moved with system
      * load. Raising the budget past what a 1500-node search can consume makes the node cap the sole
-     * terminator: every decision is now a completed search rather than an abandoned mid-search read.
-     * Measured side effect: games got roughly 2x FASTER (mean 51s to 23s), because searches stop at
-     * 1500 nodes instead of burning the full clock. Verified by the absence of any "AI player thinks
-     * too long" warning in bench logs, which the timeout path always logs.
+     * terminator in most positions: a decision is a completed search rather than an abandoned
+     * mid-search read, so play strength stops moving with system load.
+     * <p>
+     * DEFAULT IS OFF, after measuring the cost. The clock is the ONLY bound on per-decision time,
+     * and how long 1500 nodes take depends entirely on board complexity, so raising it is not the
+     * free win it looked like on the first matchup measured:
+     * <pre>
+     *   budget   Kairi vs Krenko      Kairi mirror        Kairi vs Krenko throughput
+     *   6s       51s/game             (not measured)      ~70 games/hour
+     *   600s     23s/game (2x FASTER) 1079s for ONE game  ~2 games/hour on control decks
+     *   30s      ~15min/game          (not measured)      ~4 games/hour
+     * </pre>
+     * The 2x speedup at 600s was real but matchup-specific -- Krenko's cheap goblins make small
+     * boards where a completed search is cheap. Generalising from it was wrong. Control decks build
+     * large boards where every node costs, and there the clock is the only thing keeping games to a
+     * sane length.
+     * <p>
+     * Throughput is what actually buys reliable numbers here: results are not reproducible (see
+     * below), so the defence against noise is sample size, and sample size is throughput. 70
+     * games/hour with truncated searches beats 4 games/hour with complete ones. Set the property to
+     * experiment -- a completed search IS a better decision, and load-independent strength is worth
+     * having when comparing two BOTS rather than two decks -- but it is not the default.
      * <p>
      * What this does NOT fix, despite an earlier claim in this comment that it would: results are
      * still NOT reproducible from a fixed seed. Two runs of identical seed, decks, skill and turn cap
@@ -52,7 +70,20 @@ public final class PlayerFactory {
      * Bench-only, and must stay that way. The live server needs the real clock: MAD bots in 4-player
      * Commander were timing out every 6s there, which is why maxNodes was cut to 1500.
      */
-    public static final int BENCH_MAX_THINK_TIME_SECS = 600;
+    public static final String THINK_TIME_PROPERTY = "xmage.bench.thinkSecs";
+
+    /** @return the configured override, or -1 to leave the stock skill-based budget alone. */
+    private static int thinkTimeOverride() {
+        try {
+            return Integer.parseInt(System.getProperty(THINK_TIME_PROPERTY, "-1"));
+        } catch (NumberFormatException e) {
+            return -1;
+        }
+    }
+
+    // Two nearly identical branches rather than one generic helper: ComputerPlayerCommander extends
+    // the FORK's mage.player.ai.commander.ComputerPlayer7, which is a different class from the shared
+    // mage.player.ai.ComputerPlayer7, so no single type bound covers both.
 
     private PlayerFactory() {
     }
@@ -61,13 +92,17 @@ public final class PlayerFactory {
         if (KANNA.equals(type)) {
             return new ComputerPlayerKanna(name, range, skill);
         } else if (CP7.equals(type)) {
-            ComputerPlayer7 player = new ComputerPlayer7(name, range, skill);
-            player.setMaxThinkTimeSecs(BENCH_MAX_THINK_TIME_SECS);
-            return player;
+            ComputerPlayer7 cp7 = new ComputerPlayer7(name, range, skill);
+            if (thinkTimeOverride() > 0) {
+                cp7.setMaxThinkTimeSecs(thinkTimeOverride());
+            }
+            return cp7;
         } else if (COMMANDER.equals(type)) {
-            ComputerPlayerCommander player = new ComputerPlayerCommander(name, range, skill);
-            player.setMaxThinkTimeSecs(BENCH_MAX_THINK_TIME_SECS);
-            return player;
+            ComputerPlayerCommander cmd = new ComputerPlayerCommander(name, range, skill);
+            if (thinkTimeOverride() > 0) {
+                cmd.setMaxThinkTimeSecs(thinkTimeOverride());
+            }
+            return cmd;
         } else if (MCTS.equals(type)) {
             return new ComputerPlayerMCTS(name, range, skill);
         } else if (BASE.equals(type)) {

@@ -147,6 +147,34 @@ public class ComputerPlayer6 extends ComputerPlayer {
         this.maxThinkTimeSecs = maxThinkTimeSecs;
     }
 
+    /**
+     * DARRELLBEST-FORK: the single point where a game state becomes a number, and the reason this
+     * module is a source fork at all.
+     * <p>
+     * Upstream MAD calls {@code GameStateEvaluator2.evaluate(...).getTotalScore()} inline at 13
+     * places, and GameStateEvaluator2 is a public final class, so there is no way to change how MAD
+     * evaluates a position without editing a class shared by every bot on the server. Hoisting all
+     * 13 into this one overridable method is what makes the evaluation function replaceable per
+     * player -- {@code ComputerPlayerLearner} overrides exactly this to substitute learned weights.
+     * <p>
+     * ALL 13 had to move, not just the convenient ones. Several evaluated a different game object
+     * ({@code node.getGame()}, {@code sim}, {@code prevGame}) via {@code this.getId()} rather than
+     * {@code playerId}; leaving any of them on the static path would mean a subclass's evaluator
+     * governed some comparisons while the hand-tuned one governed others, and a minimax search whose
+     * scores come from two different functions compares values that are not on the same scale. That
+     * is a silent, plausible-looking wrongness -- the search still returns a move, just an incoherent
+     * one. {@code playerId} and {@code this.getId()} are the same value here, so routing both through
+     * a single (game) parameter loses nothing.
+     * <p>
+     * Behaviour is unchanged from MAD: this returns exactly what the inline calls returned.
+     *
+     * @param game the state to score, which may be a simulated future rather than the real game
+     * @return this player's score for that state, higher being better for this player
+     */
+    protected int evaluateState(Game game) {
+        return GameStateEvaluator2.evaluate(playerId, game).getTotalScore();
+    }
+
     @Override
     public ComputerPlayer6 copy() {
         return new ComputerPlayer6(this);
@@ -241,7 +269,7 @@ public class ComputerPlayer6 extends ComputerPlayer {
         Game game = node.getGame();
         if (!COMPUTER_DISABLE_TIMEOUT_IN_GAME_SIMULATIONS && Thread.currentThread().isInterrupted()) {
             logger.debug("AI game sim interrupted by timeout");
-            return GameStateEvaluator2.evaluate(playerId, game).getTotalScore();
+            return evaluateState(game);
         }
         // Condition to stop deeper simulation
         if (SimulationNode2.nodeCount > MAX_SIMULATED_NODES_PER_ERROR) {
@@ -251,7 +279,7 @@ public class ComputerPlayer6 extends ComputerPlayer {
         if (depth <= 0
                 || SimulationNode2.nodeCount > maxNodes
                 || game.checkIfGameIsOver()) {
-            val = GameStateEvaluator2.evaluate(playerId, game).getTotalScore();
+            val = evaluateState(game);
             if (logger.isTraceEnabled()) {
                 StringBuilder sb = new StringBuilder("Add Actions -- reached end state  <").append(val).append('>');
                 SimulationNode2 logNode = node;
@@ -285,20 +313,20 @@ public class ComputerPlayer6 extends ComputerPlayer {
             }
 
             if (game.checkIfGameIsOver()) {
-                val = GameStateEvaluator2.evaluate(playerId, game).getTotalScore();
+                val = evaluateState(game);
             } else if (stepFinished) {
                 logger.debug("Step finished");
-                int testScore = GameStateEvaluator2.evaluate(playerId, game).getTotalScore();
+                int testScore = evaluateState(game);
                 if (game.isActivePlayer(playerId)) {
                     if (testScore < currentScore) {
                         // if score at end of step is worse than original score don't check further
                         //logger.debug("Add Action -- abandoning check, no immediate benefit");
                         val = testScore;
                     } else {
-                        val = GameStateEvaluator2.evaluate(playerId, game).getTotalScore();
+                        val = evaluateState(game);
                     }
                 } else {
-                    val = GameStateEvaluator2.evaluate(playerId, game).getTotalScore();
+                    val = evaluateState(game);
                 }
             } else if (!node.getChildren().isEmpty()) {
                 if (logger.isDebugEnabled()) {
@@ -538,14 +566,14 @@ public class ComputerPlayer6 extends ComputerPlayer {
     protected int simulatePriority(SimulationNode2 node, Game game, int depth, int alpha, int beta) {
         if (!COMPUTER_DISABLE_TIMEOUT_IN_GAME_SIMULATIONS && Thread.currentThread().isInterrupted()) {
             logger.debug("AI game sim interrupted by timeout");
-            return GameStateEvaluator2.evaluate(playerId, game).getTotalScore();
+            return evaluateState(game);
         }
         node.setGameValue(game.getState().getValue(true).hashCode());
         SimulatedPlayer2 currentPlayer = (SimulatedPlayer2) game.getPlayer(game.getPlayerList().get());
         SimulationNode2 bestNode = null;
         List<Ability> allActions = currentPlayer.simulatePriority(game);
         optimize(game, allActions);
-        int startedScore = GameStateEvaluator2.evaluate(this.getId(), node.getGame()).getTotalScore();
+        int startedScore = evaluateState(node.getGame());
         if (logger.isInfoEnabled()
                 && !allActions.isEmpty()
                 && depth == maxDepth) {
@@ -591,7 +619,7 @@ public class ComputerPlayer6 extends ComputerPlayer {
                 int finalScore;
                 if (action instanceof PassAbility && sim.getStack().isEmpty()) {
                     // no more next actions, it's a final score
-                    finalScore = GameStateEvaluator2.evaluate(this.getId(), sim).getTotalScore();
+                    finalScore = evaluateState(sim);
                 } else {
                     // resolve current action and calc all next actions to find best score (return max possible score)
                     finalScore = addActions(newNode, depth - 1, alpha, beta);
@@ -634,8 +662,8 @@ public class ComputerPlayer6 extends ComputerPlayer {
                             prevNode = fullChain.get(chainIndex - 1);
                         }
 
-                        int currentScore = GameStateEvaluator2.evaluate(this.getId(), currentNode.getGame()).getTotalScore();
-                        int prevScore = GameStateEvaluator2.evaluate(this.getId(), prevNode.getGame()).getTotalScore();
+                        int currentScore = evaluateState(currentNode.getGame());
+                        int prevScore = evaluateState(prevNode.getGame());
 
                         if (currentNode.getAbilities() != null) {
                             // ON PRIORITY
@@ -1245,7 +1273,7 @@ public class ComputerPlayer6 extends ComputerPlayer {
         if (action instanceof PassAbility || action instanceof SpellAbility || action.isManaAbility()) {
             return false;
         }
-        int newVal = GameStateEvaluator2.evaluate(playerId, sim).getTotalScore();
+        int newVal = evaluateState(sim);
         SimulationNode2 test = node.getParent();
         while (test != null) {
             if (test.getPlayerId().equals(playerId)) {
@@ -1254,7 +1282,7 @@ public class ComputerPlayer6 extends ComputerPlayer {
                         if (test.getParent() != null) {
                             Game prevGame = node.getGame();
                             if (prevGame != null) {
-                                int oldVal = GameStateEvaluator2.evaluate(playerId, prevGame).getTotalScore();
+                                int oldVal = evaluateState(prevGame);
                                 if (oldVal >= newVal) {
                                     return true;
                                 }
