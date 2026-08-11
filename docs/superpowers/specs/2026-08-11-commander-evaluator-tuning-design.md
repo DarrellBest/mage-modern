@@ -194,6 +194,45 @@ works on game copies and the same printed ability is a different instance at eve
 
 ---
 
+### Stage 4 — Sweep strategy
+
+A full grid is not affordable and is not the right instrument anyway. At ~1,000 games to resolve a
+5-point edge, a grid over even six parameters at three levels each is 729 configurations, i.e.
+~700,000 games. The budget buys roughly one or two dozen configurations per night, so the sweep has
+to be designed around that, not around exhaustiveness.
+
+**Two phases: screen, then refine.**
+
+*Screening.* Each candidate parameter tested alone at 2–3 coarse levels, ~100 games per level. At
+n=100 the 95% interval is roughly ±10 points — far too loose to *tune* with, but entirely adequate
+to answer the only question screening asks: **does this parameter move the win rate at all?** Most
+will not. Spending 1,000 games on a parameter that turns out to be inert is the main way this
+project could waste a night.
+
+*Refinement.* Only parameters that visibly moved the needle get the full ~1,000-game treatment, and
+only at their most promising levels. This is where the CI-lower-bound gate (G1) applies.
+
+**Screening candidates, in priority order** — ranked by size of the known Commander mismatch, not by
+guesswork:
+
+| Parameter | Default | Why it is a candidate |
+|---|---|---|
+| `handCardScore` | 5 | Measured at 0.15% of the position. The largest known defect |
+| `lifeAboveMultiplier` | 100 | Governs the whole flat region the bot actually lives in (until the Stage 1 curve lands) |
+| `manaValuePenaltyPerPip` | 20 | A flat cheapness bias; actively hostile to Commander's expensive bombs |
+| `creaturePowerMultiplier` / `creatureToughnessMultiplier` | 300 / 200 | The 1.5:1 aggression bias, inherited from 60-card duel |
+| `permanentOnBattlefieldBonus` | 300 | Sets the exchange rate between board presence and everything else |
+| `damageMarkedPenalty` | 2 | So small the bot barely notices a creature is one point from dying |
+
+**Confounder to avoid:** parameters are not independent. `handCardScore` and
+`permanentOnBattlefieldBonus` both express "hand versus board", so moving one changes the meaning of
+the other. Screen them individually against the *default* baseline, then verify the best combination
+jointly rather than assuming the individual gains add.
+
+**Do not tune the life table and `lifeAboveMultiplier` in the same pass.** Stage 1 replaces the table
+outright; screening a multiplier that only applies above the table's top while simultaneously
+changing where that top is would confound both.
+
 ## Measured budget
 
 From a completed 10-game `cp7` vs `commander` Krenko Commander run:
