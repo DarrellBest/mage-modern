@@ -53,6 +53,7 @@ public final class CommanderEvalParams {
 
     // --- hand ---
     private final int handCardScore;
+    private final int commanderDamageWeight;
 
     // --- card definition ---
     private final int baseCardValue;
@@ -90,6 +91,7 @@ public final class CommanderEvalParams {
         this.lifeScores = Arrays.copyOf(b.lifeScores, b.lifeScores.length);
         this.lifeAboveMultiplier = b.lifeAboveMultiplier;
         this.handCardScore = b.handCardScore;
+        this.commanderDamageWeight = b.commanderDamageWeight;
         this.baseCardValue = b.baseCardValue;
         this.landBaseMultiplier = b.landBaseMultiplier;
         this.landPerManaSymbol = b.landPerManaSymbol;
@@ -129,6 +131,7 @@ public final class CommanderEvalParams {
         b.lifeScores = Arrays.copyOf(this.lifeScores, this.lifeScores.length);
         b.lifeAboveMultiplier = this.lifeAboveMultiplier;
         b.handCardScore = this.handCardScore;
+        b.commanderDamageWeight = this.commanderDamageWeight;
         b.baseCardValue = this.baseCardValue;
         b.landBaseMultiplier = this.landBaseMultiplier;
         b.landPerManaSymbol = this.landPerManaSymbol;
@@ -184,6 +187,15 @@ public final class CommanderEvalParams {
 
     public int getHandCardScore() {
         return handCardScore;
+    }
+
+    /**
+     * DARRELLBEST-FORK: how much being dead to commander damage is worth, on the same scale as the
+     * life score. 0 (the default) disables the term entirely, keeping DEFAULT bit-identical to the
+     * historical evaluator, which had no concept of commander damage at all.
+     */
+    public int getCommanderDamageWeight() {
+        return commanderDamageWeight;
     }
 
     // --- card definition ---
@@ -308,6 +320,7 @@ public final class CommanderEvalParams {
                 + "lifeScores=" + Arrays.toString(lifeScores)
                 + ", lifeAboveMultiplier=" + lifeAboveMultiplier
                 + ", handCardScore=" + handCardScore
+                + ", commanderDamageWeight=" + commanderDamageWeight
                 + ", baseCardValue=" + baseCardValue
                 + ", landBaseMultiplier=" + landBaseMultiplier
                 + ", landPerManaSymbol=" + landPerManaSymbol
@@ -346,6 +359,7 @@ public final class CommanderEvalParams {
                 7400, 7800, 8200, 8600, 9000, 9200, 9400, 9600, 9800, 10000};
         private int lifeAboveMultiplier = 100;
         private int handCardScore = 5;
+        private int commanderDamageWeight = 0;
         private int baseCardValue = 3;
         private int landBaseMultiplier = 50;
         private int landPerManaSymbol = 50;
@@ -389,6 +403,11 @@ public final class CommanderEvalParams {
 
         public Builder lifeAboveMultiplier(int v) {
             this.lifeAboveMultiplier = v;
+            return this;
+        }
+
+        public Builder commanderDamageWeight(int v) {
+            this.commanderDamageWeight = v;
             return this;
         }
 

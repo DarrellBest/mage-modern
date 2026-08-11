@@ -63,6 +63,19 @@ public final class GameStateEvaluator2 {
         } else {
             playerLifeScore = ArtificialScoringSystem.getLifeScore(player.getLife(), params);
             opponentLifeScore = ArtificialScoringSystem.getLifeScore(opponent.getLife(), params); // TODO: minus
+
+            // DARRELLBEST-FORK: commander damage is a SECOND death clock the evaluator was blind to.
+            // A player on 35 life who has taken 18 commander damage is one connection from losing,
+            // and without this term they score as healthy. No value of any life weight can express
+            // that, because it is a different axis -- which is why this is a new term rather than a
+            // retuned one.
+            //
+            // Weight defaults to 0, so DEFAULT stays bit-identical to the historical evaluator and
+            // this only takes effect for a params set that opts in.
+            if (params.getCommanderDamageWeight() != 0) {
+                playerLifeScore -= commanderDamagePenalty(player.getId(), game, params);
+                opponentLifeScore -= commanderDamagePenalty(opponent.getId(), game, params);
+            }
         }
 
         int playerPermanentsScore = 0;
@@ -129,6 +142,44 @@ public final class GameStateEvaluator2 {
                 playerId,
                 playerLifeScore, playerHandScore, playerPermanentsScore,
                 opponentLifeScore, opponentHandScore, opponentPermanentsScore);
+    }
+
+    /**
+     * DARRELLBEST-FORK: penalty for how close {@code playerId} is to dying to commander damage.
+     * <p>
+     * Aggregated as a <b>maximum over commanders, not a sum</b>: the rule is 21 damage from a
+     * SINGLE commander, so a player on 15 from one commander and 15 from another is at 15 of 21,
+     * not 30 of 21. Summing would have the bot panicking in multi-commander games and, worse,
+     * treating a spread-out board as lethal when it is not.
+     * <p>
+     * Quadratic in damage taken so the term stays near-free early and bites hard approaching
+     * lethal, matching how the life curve is steep near death. At the full 21 the penalty equals
+     * the weight, which makes the weight directly interpretable: "what is dying to commander
+     * damage worth, on the same scale as the life score".
+     */
+    private static int commanderDamagePenalty(UUID playerId, Game game, CommanderEvalParams params) {
+        int worst = 0;
+        for (UUID pid : game.getState().getPlayersInRange(playerId, game)) {
+            Player other = game.getPlayer(pid);
+            if (other == null) {
+                continue;
+            }
+            for (mage.cards.Card commander : game.getCommanderCardsFromAnyZones(
+                    other, mage.constants.CommanderCardType.ANY, mage.constants.Zone.BATTLEFIELD,
+                    mage.constants.Zone.COMMAND, mage.constants.Zone.GRAVEYARD)) {
+                mage.watchers.common.CommanderInfoWatcher watcher = game.getState()
+                        .getWatcher(mage.watchers.common.CommanderInfoWatcher.class, commander.getId());
+                if (watcher != null) {
+                    worst = Math.max(worst, watcher.getDamageToPlayer().getOrDefault(playerId, 0));
+                }
+            }
+        }
+        if (worst <= 0) {
+            return 0;
+        }
+        int lethal = 21;
+        int capped = Math.min(worst, lethal);
+        return params.getCommanderDamageWeight() * capped * capped / (lethal * lethal);
     }
 
     public static int evaluatePermanent(Permanent permanent, Game game, boolean useCombatPermanentScore, CommanderEvalParams params) {
