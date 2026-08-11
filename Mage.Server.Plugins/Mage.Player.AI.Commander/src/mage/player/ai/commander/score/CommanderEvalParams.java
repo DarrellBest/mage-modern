@@ -54,6 +54,7 @@ public final class CommanderEvalParams {
     // --- hand ---
     private final int handCardScore;
     private final int commanderDamageWeight;
+    private final int opponentSelectionMode;
 
     // --- card definition ---
     private final int baseCardValue;
@@ -92,6 +93,7 @@ public final class CommanderEvalParams {
         this.lifeAboveMultiplier = b.lifeAboveMultiplier;
         this.handCardScore = b.handCardScore;
         this.commanderDamageWeight = b.commanderDamageWeight;
+        this.opponentSelectionMode = b.opponentSelectionMode;
         this.baseCardValue = b.baseCardValue;
         this.landBaseMultiplier = b.landBaseMultiplier;
         this.landPerManaSymbol = b.landPerManaSymbol;
@@ -132,6 +134,7 @@ public final class CommanderEvalParams {
         b.lifeAboveMultiplier = this.lifeAboveMultiplier;
         b.handCardScore = this.handCardScore;
         b.commanderDamageWeight = this.commanderDamageWeight;
+        b.opponentSelectionMode = this.opponentSelectionMode;
         b.baseCardValue = this.baseCardValue;
         b.landBaseMultiplier = this.landBaseMultiplier;
         b.landPerManaSymbol = this.landPerManaSymbol;
@@ -196,6 +199,25 @@ public final class CommanderEvalParams {
      */
     public int getCommanderDamageWeight() {
         return commanderDamageWeight;
+    }
+
+    /**
+     * DARRELLBEST-FORK: which opponent the evaluator scores against in a multiplayer game.
+     * <p>
+     * {@code 0} (default) keeps upstream behaviour exactly: the FIRST opponent returned by
+     * {@code game.getOpponents(...)}, an arbitrary one. In a Free For All that means the bot scores
+     * the board as though two of its three opponents do not exist -- it cannot see a lethal board
+     * across the table.
+     * <p>
+     * {@code 1} scores against the MOST THREATENING opponent (highest life + permanents + hand).
+     * Deliberately still one opponent rather than a sum: it leaves every downstream term unchanged,
+     * and in a free-for-all you lose to whoever is strongest, not to the average. The cost is that
+     * every evaluation now scores all opponents' boards to find the maximum, which is roughly Nx the
+     * permanent scoring in an N-opponent game -- real, on a bot that already logs
+     * "AI player thinks too long" on large boards.
+     */
+    public int getOpponentSelectionMode() {
+        return opponentSelectionMode;
     }
 
     // --- card definition ---
@@ -321,6 +343,7 @@ public final class CommanderEvalParams {
                 + ", lifeAboveMultiplier=" + lifeAboveMultiplier
                 + ", handCardScore=" + handCardScore
                 + ", commanderDamageWeight=" + commanderDamageWeight
+                + ", opponentSelectionMode=" + opponentSelectionMode
                 + ", baseCardValue=" + baseCardValue
                 + ", landBaseMultiplier=" + landBaseMultiplier
                 + ", landPerManaSymbol=" + landPerManaSymbol
@@ -360,6 +383,7 @@ public final class CommanderEvalParams {
         private int lifeAboveMultiplier = 100;
         private int handCardScore = 5;
         private int commanderDamageWeight = 0;
+        private int opponentSelectionMode = 0;
         private int baseCardValue = 3;
         private int landBaseMultiplier = 50;
         private int landPerManaSymbol = 50;
@@ -403,6 +427,14 @@ public final class CommanderEvalParams {
 
         public Builder lifeAboveMultiplier(int v) {
             this.lifeAboveMultiplier = v;
+            return this;
+        }
+
+        public Builder opponentSelectionMode(int v) {
+            if (v < 0 || v > 1) {
+                throw new IllegalArgumentException("opponentSelectionMode must be 0 (first) or 1 (most threatening), got " + v);
+            }
+            this.opponentSelectionMode = v;
             return this;
         }
 

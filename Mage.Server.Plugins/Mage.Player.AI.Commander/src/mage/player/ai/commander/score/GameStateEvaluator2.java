@@ -35,10 +35,13 @@ public final class GameStateEvaluator2 {
     }
 
     public static PlayerEvaluateScore evaluate(UUID playerId, Game game, boolean useCombatPermanentScore, CommanderEvalParams params) {
-        // TODO: add multi opponents support, so AI can take better actions
         Player player = game.getPlayer(playerId);
-        // must find all leaved opponents
-        Player opponent = game.getPlayer(game.getOpponents(playerId, false).stream().findFirst().orElse(null));
+        // DARRELLBEST-FORK: upstream took the FIRST opponent and ignored the rest (its own TODO said
+        // "add multi opponents support"). Harmless in a duel, badly wrong in a Free For All, which
+        // is what the live server actually runs -- the bot scores the board as though two of its
+        // three opponents do not exist. See CommanderEvalParams.getOpponentSelectionMode; mode 0 is
+        // the original behaviour and remains the default.
+        Player opponent = selectOpponent(playerId, game, useCombatPermanentScore, params);
         if (opponent == null) {
             return new PlayerEvaluateScore(playerId, WIN_GAME_SCORE);
         }
@@ -142,6 +145,45 @@ public final class GameStateEvaluator2 {
                 playerId,
                 playerLifeScore, playerHandScore, playerPermanentsScore,
                 opponentLifeScore, opponentHandScore, opponentPermanentsScore);
+    }
+
+    /**
+     * DARRELLBEST-FORK: choose which opponent this evaluation scores against.
+     * <p>
+     * Mode 0 reproduces upstream exactly — the first opponent the engine happens to return. Mode 1
+     * picks the most threatening one by the same measure the evaluator itself uses (life + hand +
+     * board), so in a multiplayer game the bot reacts to whoever is actually about to win rather
+     * than to an arbitrary seat.
+     * <p>
+     * Still a single opponent by design, not a sum over all of them: every downstream term
+     * (life difference, permanent difference, hand difference) keeps its existing meaning and
+     * scale, so this is a targeting fix rather than a rescaling of the whole evaluator. Summing
+     * would change what every other weight means and invalidate the tuning done against them.
+     */
+    private static Player selectOpponent(UUID playerId, Game game, boolean useCombatPermanentScore,
+            CommanderEvalParams params) {
+        java.util.Set<UUID> opponentIds = game.getOpponents(playerId, false);
+        if (params.getOpponentSelectionMode() == 0 || opponentIds.size() <= 1) {
+            return game.getPlayer(opponentIds.stream().findFirst().orElse(null));
+        }
+        Player worst = null;
+        int worstScore = Integer.MIN_VALUE;
+        for (UUID opponentId : opponentIds) {
+            Player candidate = game.getPlayer(opponentId);
+            if (candidate == null) {
+                continue;
+            }
+            int threat = ArtificialScoringSystem.getLifeScore(candidate.getLife(), params)
+                    + candidate.getHand().size() * params.getHandCardScore();
+            for (Permanent permanent : game.getBattlefield().getAllActivePermanents(opponentId)) {
+                threat += evaluatePermanent(permanent, game, useCombatPermanentScore, params);
+            }
+            if (threat > worstScore) {
+                worstScore = threat;
+                worst = candidate;
+            }
+        }
+        return worst;
     }
 
     /**
