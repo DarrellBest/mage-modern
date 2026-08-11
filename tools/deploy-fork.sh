@@ -75,6 +75,31 @@ stage_deps("mage-server-*.jar"); stage_deps("mage-client-*.jar")
 print(">> staged manifest deps; stage total:", len(os.listdir(stage)))
 PY
 
+# 2c. stage the repo's <playerTypes> block, version-stamped.
+#
+# WHY THIS EXISTS: swap_dir (below) only REPLACES jars that already exist in a target dir, and the
+# config.xml step below only rewrites version stamps in the config that is already there. Neither
+# mechanism can introduce a BRAND-NEW module. So a new AI plugin would build, ship into $STAGE, and
+# then silently never reach the live server or its config -- the deploy reports success and the new
+# player type simply never appears in the client. That is exactly what happened to
+# mage-player-ai-commander: the module was added, deployed repeatedly, and never showed up, because
+# the live config.xml still listed only Human/mad/draftbot/kanna.
+#
+# Syncing the repo's playerTypes block fixes both halves at once: the config gains the entry, and
+# the existing "ensuring config-referenced plugins exist" step then copies the referenced jar in
+# because it is now referenced. The rest of each config (adminPassword, ports, server-local
+# settings) is left untouched -- only the playerTypes block is replaced.
+python3 - "$STAGE" "$POMV" "Mage.Server/release/config/config.xml" <<'PY'
+import re, sys, os
+stage, pomv, repo_cfg = sys.argv[1:4]
+src = open(repo_cfg).read().replace("${project.version}", pomv)
+m = re.search(r"[ \t]*<playerTypes>.*?</playerTypes>", src, re.S)
+if not m:
+    print("   !! no <playerTypes> block in", repo_cfg); sys.exit(1)
+open(os.path.join(stage, "playerTypes.xml"), "w").write(m.group(0))
+print(">> staged playerTypes block (%d entries)" % m.group(0).count("<playerType "))
+PY
+
 # 3. ship to server (no-op when building on the server itself)
 [ "$ON_SERVER" = 1 ] || rsync -az --delete "$STAGE/" "$REMOTE:$STAGE/"
 
@@ -108,6 +133,31 @@ stale=$(find "$BUNDLE" "$LIVE" -name '*-[0-9]*.jar' ! -name "*-${POMV}.jar" -pat
 # CRITICAL: config.xml registers plugins by version-stamped jar filename. After swapping
 # jars to a new version, realign those refs or the player-type/deck-validator/game-type
 # plugins fail to load ("Unknown player type", DeckValidatorFactory NPE) and games break.
+# Sync the playerTypes block from the repo BEFORE the version realign below, so any entry this
+# adds gets stamped by the same sed. Backs each config up first: a malformed config.xml stops the
+# server from booting at all, and this runs on a live install.
+echo ">> syncing playerTypes from repo config"
+python3 - "$STAGE/playerTypes.xml" "$BUNDLE/mage-server/config/config.xml" "$LIVE/mage-server/config/config.xml" <<'PY'
+import re, sys, os, shutil
+block_file, *cfgs = sys.argv[1:]
+if not os.path.exists(block_file):
+    print("   !! no staged playerTypes block; skipping"); sys.exit(0)
+block = open(block_file).read()
+for cfg in cfgs:
+    if not os.path.exists(cfg):
+        continue
+    text = open(cfg).read()
+    if not re.search(r"[ \t]*<playerTypes>.*?</playerTypes>", text, re.S):
+        print("   !! no <playerTypes> block in", cfg, "-- leaving alone"); continue
+    new = re.sub(r"[ \t]*<playerTypes>.*?</playerTypes>", lambda _: block, text, count=1, flags=re.S)
+    if new == text:
+        print("   = already current:", cfg); continue
+    shutil.copy2(cfg, cfg + ".bak")     # boot-critical file; keep a rollback
+    open(cfg, "w").write(new)
+    was = len(re.findall(r"<playerType ", text)); now = len(re.findall(r"<playerType ", block))
+    print("   updated %s (%d -> %d player types, backup at %s.bak)" % (cfg, was, now, cfg))
+PY
+
 echo ">> realigning config.xml plugin jar versions to ${POMV}"
 for cfg in "$BUNDLE/mage-server/config/config.xml" "$LIVE/mage-server/config/config.xml"; do
   [ -f "$cfg" ] && sed -i -E "s/-[0-9]+\.[0-9]+\.[0-9]+\.jar/-${POMV}.jar/g" "$cfg" && echo "   updated $cfg"
