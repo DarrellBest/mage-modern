@@ -321,6 +321,56 @@ games were non-decisive; at 180s with 6 workers, 26%. Every timeout is a discard
 wall-clock cap trades directly against statistical power. Median game under contention ran 124–142s,
 which is why a 120s budget discards so much.
 
+### Refinement — combined config (NEGATIVE RESULT)
+
+All three surviving screening candidates applied together (40-life curve +
+`handCardScore=150` + `commanderDamageWeight=8000`) vs DEFAULT, Krenko mirror, 246 games played
+(260 requested; one worker hit its wall limit and the wrapper correctly refused to report the
+sample as complete), **149 decisive**:
+
+| | Combined | Default |
+|---|---|---|
+| Wins | 69 | 80 |
+| **Win rate** | **46.3%** | 53.7% |
+| 95% Wilson CI | **[38.5%, 54.3%]** | |
+
+**The screening results were noise.** At 3.5× the sample of any screening arm, the combination of
+three parameters that individually measured 57–60% performs *slightly below* default, and the upper
+bound of 54.3% excludes any substantial benefit. Seat balance was 76–73, so this is not a harness
+artefact.
+
+This does not prove each parameter is individually worthless — a combined test cannot separate "all
+three are null" from "some help, some hurt, netting out" — but it does rule out the hypothesis that
+motivated all of them, that the obvious 60-card-duel mismatches are large and additive.
+
+**Confound worth naming: 39% of games (97/246) were excluded as TIMEOUT, and they are not missing at
+random.** A config that values cards in hand more highly plausibly holds interaction and plays
+longer games, so the excluded set may be systematically enriched for one side. Any future run at
+this timeout rate carries the same caveat, which is an argument for raising the budget rather than
+adding games.
+
+### Bug found by counting what the loop-breaker refused
+
+Auditing the 246-game logs for which abilities the chained-activation cap actually refused:
+
+```
+5136  ?|                                     <- degenerate bucket, no resolvable source
+1150  Mountain|{T}: Add {R}.                 <- tapping lands for mana
+  42  Treasonous Ogre|Pay 3 life: Add {R}.
+  19  Altar of Dementia|Sacrifice a creature: ...
+```
+
+Identity was `(source NAME + rule text)`. Every Mountain shares both, so N distinct lands collapsed
+into one signature and **the bot refused to tap its fourth land in a row** — not a loop, just how
+mana works. Separately, abilities with no resolvable source all shared `"?|"`, so unrelated
+abilities were counted against each other; that one bucket exceeded every real ability combined.
+
+Fixed to `(source permanent id + rule)`, with mana abilities exempt and null-source abilities never
+capped. `getSourceId()` is a UUID that survives game copies — the reason instance identity was
+rejected originally — *and* distinguishes two different permanents.
+
+This was in the deployed build, so live games were affected.
+
 ## Risks
 
 | Risk | Mitigation |
