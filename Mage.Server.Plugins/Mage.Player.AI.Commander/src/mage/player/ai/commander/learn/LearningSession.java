@@ -41,6 +41,30 @@ public final class LearningSession {
     }
 
     /**
+     * How much to trust the learned evaluation, from 0 (not at all) to 1 (entirely).
+     * <p>
+     * DARRELLBEST-FORK: this exists because the bot could not otherwise bootstrap. A zero weight
+     * vector predicts 0.5 for every position, so a scorer built from it returns the SAME number for
+     * every non-terminal state and the search becomes blind -- it cannot tell a winning board from a
+     * losing one. Measured: the learner ran Kairi vs Ur-Dragon to the 30-turn cap in 2/2 games, a
+     * matchup the same search decides in 9-24 turns with the hand-tuned evaluator. Nobody won, so
+     * won()/lost() never fired, so nothing federated, so the model stayed zero -- blind play prevents
+     * exactly the decisive games the model needs in order to stop being blind.
+     * <p>
+     * Ramping trust with version breaks that loop: early games are played at full hand-tuned strength
+     * and produce real outcomes to learn from, and the learned evaluation takes over only as evidence
+     * accumulates. FULL_TRUST_VERSION is a guess, not a measured optimum -- the right value is
+     * whenever the learned evaluator starts beating the hand-tuned one head to head, which is a
+     * benchmark question.
+     */
+    public double learnedWeight() {
+        return Math.min(1.0, checkout.version / (double) FULL_TRUST_VERSION);
+    }
+
+    /** Federated merges after which the learned evaluation is trusted completely. */
+    private static final int FULL_TRUST_VERSION = 500;
+
+    /**
      * Back up the result and federate. Safe to call more than once and from more than one copy:
      * only the first call does anything.
      * <p>
@@ -54,7 +78,13 @@ public final class LearningSession {
             return;
         }
         learner.finish(won);
-        federation.merge(learner.weightDelta(), learner.biasDelta(),
-                learner.updateCount(), checkout.version);
+        int updates = learner.updateCount();
+        federation.merge(learner.weightDelta(), learner.biasDelta(), updates, checkout.version);
+        // Logged so a silently-not-learning bot is visible without attaching a debugger. The
+        // previous failure mode -- session never created, every learning call a no-op -- produced a
+        // bot that played normally and wrote nothing, with no error anywhere.
+        org.apache.log4j.Logger.getLogger(LearningSession.class).info(
+                "Commander learner federated after game: won=" + won + " updates=" + updates
+                        + " fromVersion=" + checkout.version);
     }
 }

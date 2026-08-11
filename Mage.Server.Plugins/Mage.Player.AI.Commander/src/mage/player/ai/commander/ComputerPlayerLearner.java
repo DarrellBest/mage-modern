@@ -41,6 +41,9 @@ import mage.player.ai.commander.score.GameStateEvaluator2;
  */
 public class ComputerPlayerLearner extends ComputerPlayer7 {
 
+    private static final org.apache.log4j.Logger LOG =
+            org.apache.log4j.Logger.getLogger(ComputerPlayerLearner.class);
+
     private final FederatedWeights federation;
 
     /**
@@ -65,10 +68,19 @@ public class ComputerPlayerLearner extends ComputerPlayer7 {
         return new ComputerPlayerLearner(this);
     }
 
-    @Override
-    public void init(Game game) {
-        super.init(game);
-        if (!game.isSimulation() && session == null) {
+    /**
+     * DARRELLBEST-FORK: the session is opened lazily here, NOT in {@code init(Game)}.
+     * <p>
+     * {@code Player.init(Game)} exists on the interface but the engine never calls it:
+     * {@code GameImpl.init} calls {@code player.beginTurn(this)} instead. An {@code init} override
+     * therefore never ran, the session stayed null, and every learning call silently no-opped -- the
+     * bot played normally, wrote no weights, and reported no error. Four real games produced no
+     * weights file at all before this was found, and the unit tests could not have caught it because
+     * they never involve a Game. Creating the session on first real priority binds it to a callback
+     * the engine demonstrably makes.
+     */
+    private void ensureSession(Game game) {
+        if (session == null && !game.isSimulation()) {
             session = new LearningSession(federation);
         }
     }
@@ -78,7 +90,8 @@ public class ComputerPlayerLearner extends ComputerPlayer7 {
         // Observe BEFORE deciding: the state being recorded is the one this player faced, not the
         // one its own action produced. Recording after the decision would train the model on states
         // that already include the benefit of the move, which is the outcome, not the input.
-        if (session != null && !game.isSimulation()) {
+        if (!game.isSimulation()) {
+            ensureSession(game);
             session.learner().observe(StateFeatures.extract(playerId, game));
         }
         return super.priority(game);
@@ -115,9 +128,17 @@ public class ComputerPlayerLearner extends ComputerPlayer7 {
         if (features == null) {
             return super.evaluateState(game);
         }
+        int handTuned = super.evaluateState(game);
+        double trust = current.learnedWeight();
+        if (trust <= 0.0) {
+            // Untrained model: it would return the same number for every position and blind the
+            // search. See LearningSession.learnedWeight for the measurement behind this.
+            return handTuned;
+        }
         double p = current.learner().predict(features);
         // Map a win probability onto GameStateEvaluator2's scale, well inside its terminal values so
         // a merely good position can never outscore an actual win.
-        return (int) ((p - 0.5) * 1_000_000);
+        int learned = (int) ((p - 0.5) * 1_000_000);
+        return (int) ((1.0 - trust) * handTuned + trust * learned);
     }
 }
