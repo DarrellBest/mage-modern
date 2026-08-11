@@ -15,6 +15,7 @@ import mage.game.Game;
 import mage.game.draft.Draft;
 import mage.game.match.Match;
 import mage.game.tournament.Tournament;
+import mage.player.ai.commander.score.CommanderEvalParams;
 import mage.players.Player;
 import mage.target.Target;
 import mage.target.TargetAmount;
@@ -48,7 +49,13 @@ public class ComputerPlayerControllableProxy extends ComputerPlayer7 {
         super(name, range, skill);
     }
 
+    /** DARRELLBEST-FORK: construct with tuned evaluation weights. */
+    public ComputerPlayerControllableProxy(String name, RangeOfInfluence range, int skill, CommanderEvalParams evalParams) {
+        super(name, range, skill, evalParams);
+    }
+
     public ComputerPlayerControllableProxy(final ComputerPlayerControllableProxy player) {
+        // evalParams rides along in ComputerPlayer6's copy constructor (shared by reference).
         super(player);
         this.lastControllingPlayer = player;
     }

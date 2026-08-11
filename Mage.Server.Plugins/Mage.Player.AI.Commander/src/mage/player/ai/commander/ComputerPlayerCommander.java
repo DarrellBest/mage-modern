@@ -1,6 +1,7 @@
 package mage.player.ai.commander;
 
 import mage.constants.RangeOfInfluence;
+import mage.player.ai.commander.score.CommanderEvalParams;
 
 /**
  * DARRELLBEST-FORK: entry point for the "Computer - commander" player type.
@@ -16,9 +17,15 @@ import mage.constants.RangeOfInfluence;
  * <p>
  * The three levers this fork exists to reach, none of which are reachable by subclassing MAD:
  * <ul>
- *   <li><b>Evaluation weights</b> ({@code commander.score.GameStateEvaluator2}). Upstream scores a
- *       point of life at 300 and a card in hand at 5, making one life worth sixty cards in hand.
- *       In 40-life Commander that reads as hyper-defensive and close to blind to card advantage.</li>
+ *   <li><b>Evaluation weights</b> (now {@link mage.player.ai.commander.score.CommanderEvalParams},
+ *       hoisted out of {@code commander.score.GameStateEvaluator2} so they can be injected and tuned
+ *       without a rebuild). Upstream's life curve is a step function that flattens hard: the first
+ *       four points of life are worth 1000 each, points 5-10 are worth 500 each, 11-15 are worth 400,
+ *       16-20 are worth 200, and everything ABOVE 20 life is worth a flat 100. A card in hand is 5. In
+ *       40-life Commander the bot spends the entire game in that flat region, so the real exchange
+ *       rate it plays by is 100/5 = twenty cards in hand per point of life. That still reads as
+ *       hyper-defensive and close to blind to card advantage -- and it gets worse, not better, as
+ *       life drops toward the steep part of the curve.</li>
  *   <li><b>Move ordering.</b> The search terminates on {@code maxNodes} (1500), so how well those
  *       nodes are spent is set by the order candidates are tried; alpha-beta cuts far more with a
  *       good ordering, which buys depth at no extra cost.</li>
@@ -37,7 +44,13 @@ public class ComputerPlayerCommander extends ComputerPlayer7 {
         super(name, range, skill);
     }
 
+    /** DARRELLBEST-FORK: construct with tuned evaluation weights. */
+    public ComputerPlayerCommander(String name, RangeOfInfluence range, int skill, CommanderEvalParams evalParams) {
+        super(name, range, skill, evalParams);
+    }
+
     public ComputerPlayerCommander(final ComputerPlayerCommander player) {
+        // evalParams rides along in ComputerPlayer6's copy constructor (shared by reference).
         super(player);
     }
 

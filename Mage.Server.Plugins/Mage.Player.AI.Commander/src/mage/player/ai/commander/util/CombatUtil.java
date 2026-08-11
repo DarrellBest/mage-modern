@@ -13,6 +13,7 @@ import mage.game.permanent.Permanent;
 import mage.game.turn.CombatDamageStep;
 import mage.game.turn.EndOfCombatStep;
 import mage.game.turn.Step;
+import mage.player.ai.commander.score.CommanderEvalParams;
 import mage.player.ai.commander.score.GameStateEvaluator2;
 import mage.players.Player;
 import org.apache.log4j.Logger;
@@ -23,6 +24,24 @@ import java.util.*;
  * Base helper methods for combat.
  *
  * @author noxx
+ * <p>
+ * DARRELLBEST-FORK: the five evaluator calls in here now take a {@link CommanderEvalParams} threaded
+ * down from the bot that started the block decision, four static frames up
+ * ({@code ComputerPlayer6.declareBlockers} -> {@link #blockWithGoodTrade2} ->
+ * {@code getBlockersThatWillSurvive2} -> {@link #willItSurviveSimple}).
+ * <p>
+ * <b>Whose weights are these?</b> All five evaluate from {@code defendingPlayerId}'s perspective,
+ * taken from {@code game.getCombat().getDefenders()}, which need not be the calling bot. So these are
+ * the CALLER's weights applied to the defender's position: the bot models the block with its own
+ * valuation of creatures, life and cards. Deliberate. Another player's weights are unknowable (a
+ * human has none), and the only other option -- a hardcoded stock set -- would score block decisions
+ * on a scale the bot's own search never uses, so a bot tuned to value life differently would still
+ * block as if it were not. Keeping one scale across search and combat is what makes the resulting
+ * scores comparable. See the fuller note at the call site in {@code ComputerPlayer6.declareBlockers}.
+ * <p>
+ * No defaulting overloads here either, for the same reason as in the score package: a
+ * {@code CommanderEvalParams.DEFAULT} fallback would let a dropped argument compile into a silent
+ * reversion to stock weights.
  */
 public final class CombatUtil {
 
@@ -160,8 +179,11 @@ public final class CombatUtil {
 
     /**
      * AI related code, find better block combination for attackers
+     *
+     * @param params the CALLING bot's evaluation weights -- see the class javadoc for why the block
+     *               is modelled with the caller's weights rather than the defender's
      */
-    public static CombatInfo blockWithGoodTrade2(Game game, List<Permanent> attackers, List<Permanent> blockers) {
+    public static CombatInfo blockWithGoodTrade2(Game game, List<Permanent> attackers, List<Permanent> blockers, CommanderEvalParams params) {
         UUID attackerId = game.getCombat().getAttackingPlayerId();
         UUID defenderId = game.getCombat().getDefenders().iterator().next();
         if (attackerId == null || defenderId == null) {
@@ -174,7 +196,7 @@ public final class CombatUtil {
         for (Permanent attacker : attackers) {
             // simple combat simulation (1 vs 1)
             List<Permanent> allBlockers = getPossibleBlockers(game, attacker, blockers);
-            List<SurviveInfo> blockerStats = getBlockersThatWillSurvive2(game, attackerId, defenderId, attacker, allBlockers);
+            List<SurviveInfo> blockerStats = getBlockersThatWillSurvive2(game, attackerId, defenderId, attacker, allBlockers, params);
             Map<Permanent, Integer> blockingDiffScore = new HashMap<>();
             Map<Permanent, Integer> nonBlockingDiffScore = new HashMap<>();
             blockerStats.forEach(s -> {
@@ -263,11 +285,11 @@ public final class CombatUtil {
     /**
      * Game simulations to find all survived/killer blocker
      */
-    private static List<SurviveInfo> getBlockersThatWillSurvive2(Game game, UUID attackerId, UUID defenderId, Permanent attacker, List<Permanent> possibleBlockers) {
+    private static List<SurviveInfo> getBlockersThatWillSurvive2(Game game, UUID attackerId, UUID defenderId, Permanent attacker, List<Permanent> possibleBlockers, CommanderEvalParams params) {
         List<SurviveInfo> res = new ArrayList<>();
         for (Permanent blocker : possibleBlockers) {
             // TODO: enable willItSurviveSimulation and check stability
-            SurviveInfo info = willItSurviveSimple(game, attackerId, defenderId, attacker, blocker);
+            SurviveInfo info = willItSurviveSimple(game, attackerId, defenderId, attacker, blocker, params);
             if (info == null) {
                 continue;
             }
@@ -277,7 +299,15 @@ public final class CombatUtil {
         return res;
     }
 
-    public static SurviveInfo willItSurviveSimulation(Game originalGame, UUID attackingPlayerId, UUID defendingPlayerId, Permanent attacker, Permanent blocker) {
+    /**
+     * DARRELLBEST-FORK: currently UNREACHABLE -- {@code getBlockersThatWillSurvive2} calls
+     * {@link #willItSurviveSimple} instead, behind a TODO about enabling this one. Params are threaded
+     * through anyway, so that switching the TODO over is a one-line change rather than a change that
+     * also has to remember the weights.
+     *
+     * @param params the CALLING bot's evaluation weights -- see the class javadoc
+     */
+    public static SurviveInfo willItSurviveSimulation(Game originalGame, UUID attackingPlayerId, UUID defendingPlayerId, Permanent attacker, Permanent blocker, CommanderEvalParams params) {
         Game sim = originalGame.createSimulationForAI();
         if (blocker == null || attacker == null || sim.getPlayer(defendingPlayerId) == null) {
             return null;
@@ -288,7 +318,7 @@ public final class CombatUtil {
         Combat combat = sim.getCombat();
         combat.setAttacker(attackingPlayerId);
         combat.setDefenders(sim);
-        int startScore = GameStateEvaluator2.evaluate(defendingPlayerId, sim).getTotalScore();
+        int startScore = GameStateEvaluator2.evaluate(defendingPlayerId, sim, params).getTotalScore();
 
         // real game simulation
         // TODO: need debug and testing, old code from 2012
@@ -316,7 +346,7 @@ public final class CombatUtil {
             sim.applyEffects();
         }
 
-        int endBlockingScore = GameStateEvaluator2.evaluate(defendingPlayerId, sim).getTotalScore();
+        int endBlockingScore = GameStateEvaluator2.evaluate(defendingPlayerId, sim, params).getTotalScore();
         int endNonBlockingScore = startScore; // TODO: implement
         return new SurviveInfo(
                 !sim.getBattlefield().containsPermanent(attacker.getId()),
@@ -326,7 +356,11 @@ public final class CombatUtil {
         );
     }
 
-    public static SurviveInfo willItSurviveSimple(Game originalGame, UUID attackingPlayerId, UUID defendingPlayerId, Permanent attacker, Permanent blocker) {
+    /**
+     * @param params the CALLING bot's evaluation weights -- see the class javadoc for why the block
+     *               is modelled with the caller's weights rather than the defender's
+     */
+    public static SurviveInfo willItSurviveSimple(Game originalGame, UUID attackingPlayerId, UUID defendingPlayerId, Permanent attacker, Permanent blocker, CommanderEvalParams params) {
         Game sim = originalGame.createSimulationForAI();
         if (blocker == null || attacker == null || sim.getPlayer(defendingPlayerId) == null) {
             return null;
@@ -340,7 +374,7 @@ public final class CombatUtil {
 
         // attacker tapped before attack, it will add additional score to blocker, but it must be ignored
         // so blocker will block same creature with same score without penalty
-        int startScore = GameStateEvaluator2.evaluate(defendingPlayerId, sim, false).getTotalScore();
+        int startScore = GameStateEvaluator2.evaluate(defendingPlayerId, sim, false, params).getTotalScore();
 
         // fake combat simulation (simple damage simulation)
         Permanent simAttacker = sim.getPermanent(attacker.getId());
@@ -387,8 +421,8 @@ public final class CombatUtil {
         simNonBlocking.checkStateAndTriggered();
         simNonBlocking.processAction();
 
-        int endBlockingScore = GameStateEvaluator2.evaluate(defendingPlayerId, sim, false).getTotalScore();
-        int endNonBlockingScore = GameStateEvaluator2.evaluate(defendingPlayerId, simNonBlocking, false).getTotalScore();
+        int endBlockingScore = GameStateEvaluator2.evaluate(defendingPlayerId, sim, false, params).getTotalScore();
+        int endNonBlockingScore = GameStateEvaluator2.evaluate(defendingPlayerId, simNonBlocking, false, params).getTotalScore();
         return new SurviveInfo(
                 !sim.getBattlefield().containsPermanent(attacker.getId()),
                 !sim.getBattlefield().containsPermanent(blocker.getId()),

@@ -14,6 +14,14 @@ import mage.constants.Outcome;
  * @author nantuko
  * <p>
  * This evaluator is only good for two player games
+ * <p>
+ * DARRELLBEST-FORK: the weights are no longer baked in here -- they arrive as a
+ * {@link CommanderEvalParams}, which the calling player owns. See that class for why, and for what
+ * deliberately stayed a constant.
+ * <p>
+ * The params argument is REQUIRED on every entry point, with no defaulting overload. A convenience
+ * overload would silently score with stock weights whenever a caller forgot to pass its own, which is
+ * indistinguishable from working. Forcing the argument makes a dropped param a compile error.
  */
 public final class GameStateEvaluator2 {
 
@@ -22,13 +30,11 @@ public final class GameStateEvaluator2 {
     public static final int WIN_GAME_SCORE = 100000000;
     public static final int LOSE_GAME_SCORE = -WIN_GAME_SCORE;
 
-    public static final int HAND_CARD_SCORE = 5;
-
-    public static PlayerEvaluateScore evaluate(UUID playerId, Game game) {
-        return evaluate(playerId, game, true);
+    public static PlayerEvaluateScore evaluate(UUID playerId, Game game, CommanderEvalParams params) {
+        return evaluate(playerId, game, true, params);
     }
 
-    public static PlayerEvaluateScore evaluate(UUID playerId, Game game, boolean useCombatPermanentScore) {
+    public static PlayerEvaluateScore evaluate(UUID playerId, Game game, boolean useCombatPermanentScore, CommanderEvalParams params) {
         // TODO: add multi opponents support, so AI can take better actions
         Player player = game.getPlayer(playerId);
         // must find all leaved opponents
@@ -55,8 +61,8 @@ public final class GameStateEvaluator2 {
         } else if (opponent.getLife() <= 0) {
             playerLifeScore = ArtificialScoringSystem.WIN_GAME_SCORE;
         } else {
-            playerLifeScore = ArtificialScoringSystem.getLifeScore(player.getLife());
-            opponentLifeScore = ArtificialScoringSystem.getLifeScore(opponent.getLife()); // TODO: minus
+            playerLifeScore = ArtificialScoringSystem.getLifeScore(player.getLife(), params);
+            opponentLifeScore = ArtificialScoringSystem.getLifeScore(opponent.getLife(), params); // TODO: minus
         }
 
         int playerPermanentsScore = 0;
@@ -67,7 +73,7 @@ public final class GameStateEvaluator2 {
 
             // add values of player
             for (Permanent permanent : game.getBattlefield().getAllActivePermanents(playerId)) {
-                int onePermScore = evaluatePermanent(permanent, game, useCombatPermanentScore);
+                int onePermScore = evaluatePermanent(permanent, game, useCombatPermanentScore, params);
                 playerPermanentsScore += onePermScore;
                 if (logger.isDebugEnabled()) {
                     sbPlayer.append(permanent.getName()).append('[').append(onePermScore).append("] ");
@@ -81,7 +87,7 @@ public final class GameStateEvaluator2 {
 
             // add values of opponent
             for (Permanent permanent : game.getBattlefield().getAllActivePermanents(opponent.getId())) {
-                int onePermScore = evaluatePermanent(permanent, game, useCombatPermanentScore);
+                int onePermScore = evaluatePermanent(permanent, game, useCombatPermanentScore, params);
                 opponentPermanentsScore += onePermScore;
                 if (logger.isDebugEnabled()) {
                     sbOpponent.append(permanent.getName()).append('[').append(onePermScore).append("] ");
@@ -109,8 +115,8 @@ public final class GameStateEvaluator2 {
         // - additional improve: use revealed data to score opponent's hand:
         //   * known card by card evaluator;
         //   * unknown card by max value (so AI will use reveal to make opponent's total score lower -- is it helps???)
-        int playerHandScore = player.getHand().size() * HAND_CARD_SCORE;
-        int opponentHandScore = opponent.getHand().size() * HAND_CARD_SCORE;
+        int playerHandScore = player.getHand().size() * params.getHandCardScore();
+        int opponentHandScore = opponent.getHand().size() * params.getHandCardScore();
 
         int score = (playerLifeScore - opponentLifeScore)
                 + (playerPermanentsScore - opponentPermanentsScore)
@@ -125,7 +131,7 @@ public final class GameStateEvaluator2 {
                 opponentLifeScore, opponentHandScore, opponentPermanentsScore);
     }
 
-    public static int evaluatePermanent(Permanent permanent, Game game, boolean useCombatPermanentScore) {
+    public static int evaluatePermanent(Permanent permanent, Game game, boolean useCombatPermanentScore, CommanderEvalParams params) {
         // prevent AI from attaching bad auras to its own permanents ex: Brainwash and Demonic Torment (no immediate penalty on the battlefield)
         int value = 0;
         if (!permanent.getAttachments().isEmpty()) {
@@ -135,16 +141,16 @@ public final class GameStateEvaluator2 {
                     for (Effect e : a.getEffects()) {
                         if (e.getOutcome().equals(Outcome.Detriment)
                                 && attachment.getControllerId().equals(permanent.getControllerId())) {
-                            value -= 1000;  // seems to work well ; -300 is not effective enough
+                            value += params.getDetrimentalOwnAuraPenalty();  // seems to work well ; -300 is not effective enough
                         }
                     }
                 }
             }
         }
-        value += ArtificialScoringSystem.getFixedPermanentScore(game, permanent);
-        value += ArtificialScoringSystem.getDynamicPermanentScore(game, permanent);
+        value += ArtificialScoringSystem.getFixedPermanentScore(game, permanent, params);
+        value += ArtificialScoringSystem.getDynamicPermanentScore(game, permanent, params);
         if (useCombatPermanentScore) {
-            value += ArtificialScoringSystem.getCombatPermanentScore(game, permanent);
+            value += ArtificialScoringSystem.getCombatPermanentScore(game, permanent, params);
         }
         return value;
     }

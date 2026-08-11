@@ -5,7 +5,7 @@ import mage.constants.RangeOfInfluence;
 import mage.MageObject;
 import mage.abilities.ActivatedAbility;
 import mage.game.Game;
-import mage.player.ai.commander.score.GameStateEvaluator2;
+import mage.player.ai.commander.score.CommanderEvalParams;
 import org.apache.log4j.Logger;
 
 import java.util.Date;
@@ -26,7 +26,15 @@ public class ComputerPlayer7 extends ComputerPlayer6 {
         super(name, range, skill);
     }
 
+    /** DARRELLBEST-FORK: construct with tuned evaluation weights. */
+    public ComputerPlayer7(String name, RangeOfInfluence range, int skill, CommanderEvalParams evalParams) {
+        super(name, range, skill, evalParams);
+    }
+
     public ComputerPlayer7(final ComputerPlayer7 player) {
+        // evalParams rides along in ComputerPlayer6's copy constructor (shared by reference, it is
+        // immutable). Nothing to do here -- but see the note there: this chain is exactly where an
+        // injected field gets silently dropped, and CommanderEvalParamsCopyTest covers every link.
         super(player);
         this.allowBadMoves = player.allowBadMoves;
     }

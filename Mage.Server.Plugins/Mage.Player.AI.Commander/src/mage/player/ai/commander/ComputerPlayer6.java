@@ -25,6 +25,7 @@ import mage.game.stack.StackAbility;
 import mage.game.stack.StackObject;
 import mage.player.ai.commander.optimizers.TreeOptimizer;
 import mage.player.ai.commander.optimizers.impl.*;
+import mage.player.ai.commander.score.CommanderEvalParams;
 import mage.player.ai.commander.score.GameStateEvaluator2;
 import mage.player.ai.commander.util.CombatInfo;
 import mage.player.ai.commander.util.CombatUtil;
@@ -103,6 +104,20 @@ public class ComputerPlayer6 extends ComputerPlayer {
     List<Permanent> attackersToCheck = new ArrayList<>();
 
     protected Set<String> actionCache;
+
+    /**
+     * DARRELLBEST-FORK: the weights this player's evaluator uses. Never null.
+     * <p>
+     * Held by the REAL player, which is the object that searches and scores: {@code SimulatedPlayer2}
+     * extends the shared {@code ComputerPlayer}, not this class, and holds no reference to either
+     * scoring class; {@code SimulationNode2} holds only a UUID. So every evaluation in the tree runs
+     * through this instance's {@link #evaluateState}, and one field here governs the whole search.
+     * <p>
+     * Shared by reference with every copy (it is immutable) rather than cloned, matching how
+     * {@code ComputerPlayerLearner} shares its {@code federation} and {@code session}.
+     */
+    protected final CommanderEvalParams evalParams;
+
     private static final List<TreeOptimizer> optimizers = new ArrayList<>();
     protected int lastLoggedTurn = 0; // for debug logs: mark start of the turn
     protected static final String BLANKS = "...............................................";
@@ -116,6 +131,16 @@ public class ComputerPlayer6 extends ComputerPlayer {
     }
 
     public ComputerPlayer6(String name, RangeOfInfluence range, int skill) {
+        this(name, range, skill, CommanderEvalParams.DEFAULT);
+    }
+
+    /**
+     * DARRELLBEST-FORK: construct with tuned evaluation weights.
+     *
+     * @param evalParams the weights this player scores positions with; {@code CommanderEvalParams.DEFAULT}
+     *                   reproduces the historical hand-tuned behaviour exactly
+     */
+    public ComputerPlayer6(String name, RangeOfInfluence range, int skill, CommanderEvalParams evalParams) {
         super(name, range);
         if (skill < 4) {
             maxDepth = 4; // TODO: can be increased to support better calculations? (example = 8, skill * 2)
@@ -125,6 +150,10 @@ public class ComputerPlayer6 extends ComputerPlayer {
         maxThinkTimeSecs = skill * 3;
         maxNodes = MAX_SIMULATED_NODES_PER_CALC;
         this.actionCache = new HashSet<>();
+        if (evalParams == null) {
+            throw new IllegalArgumentException("evalParams must not be null");
+        }
+        this.evalParams = evalParams;
     }
 
     public ComputerPlayer6(final ComputerPlayer6 player) {
@@ -138,6 +167,22 @@ public class ComputerPlayer6 extends ComputerPlayer {
         this.targets.addAll(player.targets);
         this.choices.addAll(player.choices);
         this.actionCache = player.actionCache;
+        // DARRELLBEST-FORK: shared by reference, not copied -- CommanderEvalParams is immutable.
+        //
+        // This line is the whole reason CommanderEvalParams exists as a threaded field rather than a
+        // static: the copy constructor is where injected state goes to die. Two fields of this very
+        // class, maxNodes and maxThinkTimeSecs, are already missing from this constructor (inherited
+        // from upstream) -- a player copy silently reverts to whatever its constructor set. Dropping
+        // evalParams the same way would produce a bot that ACCEPTS a tuned config, reports it, and
+        // then searches with stock weights the moment the first copy is made, with no error anywhere.
+        // CommanderEvalParamsCopyTest exists specifically to fail if this line is ever removed here
+        // or in any subclass's copy constructor.
+        this.evalParams = player.evalParams;
+    }
+
+    /** DARRELLBEST-FORK: the weights this player scores positions with. Never null. */
+    public CommanderEvalParams getEvalParams() {
+        return evalParams;
     }
 
     /**
@@ -211,7 +256,7 @@ public class ComputerPlayer6 extends ComputerPlayer {
     }
 
     protected int evaluateState(Game game) {
-        return GameStateEvaluator2.evaluate(playerId, game).getTotalScore();
+        return GameStateEvaluator2.evaluate(playerId, game, evalParams).getTotalScore();
     }
 
     @Override
@@ -234,14 +279,14 @@ public class ComputerPlayer6 extends ComputerPlayer {
     protected void printBattlefieldScore(Game game, UUID playerId) {
         // hand
         Player player = game.getPlayer(playerId);
-        GameStateEvaluator2.PlayerEvaluateScore score = GameStateEvaluator2.evaluate(playerId, game);
+        GameStateEvaluator2.PlayerEvaluateScore score = GameStateEvaluator2.evaluate(playerId, game, evalParams);
         logger.info(new StringBuilder("[").append(game.getPlayer(playerId).getName()).append("]")
                 .append(", life = ").append(player.getLife())
                 .append(", score = ").append(score.getTotalScore())
                 .append(" (").append(score.getPlayerInfoFull()).append(")")
                 .toString());
         String cardsInfo = player.getHand().getCards(game).stream()
-                .map(card -> card.getName() + ":" + GameStateEvaluator2.HAND_CARD_SCORE) // TODO: add card score here after implement
+                .map(card -> card.getName() + ":" + evalParams.getHandCardScore()) // TODO: add card score here after implement
                 .collect(Collectors.joining("; "));
         StringBuilder sb = new StringBuilder("-> Hand: [")
                 .append(cardsInfo)
@@ -256,7 +301,7 @@ public class ComputerPlayer6 extends ComputerPlayer {
                         + (p.isTapped() ? ",tapped" : "")
                         + (p.isAttacking() ? ",attacking" : "")
                         + (p.getBlocking() > 0 ? ",blocking" : "")
-                        + ":" + GameStateEvaluator2.evaluatePermanent(p, game, true))
+                        + ":" + GameStateEvaluator2.evaluatePermanent(p, game, true, evalParams))
                 .collect(Collectors.joining("; "));
         sb.append("-> Permanents: [").append(ownPermanentsInfo).append("]");
         logger.info(sb.toString());
@@ -1041,7 +1086,21 @@ public class ComputerPlayer6 extends ComputerPlayer {
 
             CombatUtil.sortByPower(attackers, false); // most powerfull go to first
 
-            CombatInfo combatInfo = CombatUtil.blockWithGoodTrade2(game, attackers, possibleBlockers);
+            // DARRELLBEST-FORK: the bot models blocking with ITS OWN weights.
+            //
+            // CombatUtil's five evaluations all score from the DEFENDING player's perspective, read
+            // out of game.getCombat().getDefenders() -- which is not necessarily this bot. Passing
+            // evalParams here therefore means "predict the defender's outcome using my valuation of
+            // creatures, life and cards", not "use the defender's own weights".
+            //
+            // That is the right call, and the alternative is worse. There is no way to know another
+            // player's weights (a human has none, and a differently tuned bot's are private to it),
+            // so the only options are this bot's weights or a hardcoded stock set. A hardcoded set
+            // would reintroduce exactly the split this refactor removes: a bot tuned to value life
+            // cheaply would still refuse chump blocks, because the block decision would be scored on
+            // a scale its own search never uses. Self-modelling keeps every number the search
+            // compares on one scale, which is the property that makes the comparisons mean anything.
+            CombatInfo combatInfo = CombatUtil.blockWithGoodTrade2(game, attackers, possibleBlockers, evalParams);
             Player player = game.getPlayer(playerId);
 
             boolean blocked = false;

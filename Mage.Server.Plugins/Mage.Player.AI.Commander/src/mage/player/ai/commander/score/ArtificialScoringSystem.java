@@ -15,60 +15,72 @@ import java.util.UUID;
 
 /**
  * @author ubeefx, nantuko
+ * <p>
+ * DARRELLBEST-FORK: the weights this class used to hold as {@code private static final} constants now
+ * live in {@link CommanderEvalParams}, which every scoring method takes as a required argument.
+ * <p>
+ * Required, not defaulted: there is deliberately NO overload that supplies
+ * {@link CommanderEvalParams#DEFAULT} for you. A convenience overload would make "forgot to thread
+ * the params through" compile and run, producing a bot that accepts a tuned config and quietly scores
+ * with the stock weights -- exactly the failure this refactor exists to make impossible. The compiler
+ * is the only thing that reliably catches a dropped parameter, so it is given the chance to.
+ * <p>
+ * {@link #WIN_GAME_SCORE}/{@link #LOSE_GAME_SCORE} stay {@code static final}: they are sentinels
+ * compared for exact equality by the search, not weights (see {@link CommanderEvalParams}).
  */
 public final class ArtificialScoringSystem {
 
     public static final int WIN_GAME_SCORE = 100000000;
     public static final int LOSE_GAME_SCORE = -WIN_GAME_SCORE;
 
-    private static final int[] LIFE_SCORES = {0, 1000, 2000, 3000, 4000, 4500, 5000, 5500, 6000, 6500, 7000, 7400, 7800, 8200, 8600, 9000, 9200, 9400, 9600, 9800, 10000};
-    private static final int MAX_LIFE = LIFE_SCORES.length - 1;
     private static final int UNKNOWN_CARD_SCORE = 300;
-    private static final int PERMANENT_SCORE = 300;
-    private static final int LIFE_ABOVE_MULTIPLIER = 100;
 
-    public static int getCardDefinitionScore(final Game game, final Card card) {
-        int value = 3; //TODO: add new rating system card value
+    public static int getCardDefinitionScore(final Game game, final Card card, final CommanderEvalParams params) {
+        int value = params.getBaseCardValue(); //TODO: add new rating system card value
         if (card.isLand(game)) {
-            int score = (int) ((value / 2.0f) * 50);
+            int score = (int) ((value / 2.0f) * params.getLandBaseMultiplier());
             //TODO: check this for "any color" lands
             //TODO: check this for dual and filter lands
             /*for (Mana mana : card.getMana()) {
              score += 50;
              }*/
-            score += card.getMana().size() * 50;
+            score += card.getMana().size() * params.getLandPerManaSymbol();
             return score;
         }
 
-        final int score = value * 100 - card.getManaCost().manaValue() * 20;
+        final int score = value * params.getNonLandBaseMultiplier()
+                - card.getManaCost().manaValue() * params.getManaValuePenaltyPerPip();
         if (card.getCardType(game).contains(CardType.CREATURE)) {
-            return score + (card.getPower().getValue() + card.getToughness().getValue()) * 10;
+            return score + (card.getPower().getValue() + card.getToughness().getValue())
+                    * params.getCardPowerToughnessMultiplier();
         } else {
-            return score + (/*card.getRemoval()*50*/+(card.getRarity() == null ? 0 : card.getRarity().getRating() * 30));
+            return score + (/*card.getRemoval()*50*/+(card.getRarity() == null
+                    ? 0
+                    : card.getRarity().getRating() * params.getRarityMultiplier()));
         }
     }
 
-    public static int getFixedPermanentScore(final Game game, final Permanent permanent) {
+    public static int getFixedPermanentScore(final Game game, final Permanent permanent, final CommanderEvalParams params) {
         //TODO: cache it inside Card
-        int score = getCardDefinitionScore(game, permanent);
-        score += PERMANENT_SCORE;
+        int score = getCardDefinitionScore(game, permanent, params);
+        score += params.getPermanentOnBattlefieldBonus();
         if (permanent.getCardType(game).contains(CardType.CREATURE)) {
             // TODO: implement in the mage core
             //score + =cardDefinition.getActivations().size()*50;
             //score += cardDefinition.getManaActivations().size()*80;
         } else {
             if (permanent.hasSubtype(SubType.EQUIPMENT, game)) {
-                score += 100;
+                score += params.getEquipmentPermanentBonus();
             }
         }
         return score;
     }
 
-    public static int getDynamicPermanentScore(final Game game, final Permanent permanent) {
+    public static int getDynamicPermanentScore(final Game game, final Permanent permanent, final CommanderEvalParams params) {
 
-        int score = permanent.getCounters(game).getCount(CounterType.CHARGE) * 30;
-        score += permanent.getCounters(game).getCount(CounterType.LEVEL) * 30;
-        score -= permanent.getDamage() * 2;
+        int score = permanent.getCounters(game).getCount(CounterType.CHARGE) * params.getChargeCounterScore();
+        score += permanent.getCounters(game).getCount(CounterType.LEVEL) * params.getLevelCounterScore();
+        score -= permanent.getDamage() * params.getDamageMarkedPenalty();
         if (permanent.getCardType(game).contains(CardType.CREATURE)) {
             final int power = permanent.getPower().getValue();
             final int toughness = permanent.getToughness().getValue();
@@ -76,7 +88,10 @@ public final class ArtificialScoringSystem {
             for (Ability ability : permanent.getAbilities(game)) {
                 abilityScore += MagicAbility.getAbilityScore(ability);
             }
-            score += power * 300 + getPositive(toughness) * 200 + abilityScore * (getPositive(power) + 1) / 2;
+            score += power * params.getCreaturePowerMultiplier()
+                    + getPositive(toughness) * params.getCreatureToughnessMultiplier()
+                    + abilityScore * (getPositive(power) + params.getAbilityScorePowerOffset())
+                    / params.getAbilityScoreDivisor();
             int enchantments = 0;
             int equipments = 0;
             for (UUID uuid : permanent.getAttachments()) {
@@ -86,9 +101,9 @@ public final class ArtificialScoringSystem {
                     // TODO: implement getOutcomeTotal for permanents and cards too (not only attachments)
                     int outcomeScore = card.getAbilities(game).getOutcomeTotal();
                     if (card.getCardType(game).contains(CardType.ENCHANTMENT)) {
-                        enchantments = enchantments + outcomeScore * 100;
+                        enchantments = enchantments + outcomeScore * params.getAttachedEnchantmentOutcomeMultiplier();
                     } else {
-                        equipments = equipments + outcomeScore * 50;
+                        equipments = equipments + outcomeScore * params.getAttachedEquipmentOutcomeMultiplier();
                     }
                 }
             }
@@ -97,17 +112,17 @@ public final class ArtificialScoringSystem {
         return score;
     }
 
-    public static int getCombatPermanentScore(final Game game, final Permanent permanent) {
+    public static int getCombatPermanentScore(final Game game, final Permanent permanent, final CommanderEvalParams params) {
         int score = 0;
         if (!canTap(game, permanent)) {
-            score += getTappedScore(game, permanent);
+            score += getTappedScore(game, permanent, params);
         }
         if (permanent.getCardType(game).contains(CardType.CREATURE)) {
             if (!permanent.canAttack(null, game)) {
-                score -= 100;
+                score += params.getCannotAttackPenalty();
             }
             if (!permanent.canBlockAny(game)) {
-                score -= 30;
+                score += params.getCannotBlockPenalty();
             }
         }
         return score;
@@ -124,21 +139,22 @@ public final class ArtificialScoringSystem {
         return Math.max(0, value);
     }
 
-    public static int getTappedScore(Game game, final Permanent permanent) {
+    public static int getTappedScore(Game game, final Permanent permanent, final CommanderEvalParams params) {
         if (permanent.isCreature(game)) {
-            return -100;
+            return params.getTappedCreaturePenalty();
         } else if (permanent.isLand(game)) {
-            return -20; // means probably no mana available  (should be greater than passivity penalty
+            return params.getTappedLandPenalty(); // means probably no mana available  (should be greater than passivity penalty
         } else {
-            return -2;
+            return params.getTappedOtherPenalty();
         }
     }
 
-    public static int getLifeScore(final int life) {
-        if (life > MAX_LIFE) {
-            return LIFE_SCORES[MAX_LIFE] + (life - MAX_LIFE) * LIFE_ABOVE_MULTIPLIER;
+    public static int getLifeScore(final int life, final CommanderEvalParams params) {
+        final int maxLife = params.getMaxTabulatedLife();
+        if (life > maxLife) {
+            return params.getLifeScoreAt(maxLife) + (life - maxLife) * params.getLifeAboveMultiplier();
         } else if (life >= 0) {
-            return LIFE_SCORES[life];
+            return params.getLifeScoreAt(life);
         } else {
             return 0;
         }

@@ -5,6 +5,7 @@ import mage.game.Game;
 import mage.player.ai.commander.learn.FederatedWeights;
 import mage.player.ai.commander.learn.LearningSession;
 import mage.player.ai.commander.learn.StateFeatures;
+import mage.player.ai.commander.score.CommanderEvalParams;
 import mage.player.ai.commander.score.GameStateEvaluator2;
 
 /**
@@ -57,10 +58,23 @@ public class ComputerPlayerLearner extends ComputerPlayer7 {
         this.federation = new FederatedWeights();
     }
 
+    /**
+     * DARRELLBEST-FORK: construct with tuned evaluation weights. Those weights remain in play here --
+     * {@link #evaluateState} blends the learned score against the hand-tuned one, and the hand-tuned
+     * half is computed with exactly these params.
+     */
+    public ComputerPlayerLearner(String name, RangeOfInfluence range, int skill, CommanderEvalParams evalParams) {
+        super(name, range, skill, evalParams);
+        this.federation = new FederatedWeights();
+    }
+
     public ComputerPlayerLearner(final ComputerPlayerLearner player) {
         super(player);
         this.federation = player.federation;
         this.session = player.session;
+        // evalParams is shared by reference too, in ComputerPlayer6's copy constructor -- the same
+        // treatment as federation and session above, and for the same reason: immutable (or
+        // deliberately shared) state that every copy must agree on.
     }
 
     @Override
@@ -138,7 +152,7 @@ public class ComputerPlayerLearner extends ComputerPlayer7 {
         if (game.checkIfGameIsOver()) {
             // Ask the same question the search itself uses to stop descending, rather than a second
             // one that might disagree with it.
-            return GameStateEvaluator2.evaluate(playerId, game).getTotalScore();
+            return GameStateEvaluator2.evaluate(playerId, game, evalParams).getTotalScore();
         }
         double[] features = StateFeatures.extract(playerId, game);
         if (features == null) {
