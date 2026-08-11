@@ -45,6 +45,16 @@ public final class SimulatedPlayer2 extends ComputerPlayer {
      */
     private static final int MAX_CHAINED_SAME_TRIGGERS = 3;
 
+    /**
+     * DARRELLBEST-FORK: how many times the same ACTION may be taken consecutively on one search
+     * branch before the search stops offering it. Same idea and same number as
+     * {@link #MAX_CHAINED_SAME_TRIGGERS}, applied to the option list rather than to triggers.
+     * <p>
+     * This is the search-side counterpart to {@code ComputerPlayer7.MAX_CHAINED_SAME_ACTIVATIONS},
+     * which only fires when {@code !game.isSimulation()} and therefore never bounds the search.
+     */
+    private static final int MAX_CHAINED_SAME_ACTIONS = 3;
+
     // warning, simulated player do not restore own data by game rollback
     private final boolean isSimulatedPlayer;
     private transient ConcurrentLinkedQueue<Ability> allActions; // all possible abilities to play (copies with already selected targets)
@@ -92,6 +102,17 @@ public final class SimulatedPlayer2 extends ComputerPlayer {
         // possible actions
         List<Ability> list = new ArrayList<>(allActions);
         Collections.reverse(list);
+
+        // DARRELLBEST-FORK: drop any action this branch has already taken MAX_CHAINED_SAME_ACTIONS
+        // times consecutively. ComputerPlayer7 caps chained activations only when
+        // !game.isSimulation(), so in the SEARCH a free repeatable outlet (Altar of Dementia's
+        // "sacrifice a creature" on a board that keeps making goblin tokens) stays available at
+        // every level and the branching never bottoms out. Measured: Krenko commander mirrors
+        // spent whole minutes re-simulating consecutive Altar activations.
+        //
+        // Filtered BEFORE Pass is appended, so passing is always still an option and the list can
+        // never come back empty.
+        list.removeIf(action -> exceededChainedActions(action, game, MAX_CHAINED_SAME_ACTIONS));
 
         // pass action
         list.add(new PassAbility());
@@ -391,6 +412,14 @@ public final class SimulatedPlayer2 extends ComputerPlayer {
      * never match.
      */
     private boolean exceededChainedTriggers(Ability ability, Game game) {
+        return exceededChainedActions(ability, game, MAX_CHAINED_SAME_TRIGGERS);
+    }
+
+    /**
+     * @return true when {@code ability} already appears {@code max} times consecutively in this
+     *         search branch's ancestry, i.e. the branch is repeating itself rather than progressing
+     */
+    private boolean exceededChainedActions(Ability ability, Game game, int max) {
         if (!(game.getCustomData() instanceof SimulationNode2)) {
             return false;
         }
@@ -402,10 +431,10 @@ public final class SimulatedPlayer2 extends ComputerPlayer {
                 break; // consecutive only -- anything else on the path resets the chain
             }
             chained++;
-            if (chained >= MAX_CHAINED_SAME_TRIGGERS) {
+            if (chained >= max) {
                 // debug, not warn: a search that trips this trips it many times over, and the point
                 // is to bound the search rather than to flood the log the loop is already flooding
-                logger.debug("simulating -- capped a chained trigger (" + chained
+                logger.debug("simulating -- capped a chained action (" + chained
                         + "x consecutively on this branch): " + signature);
                 return true;
             }
