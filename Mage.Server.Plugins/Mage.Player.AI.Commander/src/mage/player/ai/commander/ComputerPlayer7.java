@@ -234,7 +234,15 @@ public class ComputerPlayer7 extends ComputerPlayer6 {
 
     protected void calculateActions(Game game) {
         if (!getNextAction(game)) {
-            currentScore = GameStateEvaluator2.evaluate(playerId, game).getTotalScore();
+            // DARRELLBEST-FORK: route through evaluateState rather than calling the static evaluator
+            // directly. currentScore is compared against evaluateState's result in
+            // ComputerPlayer6.addActions ("if (testScore < currentScore)") to decide whether to
+            // abandon a branch, so the two sides of that comparison must come from the SAME scoring
+            // function. This call was the one in-search evaluation missed when the other 13 were
+            // hoisted into evaluateState; for ComputerPlayerLearner it meant pruning by comparing a
+            // blended learned score against a hand-tuned one. For any bot that does not override
+            // evaluateState this is behaviour-identical, since evaluateState makes exactly this call.
+            currentScore = evaluateState(game);
             Game sim = createSimulation(game);
             SimulationNode2.resetCount();
             root = new SimulationNode2(null, sim, maxDepth, playerId);

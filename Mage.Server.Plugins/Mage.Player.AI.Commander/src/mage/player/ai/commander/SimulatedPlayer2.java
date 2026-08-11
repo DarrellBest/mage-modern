@@ -35,6 +35,16 @@ public final class SimulatedPlayer2 extends ComputerPlayer {
 
     private static final boolean AI_SIMULATE_ALL_BAD_AND_GOOD_TARGETS = false; // TODO: enable and do performance test (it's increase calculations by x2, but is it useful?)
 
+    /**
+     * DARRELLBEST-FORK: how many times the same trigger may branch consecutively on one search
+     * branch before the search stops fanning out on it. See {@link #exceededChainedTriggers}.
+     * <p>
+     * Matches {@code ComputerPlayer7.MAX_CHAINED_SAME_ACTIVATIONS}, which caps the equivalent loop
+     * for activated abilities — but that cap is gated on {@code !game.isSimulation()} and so does
+     * nothing inside the search. This is the search-side half of the same protection.
+     */
+    private static final int MAX_CHAINED_SAME_TRIGGERS = 3;
+
     // warning, simulated player do not restore own data by game rollback
     private final boolean isSimulatedPlayer;
     private transient ConcurrentLinkedQueue<Ability> allActions; // all possible abilities to play (copies with already selected targets)
@@ -335,8 +345,9 @@ public final class SimulatedPlayer2 extends ComputerPlayer {
     public boolean triggerAbility(TriggeredAbility source, Game game) {
         Ability ability = source.copy();
         List<Ability> options = getPlayableOptions(ability, game);
-        if (options.isEmpty()) {
-            // no options - activate as is
+        if (options.isEmpty() || exceededChainedTriggers(ability, game)) {
+            // no options (or the same trigger has already branched MAX_CHAINED_SAME_TRIGGERS times
+            // consecutively on this branch) - activate as is, without fanning out children
             logger.debug("simulating -- triggered ability:" + ability);
             game.getStack().push(game, new StackAbility(ability, playerId));
             if (ability.activate(game, false) && ability.isUsesStack()) {
@@ -358,6 +369,70 @@ public final class SimulatedPlayer2 extends ComputerPlayer {
             }
         }
         return true;
+    }
+
+    /**
+     * DARRELLBEST-FORK: bounds search explosion caused by a trigger that keeps re-triggering itself.
+     * <p>
+     * Unlike an activated ability, a trigger is <b>mandatory</b> — the AI cannot decline one without
+     * simulating an illegal game state. So this does not refuse the trigger. It stops the search from
+     * <i>branching</i> on it: past the cap the trigger is pushed and resolved as-is, taking the same
+     * path used when it has no options at all. The simulated game stays legal; only the fan-out that
+     * makes the search unbounded is removed.
+     * <p>
+     * <b>The count comes from the node's ancestry, not from a field on this player.</b> Search
+     * branches interleave through a single {@code SimulatedPlayer2}, so an instance counter would
+     * count sibling branches against each other and trip on breadth rather than on repetition.
+     * Walking parents counts only what actually happened on the path leading to this node.
+     * <p>
+     * Identity is (source name + rule text) rather than object identity, for the same reason
+     * {@code ComputerPlayer7.signatureOf} uses it: the search works on copies of the game, so the
+     * same printed ability is a different instance at every level and comparing instances would
+     * never match.
+     */
+    private boolean exceededChainedTriggers(Ability ability, Game game) {
+        if (!(game.getCustomData() instanceof SimulationNode2)) {
+            return false;
+        }
+        String signature = signatureOf(ability, game);
+        int chained = 0;
+        for (SimulationNode2 node = (SimulationNode2) game.getCustomData();
+                node != null; node = node.getParent()) {
+            if (!nodeMatchesSignature(node, signature)) {
+                break; // consecutive only -- anything else on the path resets the chain
+            }
+            chained++;
+            if (chained >= MAX_CHAINED_SAME_TRIGGERS) {
+                // debug, not warn: a search that trips this trips it many times over, and the point
+                // is to bound the search rather than to flood the log the loop is already flooding
+                logger.debug("simulating -- capped a chained trigger (" + chained
+                        + "x consecutively on this branch): " + signature);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean nodeMatchesSignature(SimulationNode2 node, String signature) {
+        List<Ability> abilities = node.getAbilities();
+        Game nodeGame = node.getGame();
+        if (abilities == null || abilities.isEmpty() || nodeGame == null) {
+            // no ability recorded on this node, or no game to resolve its source against: treat as
+            // "not the same trigger" so an unknown node breaks the chain rather than extending it
+            return false;
+        }
+        for (Ability nodeAbility : abilities) {
+            if (signature.equals(signatureOf(nodeAbility, nodeGame))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String signatureOf(Ability ability, Game game) {
+        MageObject source = ability.getSourceObject(game);
+        String name = source == null ? "?" : source.getName();
+        return name + "|" + ability.getRule();
     }
 
     protected void addAbilityNode(SimulationNode2 parent, Ability ability, int depth, Game game) {
