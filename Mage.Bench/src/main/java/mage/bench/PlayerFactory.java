@@ -5,6 +5,7 @@ import mage.player.ai.ComputerPlayer;
 import mage.player.ai.ComputerPlayer7;
 import mage.player.ai.ComputerPlayerMCTS;
 import mage.player.ai.commander.ComputerPlayerCommander;
+import mage.player.ai.commander.ComputerPlayerLearner;
 import mage.player.ai.kanna.ComputerPlayerKanna;
 import mage.players.Player;
 
@@ -24,6 +25,8 @@ public final class PlayerFactory {
     public static final String BASE = "base";
     /** DARRELLBEST-FORK: the "Computer - commander" bot, a source fork of MAD tuned independently. */
     public static final String COMMANDER = "commander";
+    /** DARRELLBEST-FORK: the "Computer - learner" bot -- commander's search, learned evaluation. */
+    public static final String LEARNER = "learner";
 
     /**
      * DARRELLBEST-FORK: think-time budget handed to every ComputerPlayer6-derived bench player,
@@ -103,12 +106,18 @@ public final class PlayerFactory {
                 cmd.setMaxThinkTimeSecs(thinkTimeOverride());
             }
             return cmd;
+        } else if (LEARNER.equals(type)) {
+            ComputerPlayerLearner learner = new ComputerPlayerLearner(name, range, skill);
+            if (thinkTimeOverride() > 0) {
+                learner.setMaxThinkTimeSecs(thinkTimeOverride());
+            }
+            return learner;
         } else if (MCTS.equals(type)) {
             return new ComputerPlayerMCTS(name, range, skill);
         } else if (BASE.equals(type)) {
             return new ComputerPlayer(name, range);
         }
         throw new IllegalArgumentException("Unknown player type '" + type
-                + "', expected one of: " + KANNA + ", " + CP7 + ", " + MCTS + ", " + BASE + ", " + COMMANDER);
+                + "', expected one of: " + KANNA + ", " + CP7 + ", " + MCTS + ", " + BASE + ", " + COMMANDER + ", " + LEARNER);
     }
 }

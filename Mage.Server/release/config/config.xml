@@ -70,6 +70,7 @@
              match PlayerType's description strings exactly or the server throws on startup. -->
         <playerType name="Computer - llm" jar="mage-player-ai-kanna-${project.version}.jar" className="mage.player.ai.kanna.ComputerPlayerKanna"/>
         <playerType name="Computer - commander" jar="mage-player-ai-commander-${project.version}.jar" className="mage.player.ai.commander.ComputerPlayerCommander"/>
+        <playerType name="Computer - learner" jar="mage-player-ai-commander-${project.version}.jar" className="mage.player.ai.commander.ComputerPlayerLearner"/>
     </playerTypes>
     <gameTypes>
         <gameType name="Two Player Duel" jar="mage-game-twoplayerduel-${project.version}.jar" className="mage.game.TwoPlayerMatch" typeName="mage.game.TwoPlayerDuelType"/>

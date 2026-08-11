@@ -73,6 +73,7 @@
         <!-- DARRELLBEST-FORK: names must match PlayerType's description strings exactly. -->
         <playerType name="Computer - llm" jar="mage-player-ai-kanna.jar" className="mage.player.ai.kanna.ComputerPlayerKanna"/>
         <playerType name="Computer - commander" jar="mage-player-ai-commander.jar" className="mage.player.ai.commander.ComputerPlayerCommander"/>
+        <playerType name="Computer - learner" jar="mage-player-ai-commander.jar" className="mage.player.ai.commander.ComputerPlayerLearner"/>
     </playerTypes>
     <gameTypes>
         <gameType name="Two Player Duel" jar="mage-game-twoplayerduel.jar" className="mage.game.TwoPlayerMatch" typeName="mage.game.TwoPlayerDuelType"/>

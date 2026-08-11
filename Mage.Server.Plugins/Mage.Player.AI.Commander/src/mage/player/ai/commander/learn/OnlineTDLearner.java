@@ -18,8 +18,8 @@ package mage.player.ai.commander.learn;
  * <b>Updates never happen inside a search.</b> {@link #observe} is called between decisions, never
  * from {@code evaluateState}. A minimax search compares scores across branches; if the weights moved
  * partway through, the second half of the tree would be scored by a different function than the
- * first and the comparison would be meaningless. Same reason {@link LinearEvaluator} only reloads
- * between games.
+ * first and the comparison would be meaningless. Same reason weights are checked out once per game
+ * rather than re-read during one.
  * <p>
  * <b>Features are normalised here, unlike the offline path.</b> {@link StateFeatures} emits raw
  * counts on wildly different scales (life_diff spans about +/-40, planeswalker_count_diff about
