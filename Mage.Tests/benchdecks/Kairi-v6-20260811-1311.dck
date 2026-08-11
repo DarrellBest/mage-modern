@@ -1,0 +1,82 @@
+1 [SLD:1506] Academy Ruins
+1 [J22:9] Alandra, Sky Dreamer
+1 [SLP:7] An Offer You Can't Refuse
+1 [SLD:2489] Arcane Denial
+1 [SLD:1492*] Arcane Signet
+1 [STX:37] Archmage Emeritus
+1 [2XM:232] Basalt Monolith
+1 [SLD:1864] Blade of Selves
+1 [A25:44] Blue Sun's Zenith
+1 [M15:46] Chasm Skulker
+1 [LCC:106] Chimil, the Inner Sun
+1 [2X2:301] Coldsteel Heart
+1 [EOE:51] Consult the Star Charts
+1 [SLD:97] Dig Through Time
+1 [WAR:245] Emergence Zone
+1 [CMM:381] Extraplanar Lens
+1 [SLD:1084] Fabricate
+1 [SLD:1995] Fact or Fiction
+1 [FIC:463] Flash Photography
+1 [MH3:220] Flooded Strand
+1 [SOS:49] Flow State
+1 [SLD:1996] Frantic Search
+1 [ZNR:60] Glasspool Mimic
+1 [DMR:54] High Tide
+1 [BLB:52] Into the Flood Maw
+1 [CHK:72] Keiga, the Tide Star
+1 [MH2:228] Liquimetal Torque
+1 [SLD:796*] Mana Vault
+1 [C21:122] Metallurgic Summonings
+1 [ONE:63] Mindsplice Apparatus
+1 [TDM:261] Mistrise Village
+1 [MH2:250] Misty Rainforest
+1 [C17:54] Mirror of the Forebears
+1 [SLD:1842] Mystic Remora
+1 [SLD:2143] Mystic Sanctuary
+1 [WHO:49] Nanogene Conversion
+1 [TDC:92] Narset's Reversal
+1 [2X2:561] Nim Deathmantle
+1 [THS:223] Nykthos, Shrine to Nyx
+1 [NEO:271] Otawara, Soaring City
+1 [MH3:224] Polluted Delta
+1 [TDC:160] Pongify
+1 [XLN:243] Primal Amulet
+1 [SLD:2699] Prismatic Vista
+1 [MSC:152] Quantum Misalignment
+1 [SLD:1781] Reality Shift
+1 [SLD:2535] Reconnaissance Mission
+1 [C21:358] Replication Technique
+1 [CMM:117] Rise from the Tides
+1 [SOC:202] Rite of Replication
+1 [40K:165*] Resurrection Orb
+1 [SLD:2415] Roaming Throne
+1 [CMR:91] Sakashima's Will
+1 [MH3:349] Sapphire Medallion
+1 [MH2:254] Scalding Tarn
+1 [ZNR:333] Sea Gate Restoration
+1 [BLB:68] Season of Weaving
+1 [MOM:77] See Double
+1 [SLC:2020] Shark Typhoon
+1 [MH3:241] Sink into Stupor
+21 [SLD:1474] Snow-Covered Island
+1 [SLD:1165] Spellseeker
+1 [DFT:67] Stock Up
+1 [GTC:53] Stolen Identity
+1 [TDC:167] Sublime Epiphany
+1 [SLD:1591] Swan Song
+1 [M13:72] Talrand, Sky Summoner
+1 [SLD:1721] Teferi's Ageless Insight
+1 [LTR:451] The One Ring
+1 [C21:34] Theoretical Duplication
+1 [OTJ:75] Three Steps Ahead
+1 [DMU:73] Vesuvan Duplimancy
+1 [SLD:478] Rhystic Study
+1 [SLD:7062] Fellwar Stone
+1 [SLD:1495] Thought Vessel
+1 [PIP:235] Mind Stone
+1 [SLD:1604] Sol Ring
+1 [SLD:1110] Phyrexian Metamorph
+1 [FCA:4] Counterspell
+SB: 1 [NEO:408] Kairi, the Swirling Sky
+LAYOUT MAIN:(1,9)(CMC,false,46)|([SLD:1506],[WAR:245],[MH3:220],[TDM:261],[MH2:250],[SLD:2143],[THS:223],[NEO:271],[MH3:224],[SLD:2699],[MH2:254],[SLD:1474],[SLD:1474],[SLD:1474],[SLD:1474],[SLD:1474],[SLD:1474],[SLD:1474],[SLD:1474],[SLD:1474],[SLD:1474],[SLD:1474],[SLD:1474],[SLD:1474],[SLD:1474],[SLD:1474],[SLD:1474],[SLD:1474],[SLD:1474],[SLD:1474],[SLD:1474],[SLD:1474])([SLP:7],[DMR:54],[BLB:52],[SLD:796*],[SLD:1842],[TDC:160],[SLD:1591],[OTJ:75],[SLD:1604])([SLD:2489],[SLD:1492*],[SLD:1864],[2X2:301],[EOE:51],[SOS:49],[MH2:228],[C17:54],[TDC:92],[2X2:561],[SLD:1781],[40K:165*],[MH3:349],[SLD:7062],[SLD:1495],[PIP:235],[FCA:4])([2XM:232],[A25:44],[M15:46],[CMM:381],[SLD:1084],[SLD:1996],[ZNR:60],[MH3:241],[SLD:1165],[DFT:67],[C21:34],[SLD:478])([J22:9],[STX:37],[SLD:1995],[FIC:463],[ONE:63],[WHO:49],[XLN:243],[SLD:2535],[SOC:202],[SLD:2415],[CMR:91],[MOM:77],[M13:72],[SLD:1721],[LTR:451],[DMU:73],[SLD:1110])([C21:122],[MSC:152],[C21:358])([LCC:106],[CHK:72],[CMM:117],[BLB:68],[SLC:2020],[GTC:53],[TDC:167])([ZNR:333])([SLD:97])
+LAYOUT SIDEBOARD:(1,1)(NONE,false,46)|([NEO:408])
