@@ -96,6 +96,7 @@ public final class CommanderEvalParams {
     public static final CommanderEvalParams TUNED = DEFAULT.toBuilder()
             .handCardScore(150)
             .commanderDamageWeight(8000)
+            .modeSelectionMode(1)
             .build();
 
     // --- life ---
@@ -106,6 +107,7 @@ public final class CommanderEvalParams {
     private final int handCardScore;
     private final int commanderDamageWeight;
     private final int opponentSelectionMode;
+    private final int modeSelectionMode;
 
     // --- card definition ---
     private final int baseCardValue;
@@ -145,6 +147,7 @@ public final class CommanderEvalParams {
         this.handCardScore = b.handCardScore;
         this.commanderDamageWeight = b.commanderDamageWeight;
         this.opponentSelectionMode = b.opponentSelectionMode;
+        this.modeSelectionMode = b.modeSelectionMode;
         this.baseCardValue = b.baseCardValue;
         this.landBaseMultiplier = b.landBaseMultiplier;
         this.landPerManaSymbol = b.landPerManaSymbol;
@@ -186,6 +189,7 @@ public final class CommanderEvalParams {
         b.handCardScore = this.handCardScore;
         b.commanderDamageWeight = this.commanderDamageWeight;
         b.opponentSelectionMode = this.opponentSelectionMode;
+        b.modeSelectionMode = this.modeSelectionMode;
         b.baseCardValue = this.baseCardValue;
         b.landBaseMultiplier = this.landBaseMultiplier;
         b.landPerManaSymbol = this.landPerManaSymbol;
@@ -269,6 +273,25 @@ public final class CommanderEvalParams {
      */
     public int getOpponentSelectionMode() {
         return opponentSelectionMode;
+    }
+
+    /**
+     * DARRELLBEST-FORK: how a modal ability picks its mode.
+     * <p>
+     * {@code 0} (default) is upstream: {@code .findFirst()} over the legal modes — the mode declared
+     * first in the card's source, every time, regardless of value. That is not a choice, it is
+     * declaration order.
+     * <p>
+     * {@code 1} scores the modes and takes the best. The case that motivated it: Kairi, the Swirling
+     * Sky's dies-trigger is "choose one — return any number of target nonland permanents with total
+     * mana value 6 or less to their OWNERS' hands; or mill six, then return up to two instants
+     * and/or sorceries from your graveyard to your hand". Bounce is declared first, and upstream's
+     * only filter is {@code canChoose} — legality, not value. So when the sole legal bounce targets
+     * are the bot's OWN permanents, it bounces its own board rather than taking the mill mode and
+     * drawing two cards. Actively harmful, not merely suboptimal.
+     */
+    public int getModeSelectionMode() {
+        return modeSelectionMode;
     }
 
     // --- card definition ---
@@ -395,6 +418,7 @@ public final class CommanderEvalParams {
                 + ", handCardScore=" + handCardScore
                 + ", commanderDamageWeight=" + commanderDamageWeight
                 + ", opponentSelectionMode=" + opponentSelectionMode
+                + ", modeSelectionMode=" + modeSelectionMode
                 + ", baseCardValue=" + baseCardValue
                 + ", landBaseMultiplier=" + landBaseMultiplier
                 + ", landPerManaSymbol=" + landPerManaSymbol
@@ -435,6 +459,7 @@ public final class CommanderEvalParams {
         private int handCardScore = 5;
         private int commanderDamageWeight = 0;
         private int opponentSelectionMode = 0;
+        private int modeSelectionMode = 0;
         private int baseCardValue = 3;
         private int landBaseMultiplier = 50;
         private int landPerManaSymbol = 50;
@@ -478,6 +503,14 @@ public final class CommanderEvalParams {
 
         public Builder lifeAboveMultiplier(int v) {
             this.lifeAboveMultiplier = v;
+            return this;
+        }
+
+        public Builder modeSelectionMode(int v) {
+            if (v < 0 || v > 1) {
+                throw new IllegalArgumentException("modeSelectionMode must be 0 (first legal) or 1 (evaluated), got " + v);
+            }
+            this.modeSelectionMode = v;
             return this;
         }
 

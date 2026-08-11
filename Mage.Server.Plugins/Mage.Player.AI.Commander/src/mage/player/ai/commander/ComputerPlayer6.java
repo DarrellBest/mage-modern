@@ -4,6 +4,8 @@ import mage.player.ai.CombatEvaluator;
 import mage.player.ai.ComputerPlayer;
 import mage.MageObject;
 import mage.abilities.Ability;
+import mage.abilities.Mode;
+import mage.abilities.Modes;
 import mage.abilities.ActivatedAbility;
 import mage.abilities.SpellAbility;
 import mage.abilities.StaticAbility;
@@ -154,6 +156,97 @@ public class ComputerPlayer6 extends ComputerPlayer {
             throw new IllegalArgumentException("evalParams must not be null");
         }
         this.evalParams = evalParams;
+    }
+
+    /**
+     * DARRELLBEST-FORK: choose a modal ability's mode by VALUE rather than by declaration order.
+     * <p>
+     * Upstream's {@code chooseMode} is {@code .findFirst()} over the legal modes, filtered only by
+     * {@code canChoose} — legality, never value. Whichever mode the card happens to declare first
+     * wins every time.
+     * <p>
+     * The case that motivated this: Kairi, the Swirling Sky's dies-trigger declares
+     * "return any number of target nonland permanents with total mana value 6 or less to their
+     * OWNERS' hands" first, and "mill six, then return up to two instants/sorceries" second. When
+     * the only legal bounce targets are the bot's own permanents, upstream bounces its own board.
+     * That is actively harmful, not merely suboptimal, and the alternative mode would have drawn it
+     * two cards.
+     * <p>
+     * <b>Scoring is by target ownership, deliberately not by {@link mage.constants.Outcome}.</b>
+     * Outcome cannot answer this: returning a permanent to hand is good when it is an opponent's
+     * and usually bad when it is your own, and the enum carries one value for the effect either way.
+     * Who the legal targets belong to does answer it, and needs no simulation.
+     * <p>
+     * The self-target penalty is a PENALTY, not an exclusion, so a mode that is the only one
+     * available is still returned. Ties keep declaration order, matching upstream when nothing
+     * distinguishes the modes.
+     */
+    @Override
+    public Mode chooseMode(Modes modes, Ability source, Game game) {
+        // upstream's fast path: modes already chosen (the simulated-game case)
+        if (modes.getMode() != null && modes.getMaxModes(game, source) == modes.getSelectedModes().size()) {
+            return modes.getMode();
+        }
+        if (evalParams.getModeSelectionMode() == 0) {
+            return super.chooseMode(modes, source, game);
+        }
+        List<Mode> available = new ArrayList<>();
+        for (Mode mode : modes.getAvailableModes(source, game)) {
+            if (!modes.isMayChooseSameModeMoreThanOnce() && modes.getSelectedModes().contains(mode.getId())) {
+                continue;
+            }
+            if (mode.getTargets().canChoose(source.getControllerId(), source, game)) {
+                available.add(mode);
+            }
+        }
+        if (available.isEmpty()) {
+            return null;
+        }
+        Mode best = null;
+        int bestScore = Integer.MIN_VALUE;
+        for (Mode mode : available) {
+            int score = scoreMode(mode, source, game);
+            if (score > bestScore) { // strict >, so ties keep declaration order
+                bestScore = score;
+                best = mode;
+            }
+        }
+        return best;
+    }
+
+    /** Penalty for a targeted mode whose only legal targets are things this player controls. */
+    private static final int MODE_SELF_TARGET_PENALTY = 1000;
+
+    private int scoreMode(Mode mode, Ability source, Game game) {
+        int score = 0;
+        for (Target target : mode.getTargets()) {
+            int mine = 0;
+            int theirs = 0;
+            for (UUID id : target.possibleTargets(source.getControllerId(), source, game)) {
+                UUID controller = null;
+                Permanent permanent = game.getPermanent(id);
+                if (permanent != null) {
+                    controller = permanent.getControllerId();
+                } else if (game.getPlayer(id) != null) {
+                    controller = id;
+                }
+                if (controller == null) {
+                    continue;
+                }
+                if (controller.equals(getId())) {
+                    mine++;
+                } else {
+                    theirs++;
+                }
+            }
+            if (theirs == 0 && mine > 0) {
+                // every legal target is our own -- this mode can only be pointed at ourselves
+                score -= MODE_SELF_TARGET_PENALTY;
+            } else {
+                score += theirs;
+            }
+        }
+        return score;
     }
 
     public ComputerPlayer6(final ComputerPlayer6 player) {
