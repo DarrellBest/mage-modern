@@ -40,8 +40,20 @@ import mage.player.ai.commander.score.CommanderEvalParams;
  */
 public class ComputerPlayerCommander extends ComputerPlayer7 {
 
+    /**
+     * DARRELLBEST-FORK: uses {@link CommanderEvalParams#TUNED}, not DEFAULT.
+     * <p>
+     * This is the constructor the SERVER reaches by reflection (config.xml names this class with the
+     * exact signature {@code (String, RangeOfInfluence, int)}), so this is what live games play
+     * with. TUNED currently differs from DEFAULT only in handCardScore (5 -> 150); see that constant
+     * for the measurement behind it.
+     * <p>
+     * Deliberately scoped to this class rather than changed in DEFAULT or in ComputerPlayer6's
+     * constructor: MAD and the learner keep the historical weights, so the tuned value affects only
+     * the bot it was measured on.
+     */
     public ComputerPlayerCommander(String name, RangeOfInfluence range, int skill) {
-        super(name, range, skill);
+        super(name, range, skill, CommanderEvalParams.TUNED);
     }
 
     /** DARRELLBEST-FORK: construct with tuned evaluation weights. */

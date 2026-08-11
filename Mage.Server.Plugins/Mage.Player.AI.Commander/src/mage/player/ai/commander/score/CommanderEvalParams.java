@@ -47,6 +47,36 @@ public final class CommanderEvalParams {
      */
     public static final CommanderEvalParams DEFAULT = builder().build();
 
+    /**
+     * DARRELLBEST-FORK: the weights the live Commander bot actually plays with.
+     * <p>
+     * Kept SEPARATE from {@link #DEFAULT} on purpose. DEFAULT must keep meaning "upstream's
+     * historical behaviour" — the equivalence tests pin exact evaluator output against values
+     * hand-derived from the pre-refactor literals, and the G0 instrument control rests on a
+     * default-configured bot being identical to the old one. Folding a tuned value into DEFAULT
+     * would quietly destroy both, and there would be nothing left to measure future changes against.
+     * <p>
+     * <b>handCardScore 5 → 150.</b> At 5, a card in hand was worth 1/60th of a permanent
+     * ({@code permanentOnBattlefieldBonus} alone is 300) — measured live at 20 points of hand
+     * against 12,926 of board, i.e. 0.15% of the position. The bot was effectively unable to value
+     * holding a counterspell.
+     * <p>
+     * Measured over 161 decisive games in three independent runs across two very different decks:
+     * <pre>
+     *   Krenko mirror (aggro)     34-25 of 59   57.6%
+     *   Kairi v6 mirror (control) 24-17 of 41   58.5%
+     *   Krenko mirror (2nd run)   35-26 of 61   57.4%
+     *   POOLED                    93-68 of 161  57.8%  95% CI [50.04%, 65.13%]
+     * </pre>
+     * The interval's lower bound clears 50% by 0.04 points and the exact binomial p is 0.058, so
+     * this is on the threshold rather than comfortably past it. What carries it is replication:
+     * three independent samples across an aggro deck and a control deck landing within 1.1 points
+     * of each other. Roughly 20-40 more decisive games would settle it properly.
+     */
+    public static final CommanderEvalParams TUNED = DEFAULT.toBuilder()
+            .handCardScore(150)
+            .build();
+
     // --- life ---
     private final int[] lifeScores;
     private final int lifeAboveMultiplier;

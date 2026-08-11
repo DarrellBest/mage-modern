@@ -155,7 +155,8 @@ public class CommanderEvalParamsCopyTest {
     }
 
     /**
-     * The legacy three-argument constructors are what config.xml and the bench harness call, so they
+     * The legacy three-argument constructors are what config.xml and the bench harness call, so what
+     * they hand back IS what live games play with. Every class except the deployed Commander bot
      * must keep producing the historical behaviour.
      */
     @Test
@@ -165,11 +166,28 @@ public class CommanderEvalParamsCopyTest {
         Assert.assertSame(CommanderEvalParams.DEFAULT,
                 new ComputerPlayer7("b", RangeOfInfluence.ALL, SKILL).getEvalParams());
         Assert.assertSame(CommanderEvalParams.DEFAULT,
-                new ComputerPlayerCommander("c", RangeOfInfluence.ALL, SKILL).getEvalParams());
-        Assert.assertSame(CommanderEvalParams.DEFAULT,
                 new ComputerPlayerLearner("d", RangeOfInfluence.ALL, SKILL).getEvalParams());
         Assert.assertSame(CommanderEvalParams.DEFAULT,
                 new ComputerPlayerControllableProxy("e", RangeOfInfluence.ALL, SKILL).getEvalParams());
+    }
+
+    /**
+     * ComputerPlayerCommander is the one class config.xml names, so its no-params constructor is
+     * what the live server actually builds. It deliberately uses TUNED rather than DEFAULT.
+     * <p>
+     * Asserted separately and explicitly because a well-meaning "make it consistent with the others"
+     * edit would silently revert the only tuning result we have measured evidence for, and nothing
+     * else in the build would notice.
+     */
+    @Test
+    public void deployedCommanderBotUsesTunedWeights() {
+        CommanderEvalParams live = new ComputerPlayerCommander("c", RangeOfInfluence.ALL, SKILL).getEvalParams();
+        Assert.assertSame("the deployed bot must use TUNED", CommanderEvalParams.TUNED, live);
+        Assert.assertEquals("TUNED's measured change is handCardScore 5 -> 150",
+                150, live.getHandCardScore());
+        Assert.assertEquals("TUNED must differ from DEFAULT ONLY in handCardScore",
+                CommanderEvalParams.DEFAULT.toBuilder().handCardScore(150).build().toString(),
+                CommanderEvalParams.TUNED.toString());
     }
 
     /**
