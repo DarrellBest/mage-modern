@@ -93,6 +93,46 @@ An immutable `CommanderEvalParams` carrying every scoring weight, **with default
 
 `ComputerPlayerLearner` already routes evaluation through an overridable evaluator; params should compose with that extension point rather than introduce a parallel mechanism.
 
+### Stage 1.5 — Two structural defects found while inventorying (fix before tuning)
+
+**a. One evaluation was never routed through `evaluateState`.** `ComputerPlayer7.java:237` sets
+`currentScore` by calling the static `GameStateEvaluator2.evaluate(...)` directly, while
+`ComputerPlayer6.java:357-360` compares it against `testScore` from the *overridable*
+`evaluateState` and prunes the branch on the result. The other 13 in-search evaluations were
+deliberately hoisted into `evaluateState`; this one was missed.
+
+This is already a live bug for `ComputerPlayerLearner`, which compares its blended learned score
+against a hand-tuned one — the exact incoherent comparison `ComputerPlayer6`'s javadoc (`:160-167`)
+claims was eliminated. Once `CommanderEvalParams` exists it becomes the same bug for every tuned
+bot: the search would prune by comparing tuned scores against default-weighted ones. **Route it
+through `evaluateState` regardless of whether the params work proceeds.**
+
+**b. The copy-constructor omission is a demonstrated silent-fallback trap.** `ComputerPlayer6`'s
+copy constructor (`:130-141`) copies `maxDepth`, `currentScore`, `combat`, `actions`, `targets`,
+`choices`, `actionCache` — and silently omits `maxNodes` and `maxThinkTimeSecs`, which are set only
+in the `(name, range, skill)` constructor.
+
+This is inherited verbatim from upstream MAD and is **not currently firing**: live game logs show
+`Nodes calculated: 31` terminating on the depth limit rather than the node limit, so the instance
+actually playing carries a non-zero `maxNodes`. It is recorded here because it proves the failure
+mode is real and unguarded — add a field to `ComputerPlayer6`, forget the copy constructor, and the
+bot silently plays with defaults while appearing to accept a tuned config. `CommanderEvalParams`
+must be added to all copy constructors (`ComputerPlayer6`, `ComputerPlayer7`,
+`ComputerPlayerCommander`, `ComputerPlayerLearner`, `ComputerPlayerControllableProxy`) **by
+reference** (it is immutable, matching `ComputerPlayerLearner`'s existing `federation`/`session`
+idiom), with a test asserting a copy carries non-default params.
+
+**Good news on the search path:** `SimulatedPlayer2` never evaluates — it extends `ComputerPlayer`,
+not `ComputerPlayer6`, and holds zero references to either scoring class. `SimulationNode2` holds
+only a `UUID`. The object doing the searching and scoring is always the real player, so a params
+field on it is used correctly throughout the search.
+
+**Awkward seam to resolve explicitly:** `util/CombatUtil` reaches the evaluator from 5 static call
+sites, four frames deep from `ComputerPlayer6.declareBlockers`. All five evaluate from
+`defendingPlayerId`'s perspective, read from `game.getCombat().getDefenders()` — not necessarily the
+calling bot. Threading params there means the bot models blocking with its own weights, which is
+probably what we want but is not what the signature says. Decide it deliberately.
+
 ### Stage 3 — Measurement
 
 - **Parallel bench wrapper.** N `BenchRunner` JVMs on disjoint seed ranges, merged JSONL, one pooled Wilson interval. Each JVM must be a separate process — the engine's `ThreadUtils.ensureRunInGameThread()` allowlists a thread literally named `main`, so in-JVM parallelism and Maven `exec:java` both silently corrupt games. Pooled rate is computed over merged raw results, never by averaging per-worker rates.
