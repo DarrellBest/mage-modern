@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -56,6 +57,10 @@ public final class BenchGame {
     // is loaded separately -- see addPlayer below).
     private static final int MIN_MAINDECK_TWOPLAYER = 40;
     private static final int MIN_MAINDECK_COMMANDER = 90;
+
+    // How often the --maxGameSeconds watchdog looks at the clock. Turns take seconds to
+    // minutes, so 1s costs nothing and still bounds the overshoot to well under a turn.
+    private static final long WATCHDOG_POLL_MS = 1000L;
 
     // Mirrors DckDeckImporter's own card-line grammar (group 1 = "SB:" prefix, group 2 =
     // declared quantity), so parseDeclaredCounts below counts a line as a card line under
@@ -164,7 +169,19 @@ public final class BenchGame {
             options.stopAtStep = PhaseStep.UNTAP;
             game.setGameOptions(options);
 
-            game.start(seat1.getId());
+            // Wall-clock bound on this one game (see startWatchdog). Nothing starts and no
+            // thread is created when --maxGameSeconds is 0, which is the default.
+            AtomicBoolean budgetExceeded = new AtomicBoolean(false);
+            Thread watchdog = config.maxGameSeconds > 0
+                    ? startWatchdog(game, options, config.maxGameSeconds, budgetExceeded, gameIndex)
+                    : null;
+            try {
+                game.start(seat1.getId());
+            } finally {
+                if (watchdog != null) {
+                    watchdog.interrupt();
+                }
+            }
 
             int turns = game.getState().getTurnNum();
             String winnerKey = null;
@@ -180,6 +197,11 @@ public final class BenchGame {
             Termination termination;
             if (winnerKey != null) {
                 termination = Termination.WIN;
+            } else if (budgetExceeded.get()) {
+                // Checked before CAP: when a game both blew its wall-clock budget and reached
+                // the turn cap, the budget is the tighter and more actionable of the two, and
+                // "this game was too slow to finish" is the fact worth surfacing.
+                termination = Termination.TIMEOUT;
             } else if (config.turnCap > 0 && turns >= config.turnCap) {
                 // engine treats the turn cap as a draw; distinguish that from a genuine
                 // mutual-loss draw by checking whether the cap was actually reached
@@ -212,6 +234,83 @@ public final class BenchGame {
                 DataCollectorServices.unregister(cardPlayCollector);
             }
         }
+    }
+
+    /**
+     * Starts a daemon thread that bounds one game in WALL-CLOCK time, and returns it so the
+     * caller can interrupt it once the game is over.
+     * <p>
+     * How it stops the game, and why it works: {@code GameImpl.setGameOptions} stores the
+     * {@link GameOptions} instance BY REFERENCE (it does not copy), so the object handed to
+     * the engine before {@code game.start()} is the same one the engine keeps consulting
+     * while the game runs. {@code GameImpl.checkStopOnTurnOption()} runs at the start of
+     * every turn and, when {@code stopOnTurn} matches the current turn and
+     * {@code stopAtStep == UNTAP}, sets {@code winnerId = null} and ends the game -- exactly
+     * the "call it a draw and move on" semantics wanted here. So the watchdog needs to do
+     * nothing more than write one field.
+     * <p>
+     * Two details that make or break it:
+     * <ul>
+     * <li>That engine check is an EXACT match ({@code stopOnTurn.equals(turnNum)}), not
+     *     {@code >=}, so the value written must be a FUTURE turn ({@code current + 1}).
+     *     Writing the current or a past turn number would never fire.</li>
+     * <li>Turns here can take minutes, so a single write can still be missed if the turn
+     *     advanced between the read and the write. The loop therefore re-arms whenever the
+     *     game has moved strictly PAST the turn it armed. It must not re-arm at or before
+     *     that turn: pushing the target forward every poll while the game is still
+     *     approaching it would walk the stop point ahead of the game forever.</li>
+     * </ul>
+     * This thread deliberately touches no engine mutator -- it only reads
+     * {@code getState().getTurnNum()} and writes a plain field on an options object. Engine
+     * code that must run on the game thread guards itself with
+     * {@code ThreadUtils.ensureRunInGameThread()} (reachable only from
+     * {@code GameImpl.checkConcede} and {@code MatchImpl}, neither of which is on this path),
+     * and BenchRunner runs games on the real "main" thread precisely to satisfy it.
+     * <p>
+     * WHAT THIS DOES NOT CATCH, and it matters: the stop is only ever evaluated at a turn
+     * boundary (UNTAP). A game wedged INSIDE a single turn -- one enormous AI search that
+     * never returns, the no-progress loops this bot has hit before -- never reaches the next
+     * UNTAP, so this watchdog will never fire for it and the game runs forever. An outer
+     * process-level {@code timeout} on the whole worker remains necessary; this option
+     * shortens slow games, it does not make a run unconditionally safe.
+     */
+    private static Thread startWatchdog(Game game, GameOptions options, int maxSeconds,
+                                        AtomicBoolean budgetExceeded, int gameIndex) {
+        long deadlineNanos = System.nanoTime() + maxSeconds * 1_000_000_000L;
+        Thread watchdog = new Thread(() -> {
+            int armedTurn = -1;
+            try {
+                while (!Thread.currentThread().isInterrupted()) {
+                    Thread.sleep(WATCHDOG_POLL_MS);
+                    if (System.nanoTime() < deadlineNanos) {
+                        continue;
+                    }
+                    int currentTurn = game.getState().getTurnNum();
+                    if (armedTurn >= 0 && currentTurn <= armedTurn) {
+                        continue; // already armed and the game has not passed it yet
+                    }
+                    armedTurn = currentTurn + 1;
+                    // The engine reads this field from the game thread without synchronization
+                    // and GameOptions.stopOnTurn is not volatile, so this hands over on the
+                    // JMM's good graces rather than a guarantee. In practice the game thread
+                    // re-reads it through a megamorphic call chain it cannot hoist the field
+                    // across, and the re-arm above covers a miss anyway. Making it a guarantee
+                    // would mean editing GameOptions in the engine module; not worth it for a
+                    // benchmark-only knob.
+                    options.stopOnTurn = armedTurn;
+                    if (budgetExceeded.compareAndSet(false, true)) {
+                        logger.info("Bench game " + gameIndex + " exceeded its " + maxSeconds
+                                + "s budget on turn " + currentTurn + "; stopping at turn " + armedTurn);
+                    }
+                }
+            } catch (InterruptedException e) {
+                // normal: the game finished and the caller interrupted us
+                Thread.currentThread().interrupt();
+            }
+        }, "bench-game-watchdog");
+        watchdog.setDaemon(true);
+        watchdog.start();
+        return watchdog;
     }
 
     /**

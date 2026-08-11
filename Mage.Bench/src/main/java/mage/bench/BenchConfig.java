@@ -19,6 +19,17 @@ public final class BenchConfig {
     public final int skill;
     public final String model;
     public final int turnCap;
+    /**
+     * Wall-clock budget per game in seconds, or 0 (the default) for unlimited.
+     * <p>
+     * Bounds a benchmark game in TIME, which {@link #turnCap} does not: turns are not a
+     * proxy for seconds here. A measured Kairi mirror spent 504 seconds on 37 turns while a
+     * Krenko game reached the same turn count in well under a minute, and one observed
+     * configuration produced no completed game at all in 20 minutes. A game that exceeds
+     * this budget is stopped at the next turn boundary and recorded as
+     * {@link Termination#TIMEOUT} -- see BenchGame's watchdog, including what it cannot catch.
+     */
+    public final int maxGameSeconds;
     public final String out;
     public final String deckDir;
     public final String ollamaUrl;
@@ -30,8 +41,8 @@ public final class BenchConfig {
 
     public BenchConfig(int games, long baseSeed, String deckA, String deckB,
                        String playerA, String playerB, int skill, String model,
-                       int turnCap, String out, String deckDir, String ollamaUrl,
-                       String gameType, String trackCards) {
+                       int turnCap, int maxGameSeconds, String out, String deckDir,
+                       String ollamaUrl, String gameType, String trackCards) {
         this.games = games;
         this.baseSeed = baseSeed;
         this.deckA = deckA;
@@ -41,6 +52,7 @@ public final class BenchConfig {
         this.skill = skill;
         this.model = model;
         this.turnCap = turnCap;
+        this.maxGameSeconds = maxGameSeconds;
         this.out = out;
         this.deckDir = deckDir;
         this.ollamaUrl = ollamaUrl;
@@ -58,6 +70,7 @@ public final class BenchConfig {
         int skill = 6;
         String model = "xmage-ai-qwen3.6:latest";
         int turnCap = 50;
+        int maxGameSeconds = 0; // unlimited: preserves the pre-existing behaviour by default
         String out = "bench-results.jsonl";
         String deckDir = "Mage.Tests";
         String ollamaUrl = "http://localhost:11434";
@@ -89,6 +102,11 @@ public final class BenchConfig {
                 model = value;
             } else if ("turnCap".equals(key)) {
                 turnCap = parseInt(key, value);
+            } else if ("maxGameSeconds".equals(key)) {
+                maxGameSeconds = parseInt(key, value);
+                if (maxGameSeconds < 0) {
+                    throw new IllegalArgumentException("--maxGameSeconds must be >= 0 (0 = unlimited), got " + value);
+                }
             } else if ("out".equals(key)) {
                 out = value;
             } else if ("deckDir".equals(key)) {
@@ -104,7 +122,7 @@ public final class BenchConfig {
             }
         }
         return new BenchConfig(games, baseSeed, deckA, deckB, playerA, playerB,
-                skill, model, turnCap, out, deckDir, ollamaUrl, gameType, trackCards);
+                skill, model, turnCap, maxGameSeconds, out, deckDir, ollamaUrl, gameType, trackCards);
     }
 
     private static int parseInt(String key, String value) {

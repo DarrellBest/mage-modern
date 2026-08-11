@@ -11,9 +11,10 @@ import java.util.List;
  * small N these runs produce, and at rates near 0 or 1, the normal interval
  * gives bounds outside [0, 1] and badly understates uncertainty.
  * <p>
- * Cap, draw, and error games are excluded from the win-rate denominator and
- * reported separately -- "never finished", "finished with no winner", and
- * "failed to complete" all mean something different from "lost".
+ * Cap, draw, timeout, and error games are excluded from the win-rate denominator
+ * and reported separately -- "never finished", "finished with no winner", "ran
+ * out of its wall-clock budget", and "failed to complete" all mean something
+ * different from "lost".
  * <p>
  * Wins are attributed by seat, not by player key: when both seats run the
  * same player type (a same-key control run, e.g. cp7 vs cp7), the key alone
@@ -39,6 +40,7 @@ public final class SummaryReporter {
         int winsB = 0;
         int caps = 0;
         int draws = 0;
+        int timeouts = 0;
         int errors = 0;
         int llmCalls = 0;
         int invalidToolCalls = 0;
@@ -49,6 +51,8 @@ public final class SummaryReporter {
                 caps++;
             } else if (result.termination == Termination.DRAW) {
                 draws++;
+            } else if (result.termination == Termination.TIMEOUT) {
+                timeouts++;
             } else if (result.termination == Termination.ERROR) {
                 errors++;
             } else {
@@ -75,7 +79,7 @@ public final class SummaryReporter {
         double[] interval = wilson(winsA, decisive);
 
         Collections.sort(turnTimes);
-        return new RunSummary(total, decisive, winsA, winsB, caps, draws, errors,
+        return new RunSummary(total, decisive, winsA, winsB, caps, draws, timeouts, errors,
                 winRateA, interval[0], interval[1],
                 percentile(turnTimes, 0.50), percentile(turnTimes, 0.95),
                 llmCalls, invalidToolCalls);
@@ -98,7 +102,12 @@ public final class SummaryReporter {
         return new double[]{lower, upper};
     }
 
-    private static long percentile(List<Long> sorted, double fraction) {
+    /**
+     * Nearest-rank percentile over an already-sorted list. Package-private rather than private
+     * so {@link MergeReporter} can report per-game wall-time percentiles the same way this class
+     * reports per-turn ones, instead of carrying a second, subtly-different definition of "p95".
+     */
+    static long percentile(List<Long> sorted, double fraction) {
         if (sorted.isEmpty()) {
             return 0L;
         }
@@ -115,8 +124,9 @@ public final class SummaryReporter {
     public static String format(RunSummary summary, String playerAKey, String playerBKey) {
         StringBuilder sb = new StringBuilder();
         sb.append(String.format("%n=== Benchmark summary ===%n"));
-        sb.append(String.format("Games:        %d total, %d decisive, %d cap, %d draw, %d error%n",
-                summary.total, summary.decisive, summary.caps, summary.draws, summary.errors));
+        sb.append(String.format("Games:        %d total, %d decisive, %d cap, %d draw, %d timeout, %d error%n",
+                summary.total, summary.decisive, summary.caps, summary.draws,
+                summary.timeouts, summary.errors));
         sb.append(String.format("%-12s %d wins%n", playerAKey + ":", summary.winsA));
         sb.append(String.format("%-12s %d wins%n", playerBKey + ":", summary.winsB));
         sb.append(String.format("Win rate:     %.1f%% for %s  (95%% CI %.1f%% - %.1f%%)%n",

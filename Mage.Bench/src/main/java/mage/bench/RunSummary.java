@@ -13,6 +13,8 @@ public final class RunSummary {
     public final int winsB;
     public final int caps;
     public final int draws;
+    /** Games cut short by the --maxGameSeconds wall-clock budget; excluded from {@link #decisive}. */
+    public final int timeouts;
     public final int errors;
     public final double winRateA;
     public final double wilsonLowerA;
@@ -22,7 +24,8 @@ public final class RunSummary {
     public final int llmCalls;
     public final int invalidToolCalls;
 
-    public RunSummary(int total, int decisive, int winsA, int winsB, int caps, int draws, int errors,
+    public RunSummary(int total, int decisive, int winsA, int winsB, int caps, int draws,
+                      int timeouts, int errors,
                       double winRateA, double wilsonLowerA, double wilsonUpperA,
                       long p50TurnMs, long p95TurnMs, int llmCalls, int invalidToolCalls) {
         this.total = total;
@@ -31,6 +34,7 @@ public final class RunSummary {
         this.winsB = winsB;
         this.caps = caps;
         this.draws = draws;
+        this.timeouts = timeouts;
         this.errors = errors;
         this.winRateA = winRateA;
         this.wilsonLowerA = wilsonLowerA;
