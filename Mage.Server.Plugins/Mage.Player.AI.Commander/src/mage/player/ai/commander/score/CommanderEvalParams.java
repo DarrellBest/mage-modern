@@ -72,9 +72,30 @@ public final class CommanderEvalParams {
      * this is on the threshold rather than comfortably past it. What carries it is replication:
      * three independent samples across an aggro deck and a control deck landing within 1.1 points
      * of each other. Roughly 20-40 more decisive games would settle it properly.
+     * <p>
+     * <b>commanderDamageWeight 0 → 8000: included on domain grounds, NOT on measurement.</b> Be
+     * clear about the difference. The 1v1 Krenko screen returned 57.1%, 95% CI [42.2%, 70.9%] —
+     * inconclusive. But that fixture is mono-red aggro in a duel, where 21 commander damage from a
+     * single source almost never decides anything, so the experiment could barely observe the
+     * mechanic it was testing. Inconclusive there is not evidence of no value in multiplayer
+     * Commander, which is what the live server actually runs and where a commander connecting three
+     * times is a normal way to die.
+     * <p>
+     * Without this term a player on 35 life who has taken 18 commander damage scores as healthy
+     * while being one hit from losing — a second lethal axis the evaluator simply could not see.
+     * <p>
+     * On the value: 8000 is the level that was actually screened, so it is preferred over an
+     * untested number. A case exists for <b>12000</b> instead — that would make 21 commander damage
+     * cost exactly what draining a full 40 life costs ({@code getLifeScore(40) == 12000}), putting
+     * the two death clocks on one scale. Worth a run before changing it; do not swap it in blind.
+     * <p>
+     * <b>Neither value is verifiable with today's harness.</b> Mage.Bench runs only two-player and
+     * Commander DUEL, so the format this term exists for cannot be benchmarked at all until the
+     * harness supports Free For All.
      */
     public static final CommanderEvalParams TUNED = DEFAULT.toBuilder()
             .handCardScore(150)
+            .commanderDamageWeight(8000)
             .build();
 
     // --- life ---

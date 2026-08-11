@@ -185,8 +185,13 @@ public class CommanderEvalParamsCopyTest {
         Assert.assertSame("the deployed bot must use TUNED", CommanderEvalParams.TUNED, live);
         Assert.assertEquals("TUNED's measured change is handCardScore 5 -> 150",
                 150, live.getHandCardScore());
-        Assert.assertEquals("TUNED must differ from DEFAULT ONLY in handCardScore",
-                CommanderEvalParams.DEFAULT.toBuilder().handCardScore(150).build().toString(),
+        Assert.assertEquals("TUNED enables the commander-damage death clock",
+                8000, live.getCommanderDamageWeight());
+        Assert.assertEquals("TUNED must differ from DEFAULT in exactly these two weights",
+                CommanderEvalParams.DEFAULT.toBuilder()
+                        .handCardScore(150)
+                        .commanderDamageWeight(8000)
+                        .build().toString(),
                 CommanderEvalParams.TUNED.toString());
     }
 
