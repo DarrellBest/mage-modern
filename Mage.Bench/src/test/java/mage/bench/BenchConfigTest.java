@@ -21,6 +21,15 @@ public class BenchConfigTest {
         assertEquals(50, config.turnCap);
         assertEquals("bench-results.jsonl", config.out);
         assertEquals("twoplayer", config.gameType);
+        assertEquals(null, config.trackCards);
+    }
+
+    @Test
+    public void trackCards_isNullByDefault_andSetWhenGiven() {
+        assertEquals(null, BenchConfig.parse(new String[]{}).trackCards);
+
+        BenchConfig config = BenchConfig.parse(new String[]{"--trackCards=/tmp/report.txt"});
+        assertEquals("/tmp/report.txt", config.trackCards);
     }
 
     @Test

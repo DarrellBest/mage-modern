@@ -23,11 +23,15 @@ public final class BenchConfig {
     public final String deckDir;
     public final String ollamaUrl;
     public final String gameType;
+    /** Path to write the per-deck card-play report to, or null when --trackCards was not given
+     * (the default): off by default, and BenchRunner/BenchGame register no extra instrumentation
+     * at all when this is null, so an ordinary run pays zero cost for this feature. */
+    public final String trackCards;
 
     public BenchConfig(int games, long baseSeed, String deckA, String deckB,
                        String playerA, String playerB, int skill, String model,
                        int turnCap, String out, String deckDir, String ollamaUrl,
-                       String gameType) {
+                       String gameType, String trackCards) {
         this.games = games;
         this.baseSeed = baseSeed;
         this.deckA = deckA;
@@ -41,6 +45,7 @@ public final class BenchConfig {
         this.deckDir = deckDir;
         this.ollamaUrl = ollamaUrl;
         this.gameType = gameType;
+        this.trackCards = trackCards;
     }
 
     public static BenchConfig parse(String[] args) {
@@ -57,6 +62,7 @@ public final class BenchConfig {
         String deckDir = "Mage.Tests";
         String ollamaUrl = "http://localhost:11434";
         String gameType = GAME_TYPE_TWOPLAYER;
+        String trackCards = null;
 
         for (String arg : args) {
             int eq = arg.indexOf('=');
@@ -91,12 +97,14 @@ public final class BenchConfig {
                 ollamaUrl = value;
             } else if ("gameType".equals(key)) {
                 gameType = parseGameType(value);
+            } else if ("trackCards".equals(key)) {
+                trackCards = value;
             } else {
                 throw new IllegalArgumentException("Unknown argument '--" + key + "'");
             }
         }
         return new BenchConfig(games, baseSeed, deckA, deckB, playerA, playerB,
-                skill, model, turnCap, out, deckDir, ollamaUrl, gameType);
+                skill, model, turnCap, out, deckDir, ollamaUrl, gameType, trackCards);
     }
 
     private static int parseInt(String key, String value) {

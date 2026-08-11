@@ -4,6 +4,7 @@ import mage.cards.decks.Deck;
 import mage.cards.decks.DeckCardLists;
 import mage.cards.decks.importer.DeckImporter;
 import mage.cards.repository.CardScanner;
+import mage.collectors.DataCollectorServices;
 import mage.constants.MultiplayerAttackOption;
 import mage.constants.PhaseStep;
 import mage.constants.RangeOfInfluence;
@@ -23,6 +24,7 @@ import org.apache.log4j.Logger;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
@@ -65,7 +67,28 @@ public final class BenchGame {
     private BenchGame() {
     }
 
+    // Literal player names BenchGame always constructs its two seats with, regardless of which
+    // config key or deck is on that seat for a given (possibly seat-swapped) game -- these are
+    // also exactly the labels CardPlayCollector will see as the "casts" prefix in game logs.
+    private static final String SEAT1_LABEL = "Seat1";
+    private static final String SEAT2_LABEL = "Seat2";
+
     public static GameResult run(BenchConfig config, int gameIndex, long seed, boolean seatSwapped) {
+        return run(config, gameIndex, seed, seatSwapped, null);
+    }
+
+    /**
+     * @param cardTracker when non-null (i.e. {@code --trackCards} was given), a per-game
+     *                    {@link CardPlayCollector} is registered with {@code DataCollectorServices}
+     *                    for the duration of this one game and its results folded into
+     *                    {@code cardTracker}, keyed by the deck that was actually on each seat for
+     *                    this game (not the raw seat label -- see {@link CardPlayTracker}'s own
+     *                    javadoc for why that distinction matters on seat-swapped games). When
+     *                    null, no collector is created or registered at all: an ordinary run pays
+     *                    zero extra cost for this feature.
+     */
+    public static GameResult run(BenchConfig config, int gameIndex, long seed, boolean seatSwapped,
+                                 CardPlayTracker cardTracker) {
         // placeholder value in case CardScanner.scan() itself throws below, so the catch
         // block always has a valid startNanos to compute wallMs from -- reset immediately
         // after a successful scan, before any real game work begins
@@ -73,7 +96,19 @@ public final class BenchGame {
         // shared by both seats: correct for a mismatched matchup (kanna vs cp7), but a
         // kanna-vs-kanna run merges both players' LLM stats into one BenchMetrics instance
         BenchMetrics metrics = new BenchMetrics();
+        // seat 1 / seat 2 assignment, swapped on odd games so play/draw advantage cancels; computed
+        // up front (not inside the try below) purely from config/seatSwapped, so it's available to
+        // the catch block too for best-effort card-play recording on a game that errored out
+        // partway through
+        String seat1Key = seatSwapped ? config.playerB : config.playerA;
+        String seat2Key = seatSwapped ? config.playerA : config.playerB;
+        String seat1Deck = seatSwapped ? config.deckB : config.deckA;
+        String seat2Deck = seatSwapped ? config.deckA : config.deckB;
         Game game = null;
+        CardPlayCollector cardPlayCollector = cardTracker == null ? null : new CardPlayCollector();
+        if (cardPlayCollector != null) {
+            DataCollectorServices.register(cardPlayCollector);
+        }
         try {
             // DARRELLBEST-FORK: nothing else in this standalone-process code path scans
             // Mage.Sets into the card DB the way CardTestPlayerAPIImpl does for the JUnit
@@ -106,14 +141,8 @@ public final class BenchGame {
                         new MatchOptions("bench match", "bench game type", false));
             }
 
-            // seat 1 / seat 2 assignment, swapped on odd games so play/draw advantage cancels
-            String seat1Key = seatSwapped ? config.playerB : config.playerA;
-            String seat2Key = seatSwapped ? config.playerA : config.playerB;
-            String seat1Deck = seatSwapped ? config.deckB : config.deckA;
-            String seat2Deck = seatSwapped ? config.deckA : config.deckB;
-
-            Player seat1 = addPlayer(game, match, config, seat1Key, "Seat1", seat1Deck, metrics);
-            Player seat2 = addPlayer(game, match, config, seat2Key, "Seat2", seat2Deck, metrics);
+            Player seat1 = addPlayer(game, match, config, seat1Key, SEAT1_LABEL, seat1Deck, metrics);
+            Player seat2 = addPlayer(game, match, config, seat2Key, SEAT2_LABEL, seat2Deck, metrics);
 
             GameOptions options = new GameOptions();
             options.testMode = false;
@@ -145,11 +174,17 @@ public final class BenchGame {
                 termination = Termination.DRAW;
             }
 
+            recordCardPlays(cardTracker, cardPlayCollector, seat1Deck, seat2Deck);
+
             long wallMs = (System.nanoTime() - startNanos) / 1_000_000L;
             return new GameResult(gameIndex, seed, winnerKey, winnerSeat, turns, wallMs,
                     termination, null, seatSwapped, metrics.snapshot());
 
         } catch (Throwable e) {
+            // best-effort: whatever was cast before the error is still useful signal for a
+            // never-cast list, so record it here too rather than only on the success path
+            recordCardPlays(cardTracker, cardPlayCollector, seat1Deck, seat2Deck);
+
             long wallMs = (System.nanoTime() - startNanos) / 1_000_000L;
             int turns = game == null ? 0 : game.getState().getTurnNum();
             String message = e.getClass().getSimpleName() + ": " + e.getMessage();
@@ -158,6 +193,30 @@ public final class BenchGame {
             logger.error("Bench game " + gameIndex + " (seed " + seed + ") failed: " + message, e);
             return new GameResult(gameIndex, seed, null, 0, turns, wallMs,
                     Termination.ERROR, message, seatSwapped, metrics.snapshot());
+        } finally {
+            if (cardPlayCollector != null) {
+                DataCollectorServices.unregister(cardPlayCollector);
+            }
+        }
+    }
+
+    /**
+     * Folds one finished (or errored-out) game's per-seat cast counts into {@code cardTracker},
+     * translating the raw "Seat1"/"Seat2" log labels to the deck that was actually on each seat
+     * for this game. No-op when card tracking isn't enabled for this run.
+     */
+    private static void recordCardPlays(CardPlayTracker cardTracker, CardPlayCollector cardPlayCollector,
+                                        String seat1Deck, String seat2Deck) {
+        if (cardTracker == null || cardPlayCollector == null) {
+            return;
+        }
+        try {
+            Map<String, Map<String, Integer>> snapshot = cardPlayCollector.snapshot();
+            cardTracker.recordGame(seat1Deck, snapshot.getOrDefault(SEAT1_LABEL, Collections.emptyMap()));
+            cardTracker.recordGame(seat2Deck, snapshot.getOrDefault(SEAT2_LABEL, Collections.emptyMap()));
+        } catch (RuntimeException e) {
+            // optional instrumentation must never break or double-fail a benchmark game
+            logger.warn("Bench game card-play recording failed: " + e, e);
         }
     }
 

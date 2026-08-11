@@ -68,6 +68,21 @@ final public class DataCollectorServices implements DataCollector {
         });
     }
 
+    // DARRELLBEST-FORK (keep on merge/rebase from upstream): register/unregister an ad-hoc
+    // collector without going through the hardcoded allServices/service-code enable path in
+    // init() above, which only knows about the two collectors it lists by name. Mage.Bench's
+    // --trackCards option uses this to attach a per-game CardPlayCollector for the duration of
+    // a single benchmark game, then detach it -- init() itself is never called on the Mage.Bench
+    // path, and getInstance().activeServices is a plain field initialized empty at declaration,
+    // so this works standalone with no ordering dependency on init().
+    public static void register(DataCollector collector) {
+        getInstance().activeServices.add(collector);
+    }
+
+    public static void unregister(DataCollector collector) {
+        getInstance().activeServices.remove(collector);
+    }
+
     private static boolean isServiceEnable(String dataCollectorCode, boolean isEnableByDefault) {
         String needCommand = COMMAND_LINE_DATA_COLLECTORS_PREFIX + dataCollectorCode;
         boolean isEnable;

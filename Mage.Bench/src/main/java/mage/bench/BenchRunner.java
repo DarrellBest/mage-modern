@@ -1,5 +1,7 @@
 package mage.bench;
 
+import mage.cards.repository.CardScanner;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,13 +32,26 @@ public final class BenchRunner {
         System.out.println(String.format("Running %d games: %s vs %s (seed %d, turn cap %d)",
                 config.games, config.playerA, config.playerB, config.baseSeed, config.turnCap));
 
+        // off by default: only built, and only registered per game by BenchGame, when
+        // --trackCards was actually given -- see BenchConfig.trackCards and BenchGame.run's
+        // 5-arg overload for the zero-cost-when-absent contract this depends on
+        CardPlayTracker cardTracker = null;
+        if (config.trackCards != null) {
+            // deck loading needs the card DB scanned first; BenchGame.run does this too but not
+            // until the first game runs, and this needs it earlier to record deck lists up front
+            CardScanner.scan();
+            cardTracker = new CardPlayTracker();
+            cardTracker.recordDeck(config.deckA, BenchGame.loadDeckList(config.deckDir, config.deckA));
+            cardTracker.recordDeck(config.deckB, BenchGame.loadDeckList(config.deckDir, config.deckB));
+        }
+
         List<GameResult> results = new ArrayList<>();
         try (ResultWriter writer = new ResultWriter(config.out)) {
             for (int i = 0; i < config.games; i++) {
                 long seed = config.baseSeed + i;
                 boolean seatSwapped = (i % 2 == 1);
 
-                GameResult result = BenchGame.run(config, i, seed, seatSwapped);
+                GameResult result = BenchGame.run(config, i, seed, seatSwapped, cardTracker);
                 writer.append(result);
                 results.add(result);
 
@@ -57,5 +72,10 @@ public final class BenchRunner {
                 SummaryReporter.summarize(results, config.playerA),
                 config.playerA, config.playerB));
         System.out.println("Results written to " + config.out);
+
+        if (cardTracker != null) {
+            cardTracker.writeReport(config.trackCards);
+            System.out.println("Card-play report written to " + config.trackCards);
+        }
     }
 }
