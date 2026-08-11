@@ -124,7 +124,7 @@ public class ComputerPlayer7 extends ComputerPlayer6 {
      */
     @Override
     public boolean activateAbility(ActivatedAbility ability, Game game) {
-        if (!game.isSimulation()) {
+        if (!game.isSimulation() && isCappable(ability, game)) {
             String signature = signatureOf(ability, game);
             if (signature.equals(lastActivatedSignature)) {
                 chainedSameActivations++;
@@ -142,10 +142,37 @@ public class ComputerPlayer7 extends ComputerPlayer6 {
         return super.activateAbility(ability, game);
     }
 
+    /**
+     * DARRELLBEST-FORK: whether this ability may be subject to the chained-activation cap at all.
+     * <p>
+     * Two exclusions, both found by counting what the cap actually refused over a 246-game run:
+     * <ul>
+     *   <li><b>Mana abilities.</b> Tapping five lands in a row for mana is not a loop, it is how
+     *       mana works. The cap fired 1,150 times on {@code Mountain|{T}: Add {R}.} in that run,
+     *       which means the bot was refusing to tap its fourth land — crippling in a red deck.</li>
+     *   <li><b>Abilities with no resolvable source.</b> These produced the degenerate signature
+     *       {@code "?|"}, which every such ability shares, so unrelated abilities were counted
+     *       against each other as if they were one ability repeating. That single bucket accounted
+     *       for 5,136 of the refusals, more than every real ability combined.</li>
+     * </ul>
+     */
+    private boolean isCappable(ActivatedAbility ability, Game game) {
+        return !ability.isManaAbility() && ability.getSourceId() != null;
+    }
+
+    /**
+     * Identity is (source PERMANENT id + rule text).
+     * <p>
+     * Not the Ability instance: the search works on copies of the game, so the instance differs run
+     * to run even for the same printed ability on the same permanent, and comparing instances would
+     * never match. But not the source NAME either, which was the original scheme's flaw — every
+     * Mountain shares a name and a rule, so N different lands collapsed into one signature and the
+     * cap fired on the fourth land as though it were the same land four times. {@code getSourceId()}
+     * is a UUID that survives game copies AND distinguishes two different permanents, so it is
+     * strictly better on both counts.
+     */
     private String signatureOf(ActivatedAbility ability, Game game) {
-        MageObject source = ability.getSourceObject(game);
-        String name = source == null ? "?" : source.getName();
-        return name + "|" + ability.getRule();
+        return ability.getSourceId() + "|" + ability.getRule();
     }
 
     /**

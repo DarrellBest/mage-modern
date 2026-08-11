@@ -424,6 +424,9 @@ public final class SimulatedPlayer2 extends ComputerPlayer {
             return false;
         }
         String signature = signatureOf(ability, game);
+        if (signature == null) {
+            return false; // unresolvable source: never cap, rather than bucket it with every other one
+        }
         int chained = 0;
         for (SimulationNode2 node = (SimulationNode2) game.getCustomData();
                 node != null; node = node.getParent()) {
@@ -458,10 +461,16 @@ public final class SimulatedPlayer2 extends ComputerPlayer {
         return false;
     }
 
+    /**
+     * Identity is (source PERMANENT id + rule text) — see {@code ComputerPlayer7.signatureOf} for
+     * the full reasoning. Briefly: not the Ability instance, because game copies make instances
+     * differ; and not the source NAME, because every Mountain shares a name and rule, which
+     * collapsed N distinct permanents into one signature and made the cap fire on the fourth land
+     * as if it were the same land four times. A null source id yields no signature and is never
+     * capped, rather than sharing a degenerate bucket with every other unresolvable ability.
+     */
     private String signatureOf(Ability ability, Game game) {
-        MageObject source = ability.getSourceObject(game);
-        String name = source == null ? "?" : source.getName();
-        return name + "|" + ability.getRule();
+        return ability.getSourceId() == null ? null : ability.getSourceId() + "|" + ability.getRule();
     }
 
     protected void addAbilityNode(SimulationNode2 parent, Ability ability, int depth, Game game) {
