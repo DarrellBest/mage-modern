@@ -274,6 +274,42 @@ Phases never overlap. Moving deck and parameters together makes any win-rate del
 
 ---
 
+## Results log
+
+### G0 — instrument control (PASSED)
+
+`commander` vs `commander`, identical DEFAULT params both sides, Krenko mirror, 60 games
+(10 workers, `--maxGameSeconds=120`), 33 decisive:
+
+| Axis | Split | Win rate | 95% Wilson CI | Contains 50%? |
+|---|---|---|---|---|
+| By config side (A vs B) | 18–15 | 54.5% | [38.0%, 70.2%] | yes |
+| By physical seat (1 vs 2) | 16–17 | 48.5% | [32.5%, 64.8%] | yes |
+
+No detectable A/B bias and no seat/play-draw bias. The instrument is sound for this matchup.
+
+Note the matchup itself is better than the originally-planned `commander` vs `cp7`: with params
+extracted, `commander`(tuned) vs `commander`(default) differs *only* in weights, whereas `cp7` is
+MAD's separate class and differs by ~120 lines of code as well.
+
+### Screening
+
+Protocol: `commander`(tuned, side A) vs `commander`(default, side B), Krenko mirror, seat-swapped,
+80 games, `--maxGameSeconds=180`. Gate G1 requires the CI **lower bound** above 50%.
+
+| Parameter | Value | Decisive | Win rate (tuned) | 95% CI | G1 |
+|---|---|---|---|---|---|
+| `handCardScore` | 150 (from 5) | 59/80 | 57.6% (34–25) | [44.9%, 69.4%] | **no** — lower bound below 50% |
+
+Suggestive but not established. Screening's question is "does this move at all?", and 57.6% is
+enough to justify refinement; it is *not* enough to claim an improvement. Reaching a lower bound
+above 50% at an effect of this size needs roughly 160+ decisive games (~220 played).
+
+**Timeout rate is the practical constraint.** At `--maxGameSeconds=120` with 10 workers, 45% of
+games were non-decisive; at 180s with 6 workers, 26%. Every timeout is a discarded sample, so the
+wall-clock cap trades directly against statistical power. Median game under contention ran 124–142s,
+which is why a 120s budget discards so much.
+
 ## Risks
 
 | Risk | Mitigation |
