@@ -281,7 +281,7 @@ public class ComputerPlayerKanna extends ComputerPlayer {
         PassAbility passAbility = new PassAbility();
         catalog.add(passAbility, "Pass");
 
-        List<RankedAction> ranked = ActionRanker.rank(catalog);
+        List<RankedAction> ranked = ActionRanker.rank(catalog, game, playerId);
         String prompt = buildPriorityPrompt(game, ranked, catalog.size());
 
         KannaAgent agent = newAgent();
@@ -295,7 +295,7 @@ public class ComputerPlayerKanna extends ComputerPlayer {
             @Override
             public String answer(ToolCall call) {
                 if (KannaAgent.TOOL_SHOW_ALL_ACTIONS.equals(call.name)) {
-                    return ActionRanker.render(ActionRanker.rank(catalog), catalog.size());
+                    return ActionRanker.render(ActionRanker.rank(catalog, game, playerId), catalog.size());
                 }
                 if (KannaAgent.TOOL_GET_CARD_TEXT.equals(call.name)) {
                     String id = call.arguments != null && call.arguments.has("id")
