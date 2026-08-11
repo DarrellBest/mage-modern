@@ -34,12 +34,68 @@ public class ComputerPlayer7 extends ComputerPlayer6 {
         return new ComputerPlayer7(this);
     }
 
+    /**
+     * DARRELLBEST-FORK: cap on how many times this player may take priority within one turn step
+     * before it is forced to pass.
+     * <p>
+     * Diagnosed from a benchmark game that ran 17+ minutes without finishing while writing 57MB of
+     * log. The AI was not deadlocked, it was churning: activate Krenko's Altar of Dementia (a free
+     * sacrifice outlet), which changes the game state, which makes {@code getNextAction} return
+     * false with "need re-calculation (game state changed between actions)", which re-runs the whole
+     * search, which activates it again. 1,095 Altar activations in a 20k-line window. Krenko keeps
+     * making goblin tokens, so the supply of creatures to sacrifice never runs out and the loop has
+     * no natural end.
+     * <p>
+     * {@code maxNodes} does not help: it bounds one search, not the number of times the search
+     * restarts. Neither does {@code maxThinkTimeSecs}, which is also per search. This is the only
+     * level at which the loop is visible.
+     * <p>
+     * The number is deliberately generous. A real turn with a long chain of activations (a storm
+     * turn, an aristocrats sacrifice loop played to a genuine win) should complete untouched; 500
+     * priorities in a single step is far past any honest line and reachable only by a bot that is
+     * not making progress. When it trips, the bot passes rather than continuing, so it loses the
+     * rest of that step instead of the whole game.
+     */
+    private static final int MAX_PRIORITIES_PER_STEP = 500;
+
+    private int prioritiesThisStep;
+    private int lastPriorityTurn = -1;
+    private String lastPriorityStep = "";
+
     @Override
     public boolean priority(Game game) {
+        if (exceededPriorityBudget(game)) {
+            pass(game);
+            return false;
+        }
         game.resumeTimer(getTurnControlledBy());
         boolean result = priorityPlay(game);
         game.pauseTimer(getTurnControlledBy());
         return result;
+    }
+
+    /**
+     * @return true when this player has already taken priority {@link #MAX_PRIORITIES_PER_STEP}
+     *         times in the current turn step, which means it is looping rather than progressing
+     */
+    private boolean exceededPriorityBudget(Game game) {
+        String step = String.valueOf(game.getTurnStepType());
+        int turn = game.getTurnNum();
+        if (turn != lastPriorityTurn || !step.equals(lastPriorityStep)) {
+            lastPriorityTurn = turn;
+            lastPriorityStep = step;
+            prioritiesThisStep = 0;
+        }
+        prioritiesThisStep++;
+        if (prioritiesThisStep == MAX_PRIORITIES_PER_STEP + 1) {
+            // Log once, not on every subsequent priority: a loop that trips this is by definition
+            // going to trip it many more times, and the point is to notice it, not to flood the log
+            // that the loop is already flooding.
+            logger.warn("AI priority budget exhausted (" + MAX_PRIORITIES_PER_STEP + " in "
+                    + step + " of turn " + turn + ") - passing to break a no-progress loop."
+                    + " Player: " + getName());
+        }
+        return prioritiesThisStep > MAX_PRIORITIES_PER_STEP;
     }
 
     private boolean priorityPlay(Game game) {
