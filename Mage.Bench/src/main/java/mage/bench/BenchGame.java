@@ -146,7 +146,21 @@ public final class BenchGame {
 
             GameOptions options = new GameOptions();
             options.testMode = false;
-            options.stopOnTurn = config.turnCap;
+            // DARRELLBEST-FORK: turnCap <= 0 means "play to a real result". GameImpl only enforces
+            // a cap when stopOnTurn is non-null, and this field is an Integer for exactly that
+            // reason, but the bench previously always autoboxed an int so "no cap" was inexpressible.
+            //
+            // Why it matters: a capped game that hits the cap is not a data point, it is a discarded
+            // one. The Kairi v1-vs-v2 comparison lost 15 of 30 games to a 30-turn cap and became
+            // uninterpretable -- control decks simply do not resolve that fast. Uncapped runs are
+            // slower per game but every game counts.
+            //
+            // The risk this accepts: nothing then bounds a game that never progresses, and two such
+            // loops were observed today (a free sacrifice outlet re-triggering the search, and a
+            // separate stall inside a single search). One looping game will consume whatever
+            // wall-clock budget the caller allows and cost every game that would have followed it,
+            // so callers should keep an outer timeout rather than relying on the engine to stop.
+            options.stopOnTurn = config.turnCap > 0 ? config.turnCap : null;
             options.stopAtStep = PhaseStep.UNTAP;
             game.setGameOptions(options);
 
@@ -166,7 +180,7 @@ public final class BenchGame {
             Termination termination;
             if (winnerKey != null) {
                 termination = Termination.WIN;
-            } else if (turns >= config.turnCap) {
+            } else if (config.turnCap > 0 && turns >= config.turnCap) {
                 // engine treats the turn cap as a draw; distinguish that from a genuine
                 // mutual-loss draw by checking whether the cap was actually reached
                 termination = Termination.CAP;
