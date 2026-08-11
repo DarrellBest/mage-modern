@@ -171,6 +171,45 @@ public class ComputerPlayer6 extends ComputerPlayer {
      * @param game the state to score, which may be a simulated future rather than the real game
      * @return this player's score for that state, higher being better for this player
      */
+    /**
+     * DARRELLBEST-FORK: the game state at the leaf of the principal variation from the last search,
+     * or null if no usable tree exists.
+     * <p>
+     * Exists for TD-Leaf. A learned evaluator that feeds a minimax search must be trained on the
+     * positions the search actually scores, and those are the LEAVES of the principal variation --
+     * the root's value is not computed by the evaluator at all, it is backed up from a leaf. Training
+     * the root instead applies the gradient to a position the evaluator never scored, so the update
+     * does not correspond to anything that changes the search's output. Samuel hit this, Beal and
+     * Smith rediscovered it in 1997, and Baxter, Tridgell and Weaver named the fix TD-Leaf(lambda)
+     * (KnightCap, arXiv cs/9901002). TD-Gammon avoided the problem only because it used no search.
+     * <p>
+     * The walk follows whichever child carries the same backed-up score as its parent, which is the
+     * definition of the principal variation in a minimax tree. Ties pick the first such child; any
+     * of them is a legitimate PV, and picking a consistent one matters more than picking a canonical
+     * one.
+     */
+    protected Game principalVariationLeaf() {
+        SimulationNode2 node = this.root;
+        if (node == null) {
+            return null;
+        }
+        int guard = 0;
+        while (!node.children.isEmpty() && guard++ < 64) {
+            SimulationNode2 next = null;
+            for (SimulationNode2 child : node.children) {
+                if (child.score == node.score) {
+                    next = child;
+                    break;
+                }
+            }
+            if (next == null) {
+                break;
+            }
+            node = next;
+        }
+        return node.getGame();
+    }
+
     protected int evaluateState(Game game) {
         return GameStateEvaluator2.evaluate(playerId, game).getTotalScore();
     }

@@ -87,14 +87,30 @@ public class ComputerPlayerLearner extends ComputerPlayer7 {
 
     @Override
     public boolean priority(Game game) {
-        // Observe BEFORE deciding: the state being recorded is the one this player faced, not the
-        // one its own action produced. Recording after the decision would train the model on states
-        // that already include the benefit of the move, which is the outcome, not the input.
-        if (!game.isSimulation()) {
-            ensureSession(game);
-            session.learner().observe(StateFeatures.extract(playerId, game));
+        if (game.isSimulation()) {
+            return super.priority(game);
         }
-        return super.priority(game);
+        ensureSession(game);
+        boolean result = super.priority(game);
+        // TD-LEAF, not TD on the root. Observe AFTER the search, using the leaf of the principal
+        // variation rather than the live game state.
+        //
+        // This was originally the other way round -- observe the root state before deciding -- which
+        // is the mistake TD-Leaf exists to correct. The evaluator never scores the root: the root's
+        // value is backed up through minimax from a leaf. Training the root therefore applies the
+        // gradient to a position the evaluator was never asked about, so the update does not
+        // correspond to anything that changes the search's output. Samuel ran into this, Beal and
+        // Smith rediscovered it in 1997, and Baxter/Tridgell/Weaver named the fix (KnightCap,
+        // arXiv cs/9901002). TD-Gammon got away with plain TD only because it used no search at all.
+        //
+        // When no usable tree exists (the search passed immediately, or was cut off), there is no
+        // leaf to train and this observes nothing rather than falling back to the root -- a wrong
+        // sample is worse than a missing one.
+        Game leaf = principalVariationLeaf();
+        if (leaf != null) {
+            session.learner().observe(StateFeatures.extract(playerId, leaf));
+        }
+        return result;
     }
 
     @Override
