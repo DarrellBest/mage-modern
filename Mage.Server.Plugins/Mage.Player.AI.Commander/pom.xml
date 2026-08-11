@@ -1,0 +1,54 @@
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.mage</groupId>
+        <artifactId>mage-server-plugins</artifactId>
+        <version>1.4.60</version>
+    </parent>
+
+    <artifactId>mage-player-ai-commander</artifactId>
+    <packaging>jar</packaging>
+    <name>Mage Player AI (commander bot)</name>
+
+    <!--
+        DARRELLBEST-FORK: a source fork of Mage.Player.AI.MAD, not a subclass of it.
+
+        Wrapping MAD by subclassing is not possible: ComputerPlayer6.addActions calls
+        GameStateEvaluator2.evaluate(...) as a static at three sites, and GameStateEvaluator2 is a
+        public FINAL class, so there is no hook to override the evaluation function. Refactoring MAD
+        to add one would change behaviour for every bot on the live server at once MAD, cp7 and
+        the base ComputerPlayer including the MAD bot people are currently playing against, whose
+        4-player timeouts were only just fixed. Forking the source keeps that risk at zero.
+
+        The copied classes keep their original names (ComputerPlayer6, SimulatedPlayer2, ...) and
+        differ from MAD's only by package, so `diff` against the MAD module stays meaningful as this
+        one diverges. GameStateEvaluator2/ArtificialScoringSystem are copied in as well retuning
+        the evaluation weights is the main point of the fork, and those live in the shared
+        Mage.Player.AI module where an edit would hit every bot.
+    -->
+    <dependencies>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>mage</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>mage-player-ai</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <sourceDirectory>src</sourceDirectory>
+    </build>
+
+    <properties>
+        <root.dir>${project.basedir}/../..</root.dir>
+    </properties>
+
+</project>

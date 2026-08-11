@@ -65,6 +65,11 @@
         <playerType name="Human" jar="mage-player-human-${project.version}.jar" className="mage.player.human.HumanPlayer"/>
         <playerType name="Computer - mad" jar="mage-player-ai-mad-${project.version}.jar" className="mage.player.ai.ComputerPlayerControllableProxy"/>
         <playerType name="Computer - draftbot" jar="mage-player-ai-draftbot-${project.version}.jar" className="mage.player.ai.ComputerDraftPlayer"/>
+        <!-- DARRELLBEST-FORK: these two were live in the deployed config.xml but had never been
+             backported here, so a clean deploy from this template silently dropped them. Names must
+             match PlayerType's description strings exactly or the server throws on startup. -->
+        <playerType name="Computer - llm" jar="mage-player-ai-kanna-${project.version}.jar" className="mage.player.ai.kanna.ComputerPlayerKanna"/>
+        <playerType name="Computer - commander" jar="mage-player-ai-commander-${project.version}.jar" className="mage.player.ai.commander.ComputerPlayerCommander"/>
     </playerTypes>
     <gameTypes>
         <gameType name="Two Player Duel" jar="mage-game-twoplayerduel-${project.version}.jar" className="mage.game.TwoPlayerMatch" typeName="mage.game.TwoPlayerDuelType"/>
