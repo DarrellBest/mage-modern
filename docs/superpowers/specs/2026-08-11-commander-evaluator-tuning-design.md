@@ -349,6 +349,36 @@ longer games, so the excluded set may be systematically enriched for one side. A
 this timeout rate carries the same caveat, which is an argument for raising the budget rather than
 adding games.
 
+### Correction: the combined result does NOT mean each part is null
+
+The combined run bundled three changes. A null (or negative) combination is consistent with one
+component helping and another hurting, so "the screening results were noise" — as first written
+here — was too broad. What the combined run actually refutes is the specific hypothesis that all
+three help *and* add.
+
+`handCardScore=150` tested alone on **two independent fixtures** lands in the same place:
+
+| Fixture | Decisive | W–L | Win rate | 95% CI |
+|---|---|---|---|---|
+| Krenko mirror (mono-red aggro) | 59/80 | 34–25 | 57.6% | [44.9%, 69.4%] |
+| Kairi v6 mirror (mono-blue control) | 41/80 | 24–17 | 58.5% | [43.4%, 72.2%] |
+| **Pooled** | **100** | **58–42** | **58.0%** | **[48.2%, 67.2%]** |
+
+Two unrelated decks agreeing within one point is not the usual shape of noise. The pooled lower
+bound (48.2%) still does not clear 50%, so this remains unproven — but it is the strongest candidate
+so far and deserves a properly powered single-parameter run (~150+ decisive games) rather than being
+written off.
+
+**Fixture choice was a design error in the first screen.** `handCardScore` was originally screened
+only on a Krenko mirror — mono-red aggro that empties its hand by turn five and has almost nothing
+for a card-advantage weight to act on. That is close to a null-by-construction experiment. A
+parameter must be screened on a deck where it can plausibly matter; the Kairi mirror is the right
+fixture for anything touching hands, card draw or interaction.
+
+**Timeout rates differ sharply by fixture and must be reported.** Krenko 26% non-decisive, Kairi
+**48%**. A control mirror burns roughly half its games on the clock, so a Kairi run needs ~2x the
+games for the same power.
+
 ### Bug found by counting what the loop-breaker refused
 
 Auditing the 246-game logs for which abilities the chained-activation cap actually refused:
