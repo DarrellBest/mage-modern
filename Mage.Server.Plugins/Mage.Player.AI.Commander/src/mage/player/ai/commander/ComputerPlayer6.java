@@ -13,6 +13,7 @@ import mage.abilities.common.PassAbility;
 import mage.abilities.effects.Effect;
 import mage.abilities.effects.SearchEffect;
 import mage.abilities.keyword.*;
+import mage.cards.Card;
 import mage.cards.Cards;
 import mage.choices.Choice;
 import mage.constants.Outcome;
@@ -36,6 +37,7 @@ import mage.players.Player;
 import mage.target.Target;
 import mage.target.TargetAmount;
 import mage.target.TargetCard;
+import mage.target.common.TargetCardInHand;
 import mage.util.CardUtil;
 import mage.util.RandomUtil;
 import mage.util.ThreadUtils;
@@ -172,6 +174,77 @@ public class ComputerPlayer6 extends ComputerPlayer {
             throw new IllegalArgumentException("evalParams must not be null");
         }
         this.evalParams = evalParams;
+    }
+
+    /**
+     * DARRELLBEST-FORK: keep a hand that can actually cast spells, and never bottom the lands.
+     * <p>
+     * Reported from a live game and confirmed in the audit log: the bot passed SIX consecutive
+     * turns without so much as a land drop, then played its first land on turn 7.
+     * <p>
+     * Two upstream problems combine. {@code ComputerPlayer.chooseMulligan} keeps unconditionally
+     * once {@code hand.size() < 6} -- with zero lands, it keeps. And under the London mulligan the
+     * cards to put on the bottom are chosen through a generic {@link TargetCardInHand}, which the
+     * AI answers with its ordinary target logic; that logic knows nothing about mulligans and will
+     * happily bottom the lands, which is how a kept hand becomes a landless one.
+     * <p>
+     * This override answers the bottoming question directly: bottom the most expensive cards first
+     * and protect a working land count, so the hand that survives is the one that can operate.
+     */
+    @Override
+    public boolean choose(Outcome outcome, Target target, Ability source, Game game,
+            java.util.Map<String, java.io.Serializable> options) {
+        if (evalParams.getSmartMulligan() >= 1
+                && target instanceof TargetCardInHand
+                && target.getMessage(game) != null
+                && target.getMessage(game).contains("bottom of your library")) {
+            int toBottom = target.getMaxNumberOfTargets() > 0
+                    ? target.getMaxNumberOfTargets() : target.getMinNumberOfTargets();
+            List<Card> ordered = new ArrayList<>(hand.getCards(game));
+            int landsHeld = 0;
+            for (Card c : ordered) {
+                if (c.isLand(game)) {
+                    landsHeld++;
+                }
+            }
+            final int lands = landsHeld;
+            // worst-first: keep lands until we are down to a workable count, then shed the most
+            // expensive spells, since an unaffordable bomb is the same as a blank card.
+            final int keepLands = Math.min(lands, 3);
+            ordered.sort((a, b) -> {
+                int aLand = a.isLand(game) ? 1 : 0;
+                int bLand = b.isLand(game) ? 1 : 0;
+                if (aLand != bLand) {
+                    return aLand - bLand; // non-lands are shed before lands
+                }
+                return b.getManaValue() - a.getManaValue(); // most expensive first
+            });
+            int chosen = 0;
+            int landsBottomed = 0;
+            for (Card c : ordered) {
+                if (chosen >= toBottom) {
+                    break;
+                }
+                if (c.isLand(game) && lands - landsBottomed <= keepLands) {
+                    continue; // protect a workable land count
+                }
+                if (target.canTarget(getId(), c.getId(), source, game)) {
+                    target.add(c.getId(), game);
+                    chosen++;
+                    if (c.isLand(game)) {
+                        landsBottomed++;
+                    }
+                }
+            }
+            if (chosen > 0) {
+                if (!game.isSimulation() && playLog.isInfoEnabled()) {
+                    playLog.info(String.format("MULLIGAN %s | bottomed %d card(s), keeping %d land(s) of %d",
+                            getName(), chosen, lands - landsBottomed, lands));
+                }
+                return true;
+            }
+        }
+        return super.choose(outcome, target, source, game, options);
     }
 
     /**

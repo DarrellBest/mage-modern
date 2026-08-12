@@ -100,6 +100,7 @@ public final class CommanderEvalParams {
             .attackAggression(1)
             .multiplayerAttackSplit(1)
             .declineLosingManaPayments(1)
+            .smartMulligan(1)
             .build();
 
     // --- life ---
@@ -114,6 +115,7 @@ public final class CommanderEvalParams {
     private final int attackAggression;
     private final int multiplayerAttackSplit;
     private final int declineLosingManaPayments;
+    private final int smartMulligan;
 
     // --- card definition ---
     private final int baseCardValue;
@@ -157,6 +159,7 @@ public final class CommanderEvalParams {
         this.attackAggression = b.attackAggression;
         this.multiplayerAttackSplit = b.multiplayerAttackSplit;
         this.declineLosingManaPayments = b.declineLosingManaPayments;
+        this.smartMulligan = b.smartMulligan;
         this.baseCardValue = b.baseCardValue;
         this.landBaseMultiplier = b.landBaseMultiplier;
         this.landPerManaSymbol = b.landPerManaSymbol;
@@ -202,6 +205,7 @@ public final class CommanderEvalParams {
         b.attackAggression = this.attackAggression;
         b.multiplayerAttackSplit = this.multiplayerAttackSplit;
         b.declineLosingManaPayments = this.declineLosingManaPayments;
+        b.smartMulligan = this.smartMulligan;
         b.baseCardValue = this.baseCardValue;
         b.landBaseMultiplier = this.landBaseMultiplier;
         b.landPerManaSymbol = this.landPerManaSymbol;
@@ -364,6 +368,18 @@ public final class CommanderEvalParams {
         return declineLosingManaPayments;
     }
 
+    /**
+     * DARRELLBEST-FORK: protect lands when putting cards on the bottom after a London mulligan.
+     * <p>
+     * {@code 0} is upstream, which answers the bottoming prompt with generic target logic that knows
+     * nothing about mulligans and will bottom the lands. Observed live: six consecutive turns with
+     * no land drop, first land on turn 7. {@code 1} bottoms the most expensive spells first and
+     * keeps a workable land count.
+     */
+    public int getSmartMulligan() {
+        return smartMulligan;
+    }
+
     // --- card definition ---
 
     public int getBaseCardValue() {
@@ -492,6 +508,7 @@ public final class CommanderEvalParams {
                 + ", attackAggression=" + attackAggression
                 + ", multiplayerAttackSplit=" + multiplayerAttackSplit
                 + ", declineLosingManaPayments=" + declineLosingManaPayments
+                + ", smartMulligan=" + smartMulligan
                 + ", baseCardValue=" + baseCardValue
                 + ", landBaseMultiplier=" + landBaseMultiplier
                 + ", landPerManaSymbol=" + landPerManaSymbol
@@ -536,6 +553,7 @@ public final class CommanderEvalParams {
         private int attackAggression = 0;
         private int multiplayerAttackSplit = 0;
         private int declineLosingManaPayments = 0;
+        private int smartMulligan = 0;
         private int baseCardValue = 3;
         private int landBaseMultiplier = 50;
         private int landPerManaSymbol = 50;
@@ -579,6 +597,14 @@ public final class CommanderEvalParams {
 
         public Builder lifeAboveMultiplier(int v) {
             this.lifeAboveMultiplier = v;
+            return this;
+        }
+
+        public Builder smartMulligan(int v) {
+            if (v < 0 || v > 1) {
+                throw new IllegalArgumentException("smartMulligan must be 0 or 1, got " + v);
+            }
+            this.smartMulligan = v;
             return this;
         }
 
