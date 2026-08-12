@@ -1732,15 +1732,27 @@ public class ComputerPlayer6 extends ComputerPlayer {
             return;
         }
         try {
-            // DARRELLBEST-FORK: how many creatures COULD have acted, logged on every combat line.
-            // Without it a "BLOCK" line that assigns no blockers is unreadable: declining to block
-            // with nothing untapped is forced, declining with three untapped is a decision worth
-            // auditing, and the old line looked identical either way. Arena logs had the bot
-            // letting a 6/6 lifelinker through on four consecutive turns with no way to tell which
-            // of the two it was.
+            // DARRELLBEST-FORK: how many creatures COULD legally have acted, logged on every
+            // combat line. Without it a "BLOCK" line that assigns no blockers is unreadable:
+            // declining to block with nothing able to block is forced, declining with three able is
+            // a decision worth auditing, and the old line looked identical either way. Arena logs
+            // had the bot letting a 6/6 lifelinker through on four consecutive turns with no way to
+            // tell which of the two it was.
+            //
+            // "Untapped" is NOT the test, and using it made this metric lie in both directions.
+            // For attackers it over-counts: a first read of these logs turned up the bot declining
+            // to attack with 8 and 9 "available" creatures, which looked like a serious misplay and
+            // was nothing of the sort -- a swarm deck had just deployed a board of summoning-sick
+            // tokens that could not legally attack. For blockers it under-counts, because the count
+            // ran after attackers had already tapped. canAttack/canBlock answer the question the
+            // line is actually asking, including summoning sickness, defender and tap state.
+            boolean blocking = "BLOCK".equals(what);
             int idle = 0;
             for (Permanent p : game.getBattlefield().getAllActivePermanents(playerId)) {
-                if (p.isCreature(game) && !p.isTapped()) {
+                if (!p.isCreature(game)) {
+                    continue;
+                }
+                if (blocking ? p.canBlockAny(game) : p.canAttackInPrinciple(null, game)) {
                     idle++;
                 }
             }
@@ -1781,7 +1793,7 @@ public class ComputerPlayer6 extends ComputerPlayer {
             } else {
                 playLog.info(String.format("%s %s | T%d.%s |%s | %d of %d untapped used | score %d",
                         what, getName(), game.getTurnNum(), game.getTurnStepType(), sb,
-                        "BLOCK".equals(what) ? used : groups, idle,
+                        blocking ? used : groups, idle,
                         evaluateState(game)));
             }
         } catch (Exception e) {
