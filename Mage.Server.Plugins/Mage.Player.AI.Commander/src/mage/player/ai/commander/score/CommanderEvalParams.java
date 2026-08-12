@@ -97,6 +97,9 @@ public final class CommanderEvalParams {
             .handCardScore(150)
             .commanderDamageWeight(8000)
             .modeSelectionMode(1)
+            .attackAggression(1)
+            .multiplayerAttackSplit(1)
+            .declineLosingManaPayments(1)
             .build();
 
     // --- life ---
@@ -110,6 +113,7 @@ public final class CommanderEvalParams {
     private final int modeSelectionMode;
     private final int attackAggression;
     private final int multiplayerAttackSplit;
+    private final int declineLosingManaPayments;
 
     // --- card definition ---
     private final int baseCardValue;
@@ -152,6 +156,7 @@ public final class CommanderEvalParams {
         this.modeSelectionMode = b.modeSelectionMode;
         this.attackAggression = b.attackAggression;
         this.multiplayerAttackSplit = b.multiplayerAttackSplit;
+        this.declineLosingManaPayments = b.declineLosingManaPayments;
         this.baseCardValue = b.baseCardValue;
         this.landBaseMultiplier = b.landBaseMultiplier;
         this.landPerManaSymbol = b.landPerManaSymbol;
@@ -196,6 +201,7 @@ public final class CommanderEvalParams {
         b.modeSelectionMode = this.modeSelectionMode;
         b.attackAggression = this.attackAggression;
         b.multiplayerAttackSplit = this.multiplayerAttackSplit;
+        b.declineLosingManaPayments = this.declineLosingManaPayments;
         b.baseCardValue = this.baseCardValue;
         b.landBaseMultiplier = this.landBaseMultiplier;
         b.landPerManaSymbol = this.landPerManaSymbol;
@@ -347,6 +353,17 @@ public final class CommanderEvalParams {
         return multiplayerAttackSplit;
     }
 
+    /**
+     * DARRELLBEST-FORK: refuse an optional mana payment that costs at least what its source makes.
+     * <p>
+     * {@code 0} (default) keeps upstream's unconditional yes to every optional cost. {@code 1}
+     * declines mana-for-mana losses on our own mana rocks — the Mana Vault case, where the bot pays
+     * {4} every upkeep to untap something that taps for {C}{C}{C}.
+     */
+    public int getDeclineLosingManaPayments() {
+        return declineLosingManaPayments;
+    }
+
     // --- card definition ---
 
     public int getBaseCardValue() {
@@ -474,6 +491,7 @@ public final class CommanderEvalParams {
                 + ", modeSelectionMode=" + modeSelectionMode
                 + ", attackAggression=" + attackAggression
                 + ", multiplayerAttackSplit=" + multiplayerAttackSplit
+                + ", declineLosingManaPayments=" + declineLosingManaPayments
                 + ", baseCardValue=" + baseCardValue
                 + ", landBaseMultiplier=" + landBaseMultiplier
                 + ", landPerManaSymbol=" + landPerManaSymbol
@@ -517,6 +535,7 @@ public final class CommanderEvalParams {
         private int modeSelectionMode = 0;
         private int attackAggression = 0;
         private int multiplayerAttackSplit = 0;
+        private int declineLosingManaPayments = 0;
         private int baseCardValue = 3;
         private int landBaseMultiplier = 50;
         private int landPerManaSymbol = 50;
@@ -560,6 +579,14 @@ public final class CommanderEvalParams {
 
         public Builder lifeAboveMultiplier(int v) {
             this.lifeAboveMultiplier = v;
+            return this;
+        }
+
+        public Builder declineLosingManaPayments(int v) {
+            if (v < 0 || v > 1) {
+                throw new IllegalArgumentException("declineLosingManaPayments must be 0 or 1, got " + v);
+            }
+            this.declineLosingManaPayments = v;
             return this;
         }
 

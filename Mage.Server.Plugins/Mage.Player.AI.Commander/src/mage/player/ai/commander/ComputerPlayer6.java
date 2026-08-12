@@ -175,6 +175,73 @@ public class ComputerPlayer6 extends ComputerPlayer {
     }
 
     /**
+     * DARRELLBEST-FORK: refuse an optional mana payment that costs more than the source produces.
+     * <p>
+     * Upstream answers YES to every optional cost:
+     * <pre>
+     *   // Be proactive! Always use abilities, the evaluation function will decide if it's good
+     *   return outcome != Outcome.AIDontUseIt;
+     * </pre>
+     * That comment is wrong about its own mechanism. {@code chooseUse} is a direct yes/no asked
+     * during resolution — no evaluation happens, and the search never gets to compare paying against
+     * not paying. It is a hardcoded yes.
+     * <p>
+     * Reported from live games: the bot untaps Mana Vault every single upkeep. Mana Vault is
+     * {@code DoIfCostPaid(UntapSourceEffect, GenericManaCost(4), "Pay {4} to untap {this}?")} and it
+     * taps for {@code {C}{C}{C}} — so it pays four mana to gain three, every turn, forever. Grim
+     * Monolith is the same shape.
+     * <p>
+     * So: when the prompt asks for a generic mana payment and the source is itself a mana producer,
+     * decline if the asking price is at least what the source makes. Deliberately narrow — it only
+     * fires on mana-for-mana decisions on our own mana rock, and every other optional cost keeps
+     * upstream's proactive behaviour, because "always yes" is right far more often than it is wrong.
+     * <p>
+     * The known cost of this rule: a line that genuinely wants the untap for its own sake (an
+     * untapper combo, or needing the mana available at instant speed later) is given up. That is a
+     * worse trade than paying 4 for 3 every turn from now until the game ends.
+     */
+    @Override
+    public boolean chooseUse(Outcome outcome, String message, String secondMessage, String trueText,
+            String falseText, Ability source, Game game) {
+        if (evalParams.getDeclineLosingManaPayments() >= 1 && message != null && source != null) {
+            java.util.regex.Matcher m = GENERIC_MANA_ASK.matcher(message);
+            if (m.find()) {
+                int asked = Integer.parseInt(m.group(1));
+                int produced = manaProducedBy(source.getSourceObject(game), game);
+                if (produced > 0 && asked >= produced) {
+                    if (!game.isSimulation() && playLog.isInfoEnabled()) {
+                        playLog.info(String.format("DECLINE %s | T%d.%s | '%s' costs %d, source makes %d",
+                                getName(), game.getTurnNum(), game.getTurnStepType(),
+                                message, asked, produced));
+                    }
+                    return false;
+                }
+            }
+        }
+        return super.chooseUse(outcome, message, secondMessage, trueText, falseText, source, game);
+    }
+
+    private static final java.util.regex.Pattern GENERIC_MANA_ASK =
+            java.util.regex.Pattern.compile("\\{(\\d+)\\}");
+
+    /** Most mana a single activation of this object's mana abilities can make, or 0 if it makes none. */
+    private int manaProducedBy(MageObject sourceObject, Game game) {
+        if (!(sourceObject instanceof Permanent)) {
+            return 0;
+        }
+        int best = 0;
+        for (Ability ability : ((Permanent) sourceObject).getAbilities(game)) {
+            if (!(ability instanceof mage.abilities.mana.ManaAbility)) {
+                continue;
+            }
+            for (mage.Mana netMana : ((mage.abilities.mana.ManaAbility) ability).getNetMana(game)) {
+                best = Math.max(best, netMana.count());
+            }
+        }
+        return best;
+    }
+
+    /**
      * DARRELLBEST-FORK: choose a modal ability's mode by VALUE rather than by declaration order.
      * <p>
      * Upstream's {@code chooseMode} is {@code .findFirst()} over the legal modes, filtered only by
