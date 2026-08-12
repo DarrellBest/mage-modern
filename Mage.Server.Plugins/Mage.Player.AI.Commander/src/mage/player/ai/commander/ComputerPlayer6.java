@@ -406,6 +406,7 @@ public class ComputerPlayer6 extends ComputerPlayer {
             pass(game);
         } else {
             boolean usedStack = false;
+            boolean refusedAction = false;
             while (actions.peek() != null) {
                 Ability ability = actions.poll();
                 // example: ===> SELECTED ACTION for PlayerA: Play Swamp
@@ -423,12 +424,33 @@ public class ComputerPlayer6 extends ComputerPlayer {
                         }
                     }
                 }
-                this.activateAbility((ActivatedAbility) ability, game);
+                // DARRELLBEST-FORK: honour a REFUSED activation instead of discarding the result.
+                //
+                // Upstream ignores this return value. When ComputerPlayer7's chained-activation cap
+                // refuses an ability, nothing reaches the stack, so usedStack stays false, the bot
+                // never passes, it keeps priority, re-runs the whole search, re-derives the SAME
+                // ability, and is refused again. The cap stops the action but not the decision loop.
+                //
+                // Measured on the live server, one Free For All game: refusals logged at 4x, 5x, 6x,
+                // 8x then 9x consecutively, spanning 18:12 to 18:24 -- twelve minutes of real time
+                // for a single ability, each cycle paying for a complete search to be told "no".
+                //
+                // If an action we already committed to is refused, the computed chain is stale:
+                // drop the rest of it and pass. Passing loses the remainder of that priority, which
+                // is exactly the trade the cap is already making, and it costs one search instead of
+                // dozens.
+                if (!this.activateAbility((ActivatedAbility) ability, game)) {
+                    logger.warn("AI action refused; abandoning the rest of this action chain and passing: "
+                            + getAbilityAndSourceInfo(game, ability, true));
+                    actions.clear();
+                    refusedAction = true;
+                    break;
+                }
                 if (ability.isUsesStack()) {
                     usedStack = true;
                 }
             }
-            if (usedStack) {
+            if (usedStack || refusedAction) {
                 pass(game);
             }
         }
