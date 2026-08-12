@@ -54,6 +54,22 @@ public class ComputerPlayer6 extends ComputerPlayer {
 
     private static final Logger logger = Logger.getLogger(ComputerPlayer6.class);
 
+    /**
+     * DARRELLBEST-FORK: audit trail of what the bot actually PLAYS, one compact line per action.
+     * <p>
+     * Deliberately named OUTSIDE the {@code mage.player.ai} tree. The server ships
+     * {@code log4j.logger.mage.player.ai=warn} inside mage-server.jar, which silences this class's
+     * INFO -- including the "SELECTED ACTION" line -- so a 198MB production log contained ZERO
+     * record of any decision the AI made, only that it had been slow. Kanna was exempted from that
+     * suppression; the commander bot never was.
+     * <p>
+     * Turning the whole package back to INFO is not the answer: it emits roughly 28MB per game of
+     * search internals. This logger inherits {@code rootLogger=info} instead, so it is written with
+     * no config change, and one line per action is a rounding error by comparison. Silence it with
+     * {@code log4j.logger.mage.ai.play=warn} if it is ever unwanted.
+     */
+    private static final Logger playLog = Logger.getLogger("mage.ai.play");
+
     // TODO: add and research maxNodes logs, is it good to increase from 5000 to 50000 for better results?
     // TODO: increase maxNodes due AI skill level like max depth?
     // DARRELLBEST-FORK (keep on merge/rebase from upstream): lowered from 5000 to 1500.
@@ -412,6 +428,13 @@ public class ComputerPlayer6 extends ComputerPlayer {
                 // example: ===> SELECTED ACTION for PlayerA: Play Swamp
                 logger.info(String.format("===> SELECTED ACTION for %s: %s",
                         getName(),
+                        getAbilityAndSourceInfo(game, ability, true)
+                ));
+                // DARRELLBEST-FORK: same information, on a logger the server actually records.
+                playLog.info(String.format("PLAY %s | T%d.%s | %s",
+                        getName(),
+                        game.getTurnNum(),
+                        game.getTurnStepType(),
                         getAbilityAndSourceInfo(game, ability, true)
                 ));
                 if (!ability.getTargets().isEmpty()) {
