@@ -17,6 +17,7 @@ import mage.cards.Card;
 import mage.cards.Cards;
 import mage.choices.Choice;
 import mage.constants.Outcome;
+import mage.constants.PhaseStep;
 import mage.constants.RangeOfInfluence;
 import mage.counters.CounterType;
 import mage.filter.StaticFilters;
@@ -565,9 +566,47 @@ public class ComputerPlayer6 extends ComputerPlayer {
         logger.info(sb.toString());
     }
 
+    /**
+     * DARRELLBEST-FORK: records what the bot was holding when it chose to do nothing in a main
+     * phase.
+     * <p>
+     * The reported symptom this exists to make visible: "it has mana sources but just never plays
+     * its commander or cards from hand to build a field", and separately sitting on a full hand and
+     * open mana in order to dump everything on someone else's turn. A bare "Pass" line cannot
+     * distinguish that from a legitimate pass with an empty hand or no untapped lands, so the two
+     * were indistinguishable in every log written so far.
+     * <p>
+     * Only its OWN main phases are logged. Passing on an opponent's turn, or in combat, is
+     * ordinary -- flagging those would bury the real cases under thousands of correct ones.
+     */
+    private void logIdlePass(Game game) {
+        if (game.isSimulation() || !playLog.isInfoEnabled()) {
+            return;
+        }
+        try {
+            if (!playerId.equals(game.getActivePlayerId())
+                    || (game.getTurnStepType() != PhaseStep.PRECOMBAT_MAIN
+                        && game.getTurnStepType() != PhaseStep.POSTCOMBAT_MAIN)) {
+                return;
+            }
+            int openMana = 0;
+            for (Permanent p : game.getBattlefield().getAllActivePermanents(playerId)) {
+                if (!p.isTapped() && p.getAbilities(game).stream().anyMatch(a -> a instanceof mage.abilities.mana.ManaAbility)) {
+                    openMana++;
+                }
+            }
+            playLog.info(String.format("IDLE %s | T%d.%s | %d card(s) in hand, %d untapped mana source(s) | score %d",
+                    getName(), game.getTurnNum(), game.getTurnStepType(),
+                    getHand().size(), openMana, evaluateState(game)));
+        } catch (Exception e) {
+            logger.debug("idle-pass log failed", e);
+        }
+    }
+
     protected void act(Game game) {
         if (actions == null
                 || actions.isEmpty()) {
+            logIdlePass(game);
             pass(game);
         } else {
             boolean usedStack = false;
