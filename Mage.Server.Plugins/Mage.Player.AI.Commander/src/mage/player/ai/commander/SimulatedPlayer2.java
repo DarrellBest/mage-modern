@@ -125,6 +125,22 @@ public final class SimulatedPlayer2 extends ComputerPlayer {
         // never come back empty.
         list.removeIf(action -> exceededChainedActions(action, game, MAX_CHAINED_SAME_ACTIONS));
 
+        // DARRELLBEST-FORK: collapse INTERCHANGEABLE actions to one branch.
+        //
+        // With twenty identical Goblin tokens on the battlefield, "sacrifice token #1" through
+        // "#20" are twenty separate branches whose resulting game states are identical. The search
+        // explored all of them, at every level -- so the real cost was not 20x but 20^depth. On the
+        // token boards this bot actually plays (286 Krenko activations in one six-game bench run,
+        // a single attack of 24 creatures) that is the dominant source of branching.
+        //
+        // Note the key uses the source's NAME and stats, NOT its id -- deliberately the opposite of
+        // the chained-action cap above, which uses the id precisely so two different Mountains are
+        // NOT treated as the same thing. Different questions: that one asks "am I repeating myself?"
+        // and must distinguish permanents; this one asks "are these choices interchangeable?" and
+        // must collapse them. Power/toughness and marked damage are in the key so a damaged token is
+        // not folded together with a healthy one.
+        list = dedupeInterchangeable(list, game);
+
         // pass action
         list.add(new PassAbility());
 
@@ -462,6 +478,47 @@ public final class SimulatedPlayer2 extends ComputerPlayer {
             }
         }
         return true;
+    }
+
+    /** Collapse actions whose outcomes are interchangeable, keeping the first of each kind. */
+    private List<Ability> dedupeInterchangeable(List<Ability> actions, Game game) {
+        Set<String> seen = new HashSet<>();
+        List<Ability> kept = new ArrayList<>(actions.size());
+        for (Ability action : actions) {
+            if (seen.add(interchangeableKey(action, game))) {
+                kept.add(action);
+            }
+        }
+        if (logger.isDebugEnabled() && kept.size() < actions.size()) {
+            logger.debug("simulating -- collapsed interchangeable actions " + actions.size()
+                    + " -> " + kept.size());
+        }
+        return kept;
+    }
+
+    private String interchangeableKey(Ability action, Game game) {
+        StringBuilder key = new StringBuilder();
+        MageObject source = action.getSourceObject(game);
+        if (source instanceof Permanent) {
+            Permanent p = (Permanent) source;
+            key.append(p.getName())
+                    .append('/').append(p.getPower().getValue())
+                    .append('/').append(p.getToughness().getValue())
+                    .append('/').append(p.getDamage())
+                    .append('/').append(p.isTapped());
+        } else {
+            key.append(source == null ? "?" : source.getName());
+        }
+        key.append('|').append(action.getRule());
+        for (Target target : action.getTargets()) {
+            List<String> ids = new ArrayList<>();
+            for (UUID id : target.getTargets()) {
+                ids.add(String.valueOf(id));
+            }
+            Collections.sort(ids);
+            key.append('|').append(String.join(",", ids));
+        }
+        return key.toString();
     }
 
     /**

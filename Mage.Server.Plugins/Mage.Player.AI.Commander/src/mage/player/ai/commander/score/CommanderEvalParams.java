@@ -101,6 +101,7 @@ public final class CommanderEvalParams {
             .multiplayerAttackSplit(1)
             .declineLosingManaPayments(1)
             .smartMulligan(1)
+            .stackObjectWeight(150)
             .build();
 
     // --- life ---
@@ -116,6 +117,7 @@ public final class CommanderEvalParams {
     private final int multiplayerAttackSplit;
     private final int declineLosingManaPayments;
     private final int smartMulligan;
+    private final int stackObjectWeight;
 
     // --- card definition ---
     private final int baseCardValue;
@@ -160,6 +162,7 @@ public final class CommanderEvalParams {
         this.multiplayerAttackSplit = b.multiplayerAttackSplit;
         this.declineLosingManaPayments = b.declineLosingManaPayments;
         this.smartMulligan = b.smartMulligan;
+        this.stackObjectWeight = b.stackObjectWeight;
         this.baseCardValue = b.baseCardValue;
         this.landBaseMultiplier = b.landBaseMultiplier;
         this.landPerManaSymbol = b.landPerManaSymbol;
@@ -206,6 +209,7 @@ public final class CommanderEvalParams {
         b.multiplayerAttackSplit = this.multiplayerAttackSplit;
         b.declineLosingManaPayments = this.declineLosingManaPayments;
         b.smartMulligan = this.smartMulligan;
+        b.stackObjectWeight = this.stackObjectWeight;
         b.baseCardValue = this.baseCardValue;
         b.landBaseMultiplier = this.landBaseMultiplier;
         b.landPerManaSymbol = this.landPerManaSymbol;
@@ -380,6 +384,27 @@ public final class CommanderEvalParams {
         return smartMulligan;
     }
 
+    /**
+     * DARRELLBEST-FORK: value of a triggered/activated ability of OURS waiting on the stack.
+     * <p>
+     * The evaluator did not look at the stack at all, which made casting a spell look like a
+     * disaster: the card leaves hand (-handCardScore, now 150), the lands become tapped, and the
+     * spell itself is worth NOTHING until it resolves. ComputerPlayer6.addActions then abandons any
+     * branch whose score drops ("if (testScore &lt; currentScore)"), so the search would refuse to
+     * explore casting at all -- the bot sat on a full hand and untapped mana, then spent the
+     * opponent's turn cracking Clues and tapping lands, exactly as reported.
+     * <p>
+     * Spells on the stack are scored at their card value, which makes casting roughly
+     * score-neutral instead of a cliff. Abilities on the stack get this flat weight, signed by
+     * controller: our own triggers are pending value, an opponent's are pending problems. A wide
+     * board that triggers many times is a good position, and the evaluator should say so.
+     * <p>
+     * 0 (default) keeps the stack invisible, as upstream.
+     */
+    public int getStackObjectWeight() {
+        return stackObjectWeight;
+    }
+
     // --- card definition ---
 
     public int getBaseCardValue() {
@@ -509,6 +534,7 @@ public final class CommanderEvalParams {
                 + ", multiplayerAttackSplit=" + multiplayerAttackSplit
                 + ", declineLosingManaPayments=" + declineLosingManaPayments
                 + ", smartMulligan=" + smartMulligan
+                + ", stackObjectWeight=" + stackObjectWeight
                 + ", baseCardValue=" + baseCardValue
                 + ", landBaseMultiplier=" + landBaseMultiplier
                 + ", landPerManaSymbol=" + landPerManaSymbol
@@ -554,6 +580,7 @@ public final class CommanderEvalParams {
         private int multiplayerAttackSplit = 0;
         private int declineLosingManaPayments = 0;
         private int smartMulligan = 0;
+        private int stackObjectWeight = 0;
         private int baseCardValue = 3;
         private int landBaseMultiplier = 50;
         private int landPerManaSymbol = 50;
@@ -597,6 +624,11 @@ public final class CommanderEvalParams {
 
         public Builder lifeAboveMultiplier(int v) {
             this.lifeAboveMultiplier = v;
+            return this;
+        }
+
+        public Builder stackObjectWeight(int v) {
+            this.stackObjectWeight = v;
             return this;
         }
 

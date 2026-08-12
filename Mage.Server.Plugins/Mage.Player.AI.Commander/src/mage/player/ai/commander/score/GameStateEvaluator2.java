@@ -134,7 +134,35 @@ public final class GameStateEvaluator2 {
         int playerHandScore = player.getHand().size() * params.getHandCardScore();
         int opponentHandScore = opponent.getHand().size() * params.getHandCardScore();
 
-        int score = (playerLifeScore - opponentLifeScore)
+        // DARRELLBEST-FORK: count what is waiting on the stack.
+        //
+        // Without this the stack is invisible, so casting a spell is a pure loss at the moment it
+        // happens -- the card leaves hand (-handCardScore), lands tap, and the spell itself scores
+        // nothing until it resolves. ComputerPlayer6.addActions abandons a branch whose score drops,
+        // so the search declined to explore casting at all: the bot held a full hand and untapped
+        // mana, then used the opponent's turn to crack Clues and tap lands, which cost it no card
+        // from hand and therefore looked better.
+        //
+        // A spell is scored as the card it will become, which makes casting roughly score-neutral.
+        // An ability is scored at a flat weight, signed by controller -- our own triggers are
+        // pending value, an opponent's are pending problems, and a board that triggers many times
+        // is genuinely a good position.
+        int stackScore = 0;
+        if (params.getStackObjectWeight() != 0) {
+            for (mage.game.stack.StackObject stackObject : game.getStack()) {
+                int worth;
+                if (stackObject instanceof mage.game.stack.Spell) {
+                    worth = ArtificialScoringSystem.getCardDefinitionScore(
+                            game, ((mage.game.stack.Spell) stackObject).getCard(), params);
+                } else {
+                    worth = params.getStackObjectWeight();
+                }
+                stackScore += stackObject.getControllerId().equals(playerId) ? worth : -worth;
+            }
+        }
+
+        int score = stackScore
+                + (playerLifeScore - opponentLifeScore)
                 + (playerPermanentsScore - opponentPermanentsScore)
                 + (playerHandScore - opponentHandScore);
         logger.debug(score

@@ -1282,6 +1282,17 @@ public class ComputerPlayer6 extends ComputerPlayer {
                     }
                 }
 
+                // DARRELLBEST-FORK: within a category, try the BIGGEST play first instead of the
+                // alphabetically-first one. Alpha-beta only prunes when a good move is examined
+                // early -- ordering by rule text gave the search no help at all, so it explored
+                // close to the full tree. Mana value is a crude but free proxy for impact, and any
+                // ordering correlated with strength beats one correlated with spelling.
+                int mv1 = ability1.getManaCosts() == null ? 0 : ability1.getManaCosts().manaValue();
+                int mv2 = ability2.getManaCosts() == null ? 0 : ability2.getManaCosts().manaValue();
+                if (mv1 != mv2) {
+                    return mv2 - mv1;
+                }
+
                 // default
                 return ability1.getRule().compareTo(ability2.getRule());
             }

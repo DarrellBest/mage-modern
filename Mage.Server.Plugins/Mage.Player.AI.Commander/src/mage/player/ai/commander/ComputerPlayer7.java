@@ -267,7 +267,34 @@ public class ComputerPlayer7 extends ComputerPlayer6 {
         return false;
     }
 
+    /**
+     * DARRELLBEST-FORK: when there is nothing to do, pass without searching.
+     * <p>
+     * Reported from live play: with a large stack of triggers the bot re-evaluates the whole stack
+     * at every priority even when it holds no playable action at all, so a stack of twenty copies of
+     * the same trigger costs twenty full searches to reach the same forced conclusion.
+     * <p>
+     * A search whose only legal action is Pass cannot return anything but Pass, so running it is
+     * pure cost. The check is far cheaper than the search it replaces: one walk of the playable
+     * abilities, against a minimax to maxDepth with the whole battlefield as branching factor.
+     * <p>
+     * Mana abilities do not count as something to do -- floating mana with nothing to spend it on
+     * is still nothing to do.
+     */
+    private boolean nothingToDo(Game game) {
+        for (ActivatedAbility ability : getPlayable(game, true)) {
+            if (!ability.isManaAbility()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     protected void calculateActions(Game game) {
+        if (nothingToDo(game)) {
+            actions.clear();
+            return; // act() passes on an empty action list
+        }
         if (!getNextAction(game)) {
             // DARRELLBEST-FORK: route through evaluateState rather than calling the static evaluator
             // directly. currentScore is compared against evaluateState's result in
