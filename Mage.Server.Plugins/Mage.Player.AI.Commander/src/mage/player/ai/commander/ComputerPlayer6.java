@@ -21,6 +21,7 @@ import mage.counters.CounterType;
 import mage.filter.StaticFilters;
 import mage.game.Game;
 import mage.game.combat.Combat;
+import mage.game.combat.CombatGroup;
 import mage.game.events.GameEvent;
 import mage.game.permanent.Permanent;
 import mage.game.stack.StackAbility;
@@ -60,8 +61,7 @@ public class ComputerPlayer6 extends ComputerPlayer {
      * Deliberately named OUTSIDE the {@code mage.player.ai} tree. The server ships
      * {@code log4j.logger.mage.player.ai=warn} inside mage-server.jar, which silences this class's
      * INFO -- including the "SELECTED ACTION" line -- so a 198MB production log contained ZERO
-     * record of any decision the AI made, only that it had been slow. Kanna was exempted from that
-     * suppression; the commander bot never was.
+     * record of any decision the AI made, only that it had been slow.
      * <p>
      * Turning the whole package back to INFO is not the answer: it emits roughly 28MB per game of
      * search internals. This logger inherits {@code rootLogger=info} instead, so it is written with
@@ -226,6 +226,15 @@ public class ComputerPlayer6 extends ComputerPlayer {
                 bestScore = score;
                 best = mode;
             }
+        }
+        // DARRELLBEST-FORK: modal choices are a classic silent misplay -- upstream took whichever
+        // mode the card declared first, so "why did it bounce its own board instead of drawing two"
+        // had no answer anywhere. Real games only; the search calls this constantly.
+        if (best != null && available.size() > 1 && !game.isSimulation() && playLog.isInfoEnabled()) {
+            playLog.info(String.format("MODE %s | T%d.%s | chose '%s' (score %d) from %d options | %s",
+                    getName(), game.getTurnNum(), game.getTurnStepType(),
+                    best.getEffects().getText(best), bestScore, available.size(),
+                    source.getRule()));
         }
         return best;
     }
@@ -1478,12 +1487,91 @@ public class ComputerPlayer6 extends ComputerPlayer {
     public void selectAttackers(Game game, UUID attackingPlayerId) {
         logger.debug("selectAttackers");
         declareAttackers(game, playerId);
+        logCombatDecision(game, "ATTACK");
     }
 
     @Override
     public void selectBlockers(Ability source, Game game, UUID defendingPlayerId) {
         logger.debug("selectBlockers");
         declareBlockers(game, playerId);
+        logCombatDecision(game, "BLOCK");
+    }
+
+    /**
+     * DARRELLBEST-FORK: record the combat decision actually taken, so a misplay can be read off the
+     * log instead of reproduced.
+     * <p>
+     * Combat is where bad play is most visible and least explicable after the fact -- a suicidal
+     * attack or a refused block leaves no trace anywhere else. Attacks and blocks never went through
+     * {@code act()}, so the PLAY lines there do not cover them.
+     * <p>
+     * Gated on {@code !game.isSimulation()}: the search declares attackers and blockers thousands of
+     * times per real decision inside simulated copies, and logging those would bury the one line
+     * that matters and reintroduce exactly the log volume this logger exists to avoid.
+     * <p>
+     * Also records a NO ATTACKS / NO BLOCKS line with the count of creatures that were available.
+     * "It had six untapped creatures and attacked with none" is the single most common complaint
+     * about this bot, and silence in a log cannot distinguish "chose not to" from "never asked".
+     */
+    private void logCombatDecision(Game game, String what) {
+        if (game.isSimulation() || !playLog.isInfoEnabled()) {
+            return;
+        }
+        try {
+            StringBuilder sb = new StringBuilder();
+            int groups = 0;
+            for (CombatGroup group : game.getCombat().getGroups()) {
+                List<String> attackers = new ArrayList<>();
+                for (UUID id : group.getAttackers()) {
+                    Permanent p = game.getPermanent(id);
+                    if (p != null && p.getControllerId().equals(playerId) || "BLOCK".equals(what)) {
+                        attackers.add(describe(game, id));
+                    }
+                }
+                List<String> blockers = new ArrayList<>();
+                for (UUID id : group.getBlockers()) {
+                    blockers.add(describe(game, id));
+                }
+                if (attackers.isEmpty() && blockers.isEmpty()) {
+                    continue;
+                }
+                String defender = game.getPlayer(group.getDefenderId()) != null
+                        ? game.getPlayer(group.getDefenderId()).getName()
+                        : describe(game, group.getDefenderId());
+                sb.append(" [").append(String.join(", ", attackers)).append(" -> ").append(defender);
+                if (!blockers.isEmpty()) {
+                    sb.append(" blocked by ").append(String.join(", ", blockers));
+                }
+                sb.append(']');
+                groups++;
+            }
+            if (groups == 0) {
+                int available = 0;
+                for (Permanent p : game.getBattlefield().getAllActivePermanents(playerId)) {
+                    if (p.isCreature(game) && !p.isTapped()) {
+                        available++;
+                    }
+                }
+                playLog.info(String.format("NO %sS %s | T%d.%s | %d untapped creature(s) available | score %d",
+                        what, getName(), game.getTurnNum(), game.getTurnStepType(), available,
+                        evaluateState(game)));
+            } else {
+                playLog.info(String.format("%s %s | T%d.%s |%s | score %d",
+                        what, getName(), game.getTurnNum(), game.getTurnStepType(), sb,
+                        evaluateState(game)));
+            }
+        } catch (Exception e) {
+            // an audit log must never be able to break a live game
+            logger.debug("play log failed", e);
+        }
+    }
+
+    private String describe(Game game, UUID id) {
+        Permanent p = game.getPermanent(id);
+        if (p == null) {
+            return String.valueOf(id).substring(0, 8);
+        }
+        return p.getName() + " " + p.getPower().getValue() + "/" + p.getToughness().getValue();
     }
 
     /**
