@@ -603,6 +603,14 @@ public class ComputerPlayer6 extends ComputerPlayer {
         }
     }
 
+    /**
+     * DARRELLBEST-FORK: how many refused actions one action chain may skip before the bot gives up
+     * and passes. A chain refusing this many in a row is not hitting one unplayable card, it is
+     * failing to find anything it can legally do, and continuing to grind through it wastes time
+     * that the search could spend on the next priority.
+     */
+    private static final int MAX_REFUSALS_PER_CHAIN = 3;
+
     protected void act(Game game) {
         if (actions == null
                 || actions.isEmpty()) {
@@ -611,6 +619,7 @@ public class ComputerPlayer6 extends ComputerPlayer {
         } else {
             boolean usedStack = false;
             boolean refusedAction = false;
+            int refusals = 0;
             while (actions.peek() != null) {
                 Ability ability = actions.poll();
                 // example: ===> SELECTED ACTION for PlayerA: Play Swamp
@@ -651,11 +660,32 @@ public class ComputerPlayer6 extends ComputerPlayer {
                 // is exactly the trade the cap is already making, and it costs one search instead of
                 // dozens.
                 if (!this.activateAbility((ActivatedAbility) ability, game)) {
-                    logger.warn("AI action refused; abandoning the rest of this action chain and passing: "
+                    // DARRELLBEST-FORK: skip the refused action and keep going, rather than
+                    // throwing the whole turn away.
+                    //
+                    // Clearing the queue here was too blunt. Arena logs show most refusals are not
+                    // loops at all but casts the AI planned and then could not legally make --
+                    // Force of Will aimed at Chrome Mox during its own precombat main (it targets a
+                    // spell, and the stack was empty), Flawless Maneuver, The Ur-Dragon. One
+                    // unplayable spell cost the bot every remaining land drop, cast and activation
+                    // that turn: 69 abandoned turns across tonight's runs, 14 of them from a failed
+                    // cast that had nothing to do with a loop.
+                    //
+                    // The original 12-minute hang this guarded against came from act() ignoring the
+                    // return value and retrying forever, which skipping does not reintroduce: the
+                    // action is dropped, not retried. Two independent backstops still bound a real
+                    // loop -- the per-step chained-activation cap, and the per-step priority budget
+                    // -- and MAX_REFUSALS_PER_CHAIN below stops a chain that is refusing everything.
+                    logger.warn("AI action refused; skipping it and continuing: "
                             + getAbilityAndSourceInfo(game, ability, true));
-                    actions.clear();
-                    refusedAction = true;
-                    break;
+                    refusals++;
+                    if (refusals >= MAX_REFUSALS_PER_CHAIN) {
+                        logger.warn("AI refused " + refusals + " actions in one chain; passing");
+                        actions.clear();
+                        refusedAction = true;
+                        break;
+                    }
+                    continue;
                 }
                 if (ability.isUsesStack()) {
                     usedStack = true;
