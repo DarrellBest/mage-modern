@@ -9,7 +9,7 @@
 #
 # Anything this script does not recognise is forwarded verbatim to BenchRunner, so
 # new BenchConfig options (--paramsA/--paramsB for the evaluator sweep, --trackCards,
-# --model, --skill, ...) work here with no change to this file. A typo still fails
+# --skill, --maxGameSeconds, ...) work here with no change to this file. A typo still fails
 # loudly: BenchRunner rejects unknown arguments, and it does so in every worker at once,
 # within seconds of launch.
 #

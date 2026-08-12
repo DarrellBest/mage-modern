@@ -7,12 +7,11 @@ import mage.player.ai.ComputerPlayerMCTS;
 import mage.player.ai.commander.ComputerPlayerCommander;
 import mage.player.ai.commander.ComputerPlayerLearner;
 import mage.player.ai.commander.score.CommanderEvalParams;
-import mage.player.ai.kanna.ComputerPlayerKanna;
 import mage.players.Player;
 
 /**
  * Builds a benchmark player from a short type key, so any matchup is
- * expressible from the command line without code changes. Kanna-vs-stock and
+ * expressible from the command line without code changes. Fork-vs-stock and
  * stock-vs-stock therefore share one code path, which is what makes the
  * stock-vs-stock control run a trustworthy check on the harness itself.
  *
@@ -20,7 +19,6 @@ import mage.players.Player;
  */
 public final class PlayerFactory {
 
-    public static final String KANNA = "kanna";
     public static final String CP7 = "cp7";
     public static final String MCTS = "mcts";
     public static final String BASE = "base";
@@ -108,10 +106,7 @@ public final class PlayerFactory {
      */
     public static Player create(String type, String name, RangeOfInfluence range, int skill,
                                 CommanderEvalParams evalParams) {
-        if (KANNA.equals(type)) {
-            requireNoEvalParams(type, evalParams);
-            return new ComputerPlayerKanna(name, range, skill);
-        } else if (CP7.equals(type)) {
+        if (CP7.equals(type)) {
             // NOT a candidate for eval params, despite the fork's ComputerPlayer7 having a params
             // constructor: this key builds mage.player.ai.ComputerPlayer7 from the MAD plugin, a
             // SEPARATE class from mage.player.ai.commander.ComputerPlayer7. MAD carries its own copy
@@ -149,7 +144,7 @@ public final class PlayerFactory {
             return new ComputerPlayer(name, range);
         }
         throw new IllegalArgumentException("Unknown player type '" + type
-                + "', expected one of: " + KANNA + ", " + CP7 + ", " + MCTS + ", " + BASE + ", " + COMMANDER + ", " + LEARNER);
+                + "', expected one of: " + CP7 + ", " + MCTS + ", " + BASE + ", " + COMMANDER + ", " + LEARNER);
     }
 
     /**

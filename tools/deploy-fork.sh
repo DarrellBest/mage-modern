@@ -83,7 +83,7 @@ PY
 # then silently never reach the live server or its config -- the deploy reports success and the new
 # player type simply never appears in the client. That is exactly what happened to
 # mage-player-ai-commander: the module was added, deployed repeatedly, and never showed up, because
-# the live config.xml still listed only Human/mad/draftbot/kanna.
+# the live config.xml still listed only Human/mad/monte carlo/draftbot.
 #
 # Syncing the repo's playerTypes block fixes both halves at once: the config gains the entry, and
 # the existing "ensuring config-referenced plugins exist" step then copies the referenced jar in

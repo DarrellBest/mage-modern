@@ -16,23 +16,23 @@ public class SummaryReporterTest {
         if (winner == null) {
             winnerSeat = 0;
         } else {
-            // "kanna" is always playerA in these tests; resolve it to whichever seat
+            // "commander" is always playerA in these tests; resolve it to whichever seat
             // playerA occupies for this game (seat 2 when swapped) so seat-based
             // attribution in SummaryReporter reproduces the same result these tests
             // were written to check by key
-            boolean isPlayerA = "kanna".equals(winner);
+            boolean isPlayerA = "commander".equals(winner);
             int seatA = swapped ? 2 : 1;
             int seatB = swapped ? 1 : 2;
             winnerSeat = isPlayerA ? seatA : seatB;
         }
-        return new GameResult(index, index, winner, winnerSeat, 10, wallMs, termination, null, swapped, LlmStats.empty());
+        return new GameResult(index, index, winner, winnerSeat, 10, wallMs, termination, null, swapped);
     }
 
-    private List<GameResult> games(int kannaWins, int cp7Wins, int caps, int errors) {
+    private List<GameResult> games(int commanderWins, int cp7Wins, int caps, int errors) {
         List<GameResult> results = new ArrayList<>();
         int index = 0;
-        for (int i = 0; i < kannaWins; i++) {
-            results.add(game(index++, "kanna", Termination.WIN, 1000L));
+        for (int i = 0; i < commanderWins; i++) {
+            results.add(game(index++, "commander", Termination.WIN, 1000L));
         }
         for (int i = 0; i < cp7Wins; i++) {
             results.add(game(index++, "cp7", Termination.WIN, 1000L));
@@ -48,7 +48,7 @@ public class SummaryReporterTest {
 
     @Test
     public void countsWinsCapsAndErrorsSeparately() {
-        RunSummary summary = SummaryReporter.summarize(games(6, 4, 3, 2), "kanna");
+        RunSummary summary = SummaryReporter.summarize(games(6, 4, 3, 2), "commander");
         assertEquals(15, summary.total);
         assertEquals(10, summary.decisive);
         assertEquals(6, summary.winsA);
@@ -60,13 +60,13 @@ public class SummaryReporterTest {
     @Test
     public void winRateExcludesCapsAndErrorsFromTheDenominator() {
         // 6 wins of 10 decisive games is 60%, NOT 6/15 = 40%
-        RunSummary summary = SummaryReporter.summarize(games(6, 4, 3, 2), "kanna");
+        RunSummary summary = SummaryReporter.summarize(games(6, 4, 3, 2), "commander");
         assertEquals(0.60, summary.winRateA, 0.0001);
     }
 
     @Test
     public void wilsonInterval_fiftyPercentOfTen() {
-        RunSummary summary = SummaryReporter.summarize(games(5, 5, 0, 0), "kanna");
+        RunSummary summary = SummaryReporter.summarize(games(5, 5, 0, 0), "commander");
         assertEquals(0.50, summary.winRateA, 0.0001);
         assertEquals(0.23659, summary.wilsonLowerA, 0.001);
         assertEquals(0.76341, summary.wilsonUpperA, 0.001);
@@ -74,7 +74,7 @@ public class SummaryReporterTest {
 
     @Test
     public void wilsonInterval_zeroWins_lowerBoundIsZeroNotNegative() {
-        RunSummary summary = SummaryReporter.summarize(games(0, 10, 0, 0), "kanna");
+        RunSummary summary = SummaryReporter.summarize(games(0, 10, 0, 0), "commander");
         assertEquals(0.0, summary.winRateA, 0.0001);
         assertEquals(0.0, summary.wilsonLowerA, 0.001);
         assertEquals(0.27754, summary.wilsonUpperA, 0.001);
@@ -82,7 +82,7 @@ public class SummaryReporterTest {
 
     @Test
     public void wilsonInterval_allWins_upperBoundIsOneNotAboveOne() {
-        RunSummary summary = SummaryReporter.summarize(games(10, 0, 0, 0), "kanna");
+        RunSummary summary = SummaryReporter.summarize(games(10, 0, 0, 0), "commander");
         assertEquals(1.0, summary.winRateA, 0.0001);
         assertEquals(0.72246, summary.wilsonLowerA, 0.001);
         assertEquals(1.0, summary.wilsonUpperA, 0.001);
@@ -90,7 +90,7 @@ public class SummaryReporterTest {
 
     @Test
     public void noDecisiveGames_doesNotDivideByZero() {
-        RunSummary summary = SummaryReporter.summarize(games(0, 0, 4, 1), "kanna");
+        RunSummary summary = SummaryReporter.summarize(games(0, 0, 4, 1), "commander");
         assertEquals(0, summary.decisive);
         assertEquals(0.0, summary.winRateA, 0.0001);
         assertEquals(0.0, summary.wilsonLowerA, 0.0001);
@@ -99,7 +99,7 @@ public class SummaryReporterTest {
 
     @Test
     public void emptyResults_summarizeCleanly() {
-        RunSummary summary = SummaryReporter.summarize(new ArrayList<GameResult>(), "kanna");
+        RunSummary summary = SummaryReporter.summarize(new ArrayList<GameResult>(), "commander");
         assertEquals(0, summary.total);
         assertEquals(0, summary.decisive);
     }
@@ -111,10 +111,10 @@ public class SummaryReporterTest {
         // seat 2 wins 5, none swapped -- must come out 50/50, not 100/0.
         List<GameResult> results = new ArrayList<>();
         for (int i = 0; i < 5; i++) {
-            results.add(new GameResult(i, i, "cp7", 1, 10, 1000L, Termination.WIN, null, false, LlmStats.empty()));
+            results.add(new GameResult(i, i, "cp7", 1, 10, 1000L, Termination.WIN, null, false));
         }
         for (int i = 5; i < 10; i++) {
-            results.add(new GameResult(i, i, "cp7", 2, 10, 1000L, Termination.WIN, null, false, LlmStats.empty()));
+            results.add(new GameResult(i, i, "cp7", 2, 10, 1000L, Termination.WIN, null, false));
         }
 
         RunSummary summary = SummaryReporter.summarize(results, "cp7");
@@ -127,11 +127,11 @@ public class SummaryReporterTest {
     @Test
     public void drawsAreCountedSeparatelyAndExcludedFromDecisive() {
         List<GameResult> results = new ArrayList<>();
-        results.add(new GameResult(0, 0, "kanna", 1, 10, 1000L, Termination.WIN, null, false, LlmStats.empty()));
-        results.add(new GameResult(1, 1, null, 0, 8, 1000L, Termination.DRAW, null, false, LlmStats.empty()));
-        results.add(new GameResult(2, 2, null, 0, 50, 1000L, Termination.CAP, null, false, LlmStats.empty()));
+        results.add(new GameResult(0, 0, "commander", 1, 10, 1000L, Termination.WIN, null, false));
+        results.add(new GameResult(1, 1, null, 0, 8, 1000L, Termination.DRAW, null, false));
+        results.add(new GameResult(2, 2, null, 0, 50, 1000L, Termination.CAP, null, false));
 
-        RunSummary summary = SummaryReporter.summarize(results, "kanna");
+        RunSummary summary = SummaryReporter.summarize(results, "commander");
         assertEquals(3, summary.total);
         assertEquals(1, summary.decisive);
         assertEquals(1, summary.draws);
@@ -140,9 +140,9 @@ public class SummaryReporterTest {
 
     @Test
     public void formatMentionsBothPlayersAndTheCapCount() {
-        RunSummary summary = SummaryReporter.summarize(games(6, 4, 3, 2), "kanna");
-        String text = SummaryReporter.format(summary, "kanna", "cp7");
-        assertTrue(text.contains("kanna"));
+        RunSummary summary = SummaryReporter.summarize(games(6, 4, 3, 2), "commander");
+        String text = SummaryReporter.format(summary, "commander", "cp7");
+        assertTrue(text.contains("commander"));
         assertTrue(text.contains("cp7"));
         assertTrue(text.contains("3"));
     }

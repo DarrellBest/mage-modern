@@ -369,9 +369,32 @@ public class EvalParamsLoaderTest {
         // value arrived. A key that this loader lists but cannot actually apply -- or applies to the
         // wrong field -- would be worse than an unknown key, because it would be advertised as
         // valid in the error messages.
-        StringBuilder file = new StringBuilder();
+        // Some keys are enum-like and reject arbitrary integers (attackAggression accepts 0-2,
+        // the *SelectionMode keys accept 0-1). Probe downwards for a value each key will take, so
+        // this test keeps working as constrained weights are added instead of having to hard-code
+        // a list of them. A DISTINCT value still matters -- setting everything to the same number
+        // could not detect a key that lands in the wrong field.
+        java.util.Map<String, Integer> chosen = new java.util.LinkedHashMap<>();
         for (String key : EvalParamsLoader.validKeys()) {
-            file.append(key).append('=').append("lifeScores".equals(key) ? "0,10" : "7").append('\n');
+            if ("lifeScores".equals(key)) {
+                continue;
+            }
+            for (int candidate : new int[]{7, 2, 1, 0}) {
+                try {
+                    EvalParamsLoader.load(write("probe-" + key + ".properties", key + "=" + candidate + "\n"));
+                    chosen.put(key, candidate);
+                    break;
+                } catch (IllegalArgumentException rejected) {
+                    // try a smaller value
+                }
+            }
+            assertTrue("no value at all was accepted for key '" + key + "'", chosen.containsKey(key));
+        }
+
+        StringBuilder file = new StringBuilder();
+        file.append("lifeScores=0,10\n");
+        for (java.util.Map.Entry<String, Integer> e : chosen.entrySet()) {
+            file.append(e.getKey()).append('=').append(e.getValue()).append('\n');
         }
         String path = write("everykey.properties", file.toString());
 
@@ -392,7 +415,7 @@ public class EvalParamsLoaderTest {
                 continue; // a weight the evaluator reads some other way; still proven loadable above
             }
             assertEquals("key '" + key + "' did not reach " + getterName + "()",
-                    7, ((Integer) getter.invoke(params)).intValue());
+                    (int) chosen.get(key), ((Integer) getter.invoke(params)).intValue());
         }
     }
 }

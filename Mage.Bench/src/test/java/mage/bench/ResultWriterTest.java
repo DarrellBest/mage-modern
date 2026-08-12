@@ -17,21 +17,21 @@ public class ResultWriterTest {
 
     private GameResult result(int index, String winner, Termination termination) {
         int winnerSeat = winner == null ? 0 : 1;
-        return new GameResult(index, 100L + index, winner, winnerSeat, 12, 3400L, termination, null, index % 2 == 1, LlmStats.empty());
+        return new GameResult(index, 100L + index, winner, winnerSeat, 12, 3400L, termination, null, index % 2 == 1);
     }
 
     @Test
     public void roundTripsResultsThroughJsonl() throws Exception {
         File out = new File(folder.getRoot(), "r.jsonl");
         ResultWriter writer = new ResultWriter(out.getAbsolutePath());
-        writer.append(result(0, "kanna", Termination.WIN));
+        writer.append(result(0, "commander", Termination.WIN));
         writer.append(result(1, "cp7", Termination.WIN));
         writer.close();
 
         List<GameResult> read = ResultWriter.read(out.getAbsolutePath());
         assertEquals(2, read.size());
         assertEquals(0, read.get(0).gameIndex);
-        assertEquals("kanna", read.get(0).winner);
+        assertEquals("commander", read.get(0).winner);
         assertEquals(Termination.WIN, read.get(0).termination);
         assertEquals(false, read.get(0).seatSwapped);
         assertEquals(101L, read.get(1).seed);
@@ -42,7 +42,7 @@ public class ResultWriterTest {
     public void writesOneLinePerResult() throws Exception {
         File out = new File(folder.getRoot(), "lines.jsonl");
         ResultWriter writer = new ResultWriter(out.getAbsolutePath());
-        writer.append(result(0, "kanna", Termination.WIN));
+        writer.append(result(0, "commander", Termination.WIN));
         writer.append(result(1, null, Termination.CAP));
         writer.append(result(2, null, Termination.ERROR));
         writer.close();
@@ -55,7 +55,7 @@ public class ResultWriterTest {
     public void dataSurvivesWithoutClose_becauseEachAppendFlushes() throws Exception {
         File out = new File(folder.getRoot(), "crash.jsonl");
         ResultWriter writer = new ResultWriter(out.getAbsolutePath());
-        writer.append(result(0, "kanna", Termination.WIN));
+        writer.append(result(0, "commander", Termination.WIN));
         // deliberately NOT closed: simulates a killed run
         List<GameResult> read = ResultWriter.read(out.getAbsolutePath());
         assertEquals(1, read.size());

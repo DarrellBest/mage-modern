@@ -71,7 +71,6 @@
         <playerType name="Computer - monte carlo" jar="mage-player-ai-mcts.jar" className="mage.player.ai.ComputerPlayerMCTS"/>
         <playerType name="Computer - draftbot" jar="mage-player-ai-draftbot.jar" className="mage.player.ai.ComputerDraftPlayer"/>
         <!-- DARRELLBEST-FORK: names must match PlayerType's description strings exactly. -->
-        <playerType name="Computer - llm" jar="mage-player-ai-kanna.jar" className="mage.player.ai.kanna.ComputerPlayerKanna"/>
         <playerType name="Computer - commander" jar="mage-player-ai-commander.jar" className="mage.player.ai.commander.ComputerPlayerCommander"/>
         <playerType name="Computer - learner" jar="mage-player-ai-commander.jar" className="mage.player.ai.commander.ComputerPlayerLearner"/>
     </playerTypes>

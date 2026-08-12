@@ -17,7 +17,6 @@ public final class BenchConfig {
     public final String playerA;
     public final String playerB;
     public final int skill;
-    public final String model;
     public final int turnCap;
     /**
      * Wall-clock budget per game in seconds, or 0 (the default) for unlimited.
@@ -32,7 +31,6 @@ public final class BenchConfig {
     public final int maxGameSeconds;
     public final String out;
     public final String deckDir;
-    public final String ollamaUrl;
     public final String gameType;
     /** Path to write the per-deck card-play report to, or null when --trackCards was not given
      * (the default): off by default, and BenchRunner/BenchGame register no extra instrumentation
@@ -49,9 +47,9 @@ public final class BenchConfig {
     public final String paramsB;
 
     public BenchConfig(int games, long baseSeed, String deckA, String deckB,
-                       String playerA, String playerB, int skill, String model,
+                       String playerA, String playerB, int skill,
                        int turnCap, int maxGameSeconds, String out, String deckDir,
-                       String ollamaUrl, String gameType, String trackCards,
+                       String gameType, String trackCards,
                        String paramsA, String paramsB) {
         this.games = games;
         this.baseSeed = baseSeed;
@@ -60,12 +58,10 @@ public final class BenchConfig {
         this.playerA = playerA;
         this.playerB = playerB;
         this.skill = skill;
-        this.model = model;
         this.turnCap = turnCap;
         this.maxGameSeconds = maxGameSeconds;
         this.out = out;
         this.deckDir = deckDir;
-        this.ollamaUrl = ollamaUrl;
         this.gameType = gameType;
         this.trackCards = trackCards;
         this.paramsA = paramsA;
@@ -77,15 +73,13 @@ public final class BenchConfig {
         long baseSeed = 12345L;
         String deckA = "RB Aggro.dck";
         String deckB = "RB Aggro.dck";
-        String playerA = "kanna";
+        String playerA = "commander";
         String playerB = "cp7";
         int skill = 6;
-        String model = "xmage-ai-qwen3.6:latest";
         int turnCap = 50;
         int maxGameSeconds = 0; // unlimited: preserves the pre-existing behaviour by default
         String out = "bench-results.jsonl";
         String deckDir = "Mage.Tests";
-        String ollamaUrl = "http://localhost:11434";
         String gameType = GAME_TYPE_TWOPLAYER;
         String trackCards = null;
         String paramsA = null; // null = CommanderEvalParams.DEFAULT
@@ -112,8 +106,6 @@ public final class BenchConfig {
                 playerB = value;
             } else if ("skill".equals(key)) {
                 skill = parseInt(key, value);
-            } else if ("model".equals(key)) {
-                model = value;
             } else if ("turnCap".equals(key)) {
                 turnCap = parseInt(key, value);
             } else if ("maxGameSeconds".equals(key)) {
@@ -125,8 +117,6 @@ public final class BenchConfig {
                 out = value;
             } else if ("deckDir".equals(key)) {
                 deckDir = value;
-            } else if ("ollamaUrl".equals(key)) {
-                ollamaUrl = value;
             } else if ("gameType".equals(key)) {
                 gameType = parseGameType(value);
             } else if ("trackCards".equals(key)) {
@@ -140,7 +130,7 @@ public final class BenchConfig {
             }
         }
         return new BenchConfig(games, baseSeed, deckA, deckB, playerA, playerB,
-                skill, model, turnCap, maxGameSeconds, out, deckDir, ollamaUrl, gameType, trackCards,
+                skill, turnCap, maxGameSeconds, out, deckDir, gameType, trackCards,
                 paramsA, paramsB);
     }
 
@@ -166,12 +156,5 @@ public final class BenchConfig {
         }
         throw new IllegalArgumentException("--gameType must be one of: "
                 + GAME_TYPE_TWOPLAYER + ", " + GAME_TYPE_COMMANDER + "; got '" + value + "'");
-    }
-
-    /**
-     * True when either seat uses an LLM-backed player, i.e. the run needs Ollama.
-     */
-    public boolean usesLlm() {
-        return "kanna".equals(playerA) || "kanna".equals(playerB);
     }
 }

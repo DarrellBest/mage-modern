@@ -7,7 +7,6 @@ import mage.player.ai.ComputerPlayerMCTS;
 import mage.player.ai.commander.ComputerPlayerCommander;
 import mage.player.ai.commander.ComputerPlayerLearner;
 import mage.player.ai.commander.score.CommanderEvalParams;
-import mage.player.ai.kanna.ComputerPlayerKanna;
 import mage.players.Player;
 import org.junit.Test;
 
@@ -20,7 +19,6 @@ public class PlayerFactoryTest {
 
     @Test
     public void createsEachKnownType() {
-        assertTrue(PlayerFactory.create("kanna", "A", RangeOfInfluence.ONE, 6) instanceof ComputerPlayerKanna);
         assertTrue(PlayerFactory.create("cp7", "A", RangeOfInfluence.ONE, 6) instanceof ComputerPlayer7);
         assertTrue(PlayerFactory.create("mcts", "A", RangeOfInfluence.ONE, 6) instanceof ComputerPlayerMCTS);
         assertTrue(PlayerFactory.create("base", "A", RangeOfInfluence.ONE, 6) instanceof ComputerPlayer);
@@ -39,7 +37,7 @@ public class PlayerFactoryTest {
             fail("expected IllegalArgumentException");
         } catch (IllegalArgumentException e) {
             assertTrue(e.getMessage().contains("wizard"));
-            assertTrue(e.getMessage().contains("kanna"));
+            assertTrue(e.getMessage().contains("cp7"));
         }
     }
 
@@ -70,7 +68,13 @@ public class PlayerFactoryTest {
         ComputerPlayerCommander commander = (ComputerPlayerCommander)
                 PlayerFactory.create("commander", "A", RangeOfInfluence.ONE, 6, null);
 
-        assertSame(CommanderEvalParams.DEFAULT, commander.getEvalParams());
+        // TUNED, not DEFAULT: ComputerPlayerCommander's no-params constructor is what config.xml
+        // reaches by reflection, so it is what LIVE games play with, and it deliberately carries the
+        // measured handCardScore=150 plus the commander-damage term.
+        //
+        // Consequence for benchmarking: a run with no --paramsA is therefore NOT the historical
+        // baseline. Compare against an explicit DEFAULT params file when that is what you want.
+        assertSame(CommanderEvalParams.TUNED, commander.getEvalParams());
     }
 
     @Test
@@ -80,7 +84,7 @@ public class PlayerFactoryTest {
         // cp7 is included deliberately: the bench's "cp7" is mage.player.ai.ComputerPlayer7 from the
         // MAD plugin, a different class from the commander fork's ComputerPlayer7, and it carries
         // its own scoring code that a CommanderEvalParams cannot reach.
-        for (String type : new String[]{"kanna", "cp7", "mcts", "base"}) {
+        for (String type : new String[]{"cp7", "mcts", "base"}) {
             try {
                 PlayerFactory.create(type, "A", RangeOfInfluence.ONE, 6, tuned());
                 fail("expected IllegalArgumentException for eval params on '" + type + "'");
@@ -98,7 +102,7 @@ public class PlayerFactoryTest {
     @Test
     public void withoutParams_everyTypeStillBuilds() {
         // the legacy 4-arg overload must keep working for every type, params feature or not
-        for (String type : new String[]{"kanna", "cp7", "mcts", "base", "commander", "learner"}) {
+        for (String type : new String[]{"cp7", "mcts", "base", "commander", "learner"}) {
             assertNotNullPlayer(type, PlayerFactory.create(type, "A", RangeOfInfluence.ONE, 6));
         }
     }

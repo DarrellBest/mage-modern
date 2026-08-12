@@ -21,13 +21,11 @@ public final class RunSummary {
     public final double wilsonUpperA;
     public final long p50TurnMs;
     public final long p95TurnMs;
-    public final int llmCalls;
-    public final int invalidToolCalls;
 
     public RunSummary(int total, int decisive, int winsA, int winsB, int caps, int draws,
                       int timeouts, int errors,
                       double winRateA, double wilsonLowerA, double wilsonUpperA,
-                      long p50TurnMs, long p95TurnMs, int llmCalls, int invalidToolCalls) {
+                      long p50TurnMs, long p95TurnMs) {
         this.total = total;
         this.decisive = decisive;
         this.winsA = winsA;
@@ -41,7 +39,5 @@ public final class RunSummary {
         this.wilsonUpperA = wilsonUpperA;
         this.p50TurnMs = p50TurnMs;
         this.p95TurnMs = p95TurnMs;
-        this.llmCalls = llmCalls;
-        this.invalidToolCalls = invalidToolCalls;
     }
 }

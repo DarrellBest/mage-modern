@@ -14,10 +14,9 @@ public class BenchConfigTest {
         assertEquals(12345L, config.baseSeed);
         assertEquals("RB Aggro.dck", config.deckA);
         assertEquals("RB Aggro.dck", config.deckB);
-        assertEquals("kanna", config.playerA);
+        assertEquals("commander", config.playerA);
         assertEquals("cp7", config.playerB);
         assertEquals(6, config.skill);
-        assertEquals("xmage-ai-qwen3.6:latest", config.model);
         assertEquals(50, config.turnCap);
         assertEquals("bench-results.jsonl", config.out);
         assertEquals("twoplayer", config.gameType);
@@ -67,7 +66,7 @@ public class BenchConfigTest {
     public void namedArgs_overrideDefaults() {
         BenchConfig config = BenchConfig.parse(new String[]{
                 "--games=5", "--seed=99", "--playerA=cp7", "--playerB=mcts",
-                "--turnCap=10", "--out=x.jsonl", "--model=m", "--skill=4",
+                "--turnCap=10", "--out=x.jsonl", "--skill=4",
                 "--deckA=UW Control.dck", "--deckB=Power Hungry.dck", "--gameType=commander"
         });
         assertEquals(5, config.games);
@@ -76,7 +75,6 @@ public class BenchConfigTest {
         assertEquals("mcts", config.playerB);
         assertEquals(10, config.turnCap);
         assertEquals("x.jsonl", config.out);
-        assertEquals("m", config.model);
         assertEquals(4, config.skill);
         assertEquals("UW Control.dck", config.deckA);
         assertEquals("Power Hungry.dck", config.deckB);

@@ -143,13 +143,6 @@ public class TestPlayer implements Player {
         computerPlayer.setTestPlayerLink(this);
     }
 
-    // DARRELLBEST-FORK (keep on merge/rebase from upstream)
-    public TestPlayer(TestComputerPlayerKanna computerPlayer) {
-        this.computerPlayer = computerPlayer;
-        AIPlayer = false;
-        computerPlayer.setTestPlayerLink(this);
-    }
-
     public TestPlayer(final TestPlayer testPlayer) {
         this.AIPlayer = testPlayer.AIPlayer;
         this.AIRealGameSimulation = testPlayer.AIRealGameSimulation;

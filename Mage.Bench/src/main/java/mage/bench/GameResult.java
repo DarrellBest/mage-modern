@@ -9,7 +9,7 @@ public final class GameResult {
 
     public final int gameIndex;
     public final long seed;
-    /** Player key of the winner ("kanna", "cp7", ...), or null for a draw/cap/error. */
+    /** Player key of the winner ("commander", "cp7", ...), or null for a draw/cap/error. */
     public final String winner;
     /**
      * Seat of the winner: 1 or 2 for a decisive game, 0 otherwise. The key alone is not enough
@@ -22,7 +22,6 @@ public final class GameResult {
     public final Termination termination;
     public final String errorMessage;
     public final boolean seatSwapped;
-    public final LlmStats llm;
     /**
      * DARRELLBEST-FORK: which evaluator weights side A played with -- {@code "default"}, or the
      * params file's absolute path plus a hash of the resolved values (see
@@ -36,13 +35,13 @@ public final class GameResult {
     public final String paramsB;
 
     public GameResult(int gameIndex, long seed, String winner, int winnerSeat, int turns, long wallTimeMs,
-                      Termination termination, String errorMessage, boolean seatSwapped, LlmStats llm) {
+                      Termination termination, String errorMessage, boolean seatSwapped) {
         this(gameIndex, seed, winner, winnerSeat, turns, wallTimeMs, termination, errorMessage,
-                seatSwapped, llm, "default", "default");
+                seatSwapped, "default", "default");
     }
 
     public GameResult(int gameIndex, long seed, String winner, int winnerSeat, int turns, long wallTimeMs,
-                      Termination termination, String errorMessage, boolean seatSwapped, LlmStats llm,
+                      Termination termination, String errorMessage, boolean seatSwapped,
                       String paramsA, String paramsB) {
         this.gameIndex = gameIndex;
         this.seed = seed;
@@ -53,7 +52,6 @@ public final class GameResult {
         this.termination = termination;
         this.errorMessage = errorMessage;
         this.seatSwapped = seatSwapped;
-        this.llm = llm;
         this.paramsA = paramsA;
         this.paramsB = paramsB;
     }

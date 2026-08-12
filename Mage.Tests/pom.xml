@@ -46,13 +46,6 @@
             <version>${project.version}</version>
             <scope>compile</scope>
         </dependency>
-        <!-- DARRELLBEST-FORK (keep on merge/rebase): lets tests wrap ComputerPlayerKanna -->
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>mage-player-ai-kanna</artifactId>
-            <version>${project.version}</version>
-            <scope>compile</scope>
-        </dependency>
 
         <!-- DARRELLBEST-FORK (keep on merge/rebase from upstream): new module, no upstream
              counterpart. Lets BenchSmokeTest resolve the harness classes, and lets BenchRunner

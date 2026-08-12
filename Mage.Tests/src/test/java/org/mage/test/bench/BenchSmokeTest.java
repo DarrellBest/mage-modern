@@ -12,8 +12,8 @@ import static org.junit.Assert.assertTrue;
 
 /**
  * DARRELLBEST-FORK: smoke test for the Mage.Bench harness. Uses stock
- * ComputerPlayer on both seats so it needs no Ollama and runs in CI.
- * Exercises the harness, not the LLM path.
+ * ComputerPlayer on both seats so it stays fast enough to run in CI.
+ * Exercises the harness plumbing, not any particular bot.
  * <p>
  * Limitation: this test relies on {@link BenchConfig}'s default deck
  * ("RB Aggro.dck", intentionally left unmodified here since changing it

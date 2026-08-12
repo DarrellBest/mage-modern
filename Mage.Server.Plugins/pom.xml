@@ -38,7 +38,6 @@
         <module>Mage.Player.AI</module>
         <module>Mage.Player.AI.MAD</module>
         <module>Mage.Player.AI.Commander</module>
-        <module>Mage.Player.AI.Kanna</module>
         <module>Mage.Player.AIMCTS</module>
         <module>Mage.Player.AI.DraftBot</module>
         <module>Mage.Player.Human</module>

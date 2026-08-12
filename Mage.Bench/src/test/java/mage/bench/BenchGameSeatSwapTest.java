@@ -55,6 +55,12 @@ import static org.junit.Assert.assertTrue;
  */
 public class BenchGameSeatSwapTest {
 
+    // NOTE: "stock weights" for the commander bot means CommanderEvalParams.TUNED, not DEFAULT.
+    // ComputerPlayerCommander's no-params constructor is the one config.xml reaches by reflection,
+    // so it is what live games use, and it carries the measured handCardScore=150 plus the
+    // commander-damage term. A bench run with no --paramsA is therefore NOT the historical baseline;
+    // pass an explicit DEFAULT params file when that is what you want to compare against.
+
     private static final String BENCHDECKS_DIR = ".." + File.separator
             + "Mage.Tests" + File.separator + "benchdecks";
 
@@ -99,8 +105,7 @@ public class BenchGameSeatSwapTest {
     private Player[] buildSeats(BenchConfig config, boolean seatSwapped, Match match) throws Exception {
         Game game = new CommanderDuel(MultiplayerAttackOption.LEFT, RangeOfInfluence.ONE,
                 MulliganType.GAME_DEFAULT.getMulligan(0), 40, 7);
-        return BenchGame.addPlayers(game, match, config, BenchGame.assignSeats(config, seatSwapped),
-                new BenchMetrics());
+        return BenchGame.addPlayers(game, match, config, BenchGame.assignSeats(config, seatSwapped));
     }
 
     private static int handCardScoreOf(Player player) {
@@ -236,9 +241,9 @@ public class BenchGameSeatSwapTest {
 
         Match match = new CommanderDuelMatch(new MatchOptions("t", "t", false));
         Player[] players = buildSeats(config, false, match);
-        assertEquals(CommanderEvalParams.DEFAULT.getHandCardScore(),
+        assertEquals(CommanderEvalParams.TUNED.getHandCardScore(),
                 handCardScoreOf(players[0]));
-        assertEquals(CommanderEvalParams.DEFAULT.getHandCardScore(),
+        assertEquals(CommanderEvalParams.TUNED.getHandCardScore(),
                 handCardScoreOf(players[1]));
     }
 
@@ -263,7 +268,7 @@ public class BenchGameSeatSwapTest {
         assertEquals(COMMANDER_A, commanderOf(match, players[1]));
         assertEquals(SIDE_A_MARKER, handCardScoreOf(players[1]));
         assertEquals(COMMANDER_B, commanderOf(match, players[0]));
-        assertEquals(CommanderEvalParams.DEFAULT.getHandCardScore(),
+        assertEquals(CommanderEvalParams.TUNED.getHandCardScore(),
                 handCardScoreOf(players[0]));
     }
 

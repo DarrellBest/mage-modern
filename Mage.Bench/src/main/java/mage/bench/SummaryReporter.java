@@ -42,8 +42,6 @@ public final class SummaryReporter {
         int draws = 0;
         int timeouts = 0;
         int errors = 0;
-        int llmCalls = 0;
-        int invalidToolCalls = 0;
         List<Long> turnTimes = new ArrayList<>();
 
         for (GameResult result : results) {
@@ -65,10 +63,6 @@ public final class SummaryReporter {
                     winsB++;
                 }
             }
-            if (result.llm != null) {
-                llmCalls += result.llm.calls;
-                invalidToolCalls += result.llm.invalidToolCalls;
-            }
             if (result.turns > 0) {
                 turnTimes.add(result.wallTimeMs / result.turns);
             }
@@ -81,8 +75,7 @@ public final class SummaryReporter {
         Collections.sort(turnTimes);
         return new RunSummary(total, decisive, winsA, winsB, caps, draws, timeouts, errors,
                 winRateA, interval[0], interval[1],
-                percentile(turnTimes, 0.50), percentile(turnTimes, 0.95),
-                llmCalls, invalidToolCalls);
+                percentile(turnTimes, 0.50), percentile(turnTimes, 0.95));
     }
 
     /**
@@ -133,8 +126,6 @@ public final class SummaryReporter {
                 summary.winRateA * 100.0, playerAKey,
                 summary.wilsonLowerA * 100.0, summary.wilsonUpperA * 100.0));
         sb.append(String.format("Turn time:    p50 %d ms, p95 %d ms%n", summary.p50TurnMs, summary.p95TurnMs));
-        sb.append(String.format("LLM:          %d calls, %d invalid tool calls%n",
-                summary.llmCalls, summary.invalidToolCalls));
         return sb.toString();
     }
 }

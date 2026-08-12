@@ -18,7 +18,6 @@ import mage.game.match.Match;
 import mage.game.match.MatchOptions;
 import mage.game.mulligan.MulliganType;
 import mage.player.ai.commander.score.CommanderEvalParams;
-import mage.player.ai.kanna.ComputerPlayerKanna;
 import mage.players.Player;
 import mage.util.RandomUtil;
 import org.apache.log4j.Logger;
@@ -157,9 +156,6 @@ public final class BenchGame {
         // block always has a valid startNanos to compute wallMs from -- reset immediately
         // after a successful scan, before any real game work begins
         long startNanos = System.nanoTime();
-        // shared by both seats: correct for a mismatched matchup (kanna vs cp7), but a
-        // kanna-vs-kanna run merges both players' LLM stats into one BenchMetrics instance
-        BenchMetrics metrics = new BenchMetrics();
         // seat 1 / seat 2 assignment, swapped on odd games so play/draw advantage cancels; computed
         // up front (not inside the try below) purely from config/seatSwapped, so it's available to
         // the catch block too for best-effort card-play recording on a game that errored out
@@ -202,7 +198,7 @@ public final class BenchGame {
                         new MatchOptions("bench match", "bench game type", false));
             }
 
-            Player[] players = addPlayers(game, match, config, seats, metrics);
+            Player[] players = addPlayers(game, match, config, seats);
             Player seat1 = players[0];
             Player seat2 = players[1];
 
@@ -271,7 +267,7 @@ public final class BenchGame {
 
             long wallMs = (System.nanoTime() - startNanos) / 1_000_000L;
             return new GameResult(gameIndex, seed, winnerKey, winnerSeat, turns, wallMs,
-                    termination, null, seatSwapped, metrics.snapshot(),
+                    termination, null, seatSwapped,
                     EvalParamsLoader.describe(config.paramsA), EvalParamsLoader.describe(config.paramsB));
 
         } catch (Throwable e) {
@@ -289,7 +285,7 @@ public final class BenchGame {
             // records which weights it was asked to run with -- that is what makes an ERROR row
             // attributable to a sweep leg after the fact.
             return new GameResult(gameIndex, seed, null, 0, turns, wallMs,
-                    Termination.ERROR, message, seatSwapped, metrics.snapshot(),
+                    Termination.ERROR, message, seatSwapped,
                     describeQuietly(config.paramsA), describeQuietly(config.paramsB));
         } finally {
             if (cardPlayCollector != null) {
@@ -420,16 +416,15 @@ public final class BenchGame {
      *
      * @return {@code [seat1, seat2]}
      */
-    static Player[] addPlayers(Game game, Match match, BenchConfig config, SeatPlan seats,
-                               BenchMetrics metrics) throws Exception {
-        Player seat1 = addPlayer(game, match, config, seats.seat1, SEAT1_LABEL, metrics);
-        Player seat2 = addPlayer(game, match, config, seats.seat2, SEAT2_LABEL, metrics);
+    static Player[] addPlayers(Game game, Match match, BenchConfig config, SeatPlan seats)
+            throws Exception {
+        Player seat1 = addPlayer(game, match, config, seats.seat1, SEAT1_LABEL);
+        Player seat2 = addPlayer(game, match, config, seats.seat2, SEAT2_LABEL);
         return new Player[]{seat1, seat2};
     }
 
     private static Player addPlayer(Game game, Match match, BenchConfig config,
-                                    SeatPlan.Seat seat, String name,
-                                    BenchMetrics metrics) throws Exception {
+                                    SeatPlan.Seat seat, String name) throws Exception {
         String typeKey = seat.playerKey;
         String deckName = seat.deck;
         // The player key, the deck and the weights all come off the SAME Seat object, so this
@@ -437,18 +432,6 @@ public final class BenchGame {
         // assigned -- see SeatPlan.
         Player player = PlayerFactory.create(typeKey, name, RangeOfInfluence.ONE, config.skill,
                 seat.evalParams);
-        if (player instanceof ComputerPlayerKanna) {
-            ComputerPlayerKanna kanna = (ComputerPlayerKanna) player;
-            kanna.setBenchMetrics(metrics);
-            kanna.setModel(config.model);
-            // DARRELLBEST-FORK (keep on merge/rebase from upstream): pass the bare base
-            // URL. OllamaClient (Mage.Player.AI.Kanna) owns the "/api/chat" suffix itself
-            // now, so appending it again here doubled the path to ".../api/chat/api/chat"
-            // and 404'd every call -- silent, because Kanna's decision methods catch
-            // Throwable and fall back to heuristics, producing a complete-looking game in
-            // which the model was never actually consulted.
-            kanna.setOllamaUrl(config.ollamaUrl);
-        }
 
         Deck deck = Deck.load(loadDeckList(config.deckDir, deckName), false, false);
         int minMaindeck = BenchConfig.GAME_TYPE_COMMANDER.equals(config.gameType)
