@@ -1346,7 +1346,11 @@ public class ComputerPlayer6 extends ComputerPlayer {
             // TODO: add game simulations here to find best attackers/blockers combination
 
             // find safe attackers (can't be killed by blockers)
-            for (UUID defenderId : game.getOpponents(playerId, true)) {
+            // DARRELLBEST-FORK: iterate by index so each pass knows how many opponents are still to
+            // come, which is what lets the attack be divided rather than dumped on the first one.
+            List<UUID> defenderOrder = new ArrayList<>(game.getOpponents(playerId, true));
+            for (int defenderIndex = 0; defenderIndex < defenderOrder.size(); defenderIndex++) {
+                UUID defenderId = defenderOrder.get(defenderIndex);
                 Player defender = game.getPlayer(defenderId);
                 if (!defender.isInGame()) {
                     continue;
@@ -1500,12 +1504,43 @@ public class ComputerPlayer6 extends ComputerPlayer {
                 }
 
                 // TRY ATTACK PLAYER
-                // any remaining attackers go for the player
+                // DARRELLBEST-FORK: divide the attack across opponents instead of giving the whole
+                // team to whoever happens to be first in the list.
+                //
+                // Upstream declares EVERY remaining attacker against this defender; the next
+                // opponent then finds isAttacking() already true for all of them and is skipped. In
+                // a Free For All -- what the live server actually runs -- the bot could never split.
+                //
+                // Greedy on purpose: send exactly enough power to kill this opponent when that is
+                // on the table, otherwise an even share of what is left, keeping the rest for the
+                // opponents still to come. Searching assignments of N attackers over M defenders is
+                // M^N, the same explosion that already makes this bot time out on big boards.
+                List<Permanent> stillFree = new ArrayList<>();
                 for (Permanent attackingPermanent : attackersToCheck) {
-                    if (attackingPermanent.isAttacking()) {
-                        continue;
+                    if (!attackingPermanent.isAttacking()) {
+                        stillFree.add(attackingPermanent);
                     }
-                    attackingPlayer.declareAttacker(attackingPermanent.getId(), defenderId, game, true);
+                }
+                int toSend = stillFree.size();
+                int defendersLeft = defenderOrder.size() - defenderIndex;
+                if (evalParams.getMultiplayerAttackSplit() >= 1 && defendersLeft > 1 && !stillFree.isEmpty()) {
+                    Player defendingPlayer = game.getPlayer(defenderId);
+                    int lifeToBeat = defendingPlayer == null ? Integer.MAX_VALUE : defendingPlayer.getLife();
+                    int needed = 0;
+                    int power = 0;
+                    for (Permanent attackingPermanent : stillFree) {
+                        needed++;
+                        power += attackingPermanent.getPower().getValue();
+                        if (power >= lifeToBeat) {
+                            break;
+                        }
+                    }
+                    // lethal is worth committing to; otherwise take a fair share and move on
+                    toSend = (power >= lifeToBeat) ? needed
+                            : Math.max(1, stillFree.size() / defendersLeft);
+                }
+                for (int i = 0; i < toSend && i < stillFree.size(); i++) {
+                    attackingPlayer.declareAttacker(stillFree.get(i).getId(), defenderId, game, true);
                 }
             }
         }

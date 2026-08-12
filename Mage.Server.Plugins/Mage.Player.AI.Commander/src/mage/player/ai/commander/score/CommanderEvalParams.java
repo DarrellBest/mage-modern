@@ -109,6 +109,7 @@ public final class CommanderEvalParams {
     private final int opponentSelectionMode;
     private final int modeSelectionMode;
     private final int attackAggression;
+    private final int multiplayerAttackSplit;
 
     // --- card definition ---
     private final int baseCardValue;
@@ -150,6 +151,7 @@ public final class CommanderEvalParams {
         this.opponentSelectionMode = b.opponentSelectionMode;
         this.modeSelectionMode = b.modeSelectionMode;
         this.attackAggression = b.attackAggression;
+        this.multiplayerAttackSplit = b.multiplayerAttackSplit;
         this.baseCardValue = b.baseCardValue;
         this.landBaseMultiplier = b.landBaseMultiplier;
         this.landPerManaSymbol = b.landPerManaSymbol;
@@ -193,6 +195,7 @@ public final class CommanderEvalParams {
         b.opponentSelectionMode = this.opponentSelectionMode;
         b.modeSelectionMode = this.modeSelectionMode;
         b.attackAggression = this.attackAggression;
+        b.multiplayerAttackSplit = this.multiplayerAttackSplit;
         b.baseCardValue = this.baseCardValue;
         b.landBaseMultiplier = this.landBaseMultiplier;
         b.landPerManaSymbol = this.landPerManaSymbol;
@@ -322,6 +325,28 @@ public final class CommanderEvalParams {
         return attackAggression;
     }
 
+    /**
+     * DARRELLBEST-FORK: whether attacks may be SPLIT across several opponents.
+     * <p>
+     * {@code 0} (default) is upstream, and in a multiplayer game it is badly wrong. The
+     * "any remaining attackers go for the player" loop in {@code declareAttackers} sits INSIDE the
+     * per-defender loop, so on the FIRST opponent it declares every remaining attacker against them;
+     * every later opponent then finds {@code isAttacking()} already true and is skipped. The bot
+     * therefore dumps its whole team on whoever happens to come first in the opponent list and can
+     * never divide its attack — in Free For All, which is what the live server runs.
+     * <p>
+     * {@code 1} distributes instead: send exactly enough power to kill an opponent when that is
+     * available, otherwise an even share, leaving the remainder for the opponents still to come.
+     * <p>
+     * The assignment is deliberately GREEDY, one pass over attackers per defender. Searching
+     * assignments of N attackers across M defenders is M^N, which is precisely the kind of explosion
+     * that already makes this bot time out on large boards; a good split found cheaply beats an
+     * optimal one that never finishes.
+     */
+    public int getMultiplayerAttackSplit() {
+        return multiplayerAttackSplit;
+    }
+
     // --- card definition ---
 
     public int getBaseCardValue() {
@@ -448,6 +473,7 @@ public final class CommanderEvalParams {
                 + ", opponentSelectionMode=" + opponentSelectionMode
                 + ", modeSelectionMode=" + modeSelectionMode
                 + ", attackAggression=" + attackAggression
+                + ", multiplayerAttackSplit=" + multiplayerAttackSplit
                 + ", baseCardValue=" + baseCardValue
                 + ", landBaseMultiplier=" + landBaseMultiplier
                 + ", landPerManaSymbol=" + landPerManaSymbol
@@ -490,6 +516,7 @@ public final class CommanderEvalParams {
         private int opponentSelectionMode = 0;
         private int modeSelectionMode = 0;
         private int attackAggression = 0;
+        private int multiplayerAttackSplit = 0;
         private int baseCardValue = 3;
         private int landBaseMultiplier = 50;
         private int landPerManaSymbol = 50;
@@ -533,6 +560,14 @@ public final class CommanderEvalParams {
 
         public Builder lifeAboveMultiplier(int v) {
             this.lifeAboveMultiplier = v;
+            return this;
+        }
+
+        public Builder multiplayerAttackSplit(int v) {
+            if (v < 0 || v > 1) {
+                throw new IllegalArgumentException("multiplayerAttackSplit must be 0 (all on one opponent) or 1 (split), got " + v);
+            }
+            this.multiplayerAttackSplit = v;
             return this;
         }
 
