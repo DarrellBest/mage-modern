@@ -1,0 +1,70 @@
+1 [CMR:716] War Room
+1 [PPRO:2022-3] Nykthos, Shrine to Nyx
+1 [WHO:296] Reliquary Tower
+1 [WHO:320] Temple of the False God
+33 [UNF:240] Plains
+1 [BBD:94] Land Tax
+1 [BBD:110] Swords to Plowshares
+1 [GN3:15] Path to Exile
+1 [AVR:2] Angel of Jubilation
+1 [CLB:9] Battle Angels of Tyr
+1 [SLD:1388] Bruna, the Fading Light
+1 [SLD:1289] Linvala, Keeper of Silence
+1 [M21:340] Baneslayer Angel
+1 [KHM:382] Youthful Valkyrie
+1 [ORI:4] Archangel of Tithes
+1 [MAT:152] Metropolis Reformer
+1 [SLD:1290] Sunblast Angel
+1 [C14:2] Angelic Field Marshal
+1 [MPS:24] Sol Ring
+1 [SLD:1335] Gisela, the Broken Blade
+1 [AFC:63] Angel of Finality
+1 [GTC:3] Angelic Skirmisher
+1 [DMU:388] Serra Paragon
+1 [C20:73] Akroma, Angel of Wrath
+1 [J22:200] Inspiring Overseer
+1 [CMR:2] Akroma, Vision of Ixidor
+1 [VOC:69] Breathkeeper Seraph
+1 [SLD:281] Karmic Guide
+1 [M20:310] Serra's Guardian
+1 [CMA:4] Angelic Arbiter
+1 [DVD:13] Reya Dawnbringer
+1 [CLB:862] Herald's Horn
+1 [DMC:188] Oketra's Monument
+1 [DMR:453] Urza's Incubator
+1 [C14:93] True Conviction
+1 [CMR:619] Court of Grace
+1 [A25:23] Luminarch Ascension
+1 [C14:233] Caged Sun
+1 [DMR:447] Gauntlet of Power
+1 [WOC:28] Throne of Eldraine
+1 [CMM:653] Arcane Signet
+1 [ELD:222] Heraldic Banner
+1 [THB:344] Nyx Lotus
+1 [40K:166] Sceptre of Eternal Glory
+1 [CLB:879] Thought Vessel
+1 [CMM:393] The Immortal Sun
+1 [TSR:262] Akroma's Memorial
+1 [E02:44] Quicksilver Amulet
+1 [CMM:413] Sword of the Animist
+1 [40K:237] Endless Atlas
+1 [LCC:101] Archaeomancer's Map
+1 [C14:251] Moonsilver Spear
+1 [STA:2] Day of Judgment
+1 [M15:18] Mass Calcify
+1 [V15:7] Entreat the Angels
+1 [WOC:62] Austere Command
+1 [CMM:624] Generous Gift
+1 [DMR:6] Enlightened Tutor
+1 [BRO:6] Disenchant
+1 [BBD:240] Mind's Eye
+1 [SLD:496] Platinum Angel
+1 [MIC:86] Herald of War
+1 [AFR:359] The Book of Exalted Deeds
+1 [2XM:335] Avacyn, Angel of Hope
+1 [MOC:73] Firemane Commando
+1 [ZNR:314] Angel of Destiny
+1 [TSR:26] Mana Tithe
+SB: 1 [LRW:6] Brigid, Hero of Kinsbaile
+LAYOUT MAIN:(1,10)(CMC,false,100)|([PPRO:2022-3],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[WHO:296],[WHO:320],[CMR:716])([DMR:6],[BBD:94],[TSR:26],[GN3:15],[MPS:24],[BBD:110])([CMM:653],[BRO:6],[40K:237],[A25:23],[CMM:413],[CLB:879],[KHM:382])([LCC:101],[V15:7],[CMM:624],[CLB:862],[ELD:222],[J22:200],[MAT:152],[DMC:188],[AFR:359],[DMR:453])([AFC:63],[AVR:2],[C14:2],[ORI:4],[CLB:9],[CMR:619],[STA:2],[MOC:73],[SLD:1335],[SLD:1289],[C14:251],[THB:344],[E02:44],[40K:166],[DMU:388])([ZNR:314],[M21:340],[DMR:447],[MIC:86],[SLD:281],[BBD:240],[WOC:28])([GTC:3],[WOC:62],[VOC:69],[C14:233],[M20:310],[SLD:1290],[CMM:393],[C14:93])([TSR:262],[CMR:2],[CMA:4],[SLD:1388],[M15:18],[SLD:496])([C20:73],[2XM:335])([DVD:13])
+LAYOUT SIDEBOARD:(1,1)(NONE,false,100)|([LRW:6])

@@ -1,0 +1,102 @@
+1 [2X2:171] Animar, Soul of Elements
+1 [LTC:5] Aragorn, King of Gondor
+1 [ELD:331] Arcane Signet
+1 [ZEN:211] Arid Mesa
+1 [ALA:155] Bant Charm
+1 [BRO:257] Battlefield Forge
+1 [LTR:196] Bilbo, Retired Burglar
+1 [EVE:66] Bloom Tender
+1 [LTR:302] Boromir, Warden of the Tower
+1 [GTC:148] Boros Charm
+1 [CLB:348] Bountiful Promenade
+1 [RNA:246] Breeding Pool
+1 [SNC:171] Brokers Charm
+1 [SNC:173] Cabaretti Charm
+1 [DMC:10] Cadric, Soul Kindler
+1 [AVR:10] Cathars' Crusade
+1 [ELD:326] Chulane, Teller of Tales
+1 [ELD:333] Command Tower
+1 [MOM:221] Djeru and Hazoret
+1 [WAR:193] Dovin's Veto
+1 [LTC:52] Eomer, King of Rohan
+1 [LTC:1] Eowyn, Shieldmaiden
+1 [CON:142] Exotic Orchard
+1 [ELD:190] Faeburrow Elder
+1 [DMC:11] Fallaji Wayfarer
+1 [LTR:202] Faramir, Prince of Ithilien
+1 [KTK:233] Flooded Strand
+1 [LTR:15] Flowering of the White Tree
+1 [LTC:56] Forth Eorlingas!
+1 [LTR:205] Frodo Baggins
+1 [LTC:498] Galadriel, Light of Valinor
+1 [MH2:198] General Ferrous Rokiric
+1 [LTC:32] Gimli of the Glittering Caves
+1 [BOT:11] Goldbug, Humanity's Ally
+1 [CLU:277] Hallowed Fountain
+1 [BNG:159] Heroes' Podium
+1 [LTR:240] Horn of Gondor
+1 [MOM:229] Inga and Esika
+1 [SNC:250] Jetmir's Garden
+1 [DOM:197] Jhoira, Weatherlight Captain
+1 [IKO:250] Ketria Triome
+1 [LTC:40] Legolas Greenleaf
+1 [DMC:7] Mana Cannons
+1 [LTR:215] Merry, Esquire of Rohan
+1 [CHK:279] Minamo, School at Water's Edge
+1 [LTR:256] Minas Tirith
+1 [ZEN:220] Misty Rainforest
+1 [DOM:224] Mox Amber
+1 [MID:265] Overgrown Farmland
+1 [DIS:176] Pillar of the Paruns
+1 [LTR:218] Pippin, Guard of the Citadel
+1 [SUM:284] Plateau
+1 [DMU:252] Plaza of Heroes
+1 [DOM:202] Raff Capashen, Ship's Mage
+1 [IKO:251] Raugrin Triome
+1 [SHM:278*] Reflecting Pool
+1 [CMM:424] Rejuvenating Springs
+1 [SOK:142] Reki, the History of Kamigawa
+1 [DMU:236] Relic of Legends
+1 [GRN:254] Sacred Foundry
+1 [LTR:222] Samwise Gamgee
+1 [SUM:285] Savannah
+1 [ZEN:223] Scalding Tarn
+1 [CLB:360] Sea of Clouds
+1 [DST:140] Skullclamp
+1 [SNC:257] Spara's Headquarters
+1 [CLB:361] Spire Garden
+1 [RNA:259] Stomping Ground
+1 [RTR:201] Supreme Verdict
+1 [KTK:206] Surrak Dragonclaw
+1 [SUM:287] Taiga
+1 [GRN:258] Temple Garden
+1 [LTR:186] The Ring Goes South
+1 [ALA:204] Titanic Ultimatum
+1 [RNA:242] Tome of the Guildpact
+1 [VOW:249] Torens, Fist of the Angels
+1 [SUM:288] Tropical Island
+1 [SUM:289] Tundra
+1 [SUM:291] Volcanic Island
+1 [LTR:36] War of the Last Alliance
+1 [KTK:248] Windswept Heath
+1 [KTK:249] Wooded Foothills
+1 [SLD:1011] Sol Ring
+1 [CMR:686] Three Visits
+1 [SLD:189] Nature's Lore
+1 [MAT:97] Sigarda, Font of Blessings
+1 [2XM:360] Lightning Greaves
+1 [CMD:182] Aura Shards
+1 [AFR:362] Guardian of Faith
+1 [MAT:81] Gold-Forged Thopteryx
+1 [DMR:443] Absorb
+1 [CMM:657] Fellwar Stone
+1 [LTC:285] Talisman of Conviction
+1 [WHO:249] Talisman of Curiosity
+1 [WHO:251] Talisman of Impulse
+1 [WHO:253] Talisman of Progress
+1 [WHO:254] Talisman of Unity
+1 [WHO:232] Farseek
+1 [DMR:441] Sylvan Library
+SB: 1 [LTR:192] Aragorn, the Uniter
+LAYOUT MAIN:(1,7)(CMC,false,70)|([ZEN:211],[BRO:257],[CLB:348],[RNA:246],[ELD:333],[CON:142],[KTK:233],[CLU:277],[SNC:250],[IKO:250],[CHK:279],[LTR:256],[ZEN:220],[MID:265],[DIS:176],[SUM:284],[DMU:252],[IKO:251],[CMM:424],[GRN:254],[SUM:285],[ZEN:223],[CLB:360],[SNC:257],[CLB:361],[RNA:259],[SUM:287],[GRN:258],[SUM:288],[SUM:289],[SUM:291],[KTK:248],[KTK:249],[SHM:278*])([DST:140],[SLD:1011],[DOM:224])([EVE:66],[GTC:148],[WAR:193],[LTR:15],[LTC:56],[LTR:205],[LTR:215],[LTR:218],[LTR:222],[CMR:686],[WHO:232],[SLD:189],[2XM:360],[MAT:81],[CMM:657],[ELD:331],[LTC:285],[WHO:249],[WHO:254],[WHO:251],[WHO:253],[DMR:441])([2X2:171],[ALA:155],[LTR:196],[LTR:302],[SNC:171],[SNC:173],[ELD:190],[DMC:11],[MH2:198],[LTC:32],[BOT:11],[LTR:240],[LTC:40],[DMC:7],[SOK:142],[DMU:236],[VOW:249],[CMD:182],[AFR:362],[DMR:443])([LTC:5],[DMC:10],[LTR:202],[MOM:229],[DOM:197],[DOM:202],[RTR:201],[LTR:186],[LTR:36],[MAT:97])([AVR:10],[ELD:326],[MOM:221],[LTC:52],[LTC:1],[LTC:498],[BNG:159],[KTK:206],[RNA:242])([ALA:204])
+LAYOUT SIDEBOARD:(1,1)(NONE,false,100)|([LTR:192])

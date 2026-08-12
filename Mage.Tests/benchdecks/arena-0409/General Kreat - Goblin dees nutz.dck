@@ -1,0 +1,89 @@
+1 [BLC:21] Agate Instigator
+1 [ELD:331] Arcane Signet
+1 [MH3:215] Arena of Glory
+1 [AVR:128] Battle Hymn
+1 [KHM:123] Birgi, God of Storytelling
+1 [LCI:135] Brass's Tunnel-Grinder
+1 [J22:31] Brazen Cannonade
+1 [ONS:191] Brightstone Ritual
+1 [TMT:235] Casey Jones, Vigilante
+1 [LCI:410a] Cavern of Souls
+1 [TMT:89] Cool but Rude
+1 [TLE:311] Deflecting Swat
+1 [AFR:254] Den of the Bugbear
+1 [CHK:163] Desperate Ritual
+1 [EOE:132] Devastating Onslaught
+1 [SPM:260] Electro, Assaulting Battery
+1 [DKA:87] Faithless Looting
+1 [TLA:132] Fated Firepower
+1 [MH3:119] Flare of Duplication
+1 [MH3:124] Glimpse the Impossible
+1 [TMP:179] Goblin Bombardment
+1 [USG:190] Goblin Lackey
+1 [ONS:207] Goblin Sharpshooter
+1 [DOM:130] Goblin Warchief
+1 [ULG:80] Goblin Welder
+1 [FIC:153] Gogo, Mysterious Mime
+1 [FDN:716] Guttersnipe
+1 [DFT:134] Howlsquad Heavy
+1 [FDN:717] Impact Tremors
+1 [KLD:247] Inventors' Fair
+1 [SOA:44] Jeska's Will
+1 [CHK:175] Kiki-Jiki, Mirror Breaker
+1 [SLD:2082] Knuckles the Echidna
+1 [FDN:204] Krenko, Mob Boss
+1 [GTC:97] Legion Loyalist
+1 [GRN:109] Legion Warboss
+1 [MH3:128] Molten Gatekeeper
+14 [HOB:197] Mountain
+1 [DOM:224] Mox Amber
+1 [DFT:257] Muraganda Raceway
+1 [HOU:104] Neheb, the Eternal
+1 [TSP:171] Norin the Wary
+1 [THS:223] Nykthos, Shrine to Nyx
+1 [LCI:158] Ojer Axonil, Deepest Might
+1 [MH3:129] Party Thrasher
+1 [SNC:116] Professional Face-Breaker
+1 [M11:153] Pyretic Ritual
+1 [FCA:43] Ragavan, Nimble Pilferer
+1 [OTJ:142] Return the Favor
+1 [CSP:96] Rite of Flame
+1 [LCI:258] Roaming Throne
+1 [FDN:332] Searslicer Goblin
+1 [9ED:216] Seething Song
+1 [SPM:262] Shadow of the Goblin
+1 [DOM:143] Siege-Gang Commander
+1 [M3C:61] Siege-Gang Lieutenant
+1 [PLC:122] Simian Spirit Guide
+1 [DOM:144] Skirk Prospector
+1 [DST:140] Skullclamp
+1 [DMU:146] Squee, Dubious Monarch
+1 [HOC:44] The One Ring
+1 [BLB:260] Three Tree City
+1 [WOC:28] Throne of Eldraine
+1 [ELD:147] Torbran, Thane of Red Fell
+1 [SLD:2007] Treasonous Ogre
+1 [DSK:161] Untimely Malfunction
+1 [MB2:114] Urza's Saga
+1 [ZNR:174] Valakut Awakening
+1 [SOC:422] War Room
+1 [ZEN:154] Warren Instigator
+1 [EOE:169] Weftstalker Ardent
+1 [SUM:185] Wheel of Fortune
+1 [CMR:211] Wheel of Misfortune
+1 [SLD:1494*] Sol Ring
+1 [MH3:348] Ruby Medallion
+1 [SLD:2375] Anger
+1 [2X2:394] Mana Vault
+1 [FCA:14] Purphoros, God of the Forge
+1 [CMM:646] Vandalblast
+1 [SLD:1312] Goblin Matron
+1 [SLD:317] Goblin Trashmaster
+1 [SLD:7032] Lotus Petal
+1 [WOT:49] Shared Animosity
+1 [2X2:395] Panharmonicon
+1 [ONC:134] Idol of Oblivion
+1 [FIC:369] Tome of Legends
+SB: 1 [J25:48] General Kreat, the Boltbringer
+LAYOUT MAIN:(1,6)(CMC,false,46)|([MH3:215],[LCI:410a],[AFR:254],[KLD:247],[SLD:7032],[HOB:197],[HOB:197],[HOB:197],[HOB:197],[HOB:197],[HOB:197],[HOB:197],[HOB:197],[HOB:197],[HOB:197],[HOB:197],[HOB:197],[HOB:197],[HOB:197],[DOM:224],[DFT:257],[THS:223],[BLB:260],[MB2:114],[SOC:422])([ONS:191],[EOE:132],[DKA:87],[USG:190],[ULG:80],[GTC:97],[2X2:394],[TSP:171],[FCA:43],[CSP:96],[DOM:144],[DST:140],[SLD:1494*],[CMM:646])([BLC:21],[ELD:331],[AVR:128],[TMT:89],[CHK:163],[TMP:179],[ONC:134],[FDN:717],[MH3:129],[M11:153],[OTJ:142],[MH3:348],[FDN:332],[SPM:262],[DSK:161],[ZEN:154],[FIC:369])([KHM:123],[LCI:135],[TMT:235],[TLE:311],[SPM:260],[TLA:132],[MH3:119],[MH3:124],[SLD:1312],[ONS:207],[DOM:130],[FDN:716],[DFT:134],[SOA:44],[GRN:109],[MH3:128],[SNC:116],[9ED:216],[WOT:49],[PLC:122],[DMU:146],[ZNR:174],[EOE:169],[SUM:185],[CMR:211])([SLD:2375],[J22:31],[SLD:317],[FIC:153],[SLD:2082],[FDN:204],[LCI:158],[2X2:395],[FCA:14],[LCI:258],[M3C:61],[HOC:44],[ELD:147],[SLD:2007])([CHK:175],[HOU:104],[DOM:143],[WOC:28])
+LAYOUT SIDEBOARD:(1,1)(NONE,false,46)|([J25:48])

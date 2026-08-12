@@ -1,0 +1,76 @@
+1 [MOC:169] Angel of Finality
+1 [GTC:3] Angelic Skirmisher
+1 [SOI:242] Anguished Unmaking
+1 [ORI:4] Archangel of Tithes
+1 [KLD:5] Authority of the Consuls
+1 [M21:340] Baneslayer Angel
+1 [CLB:9] Battle Angels of Tyr
+1 [M20:8] Bishop of Wings
+1 [LCC:181] Black Market Connections
+1 [GTC:6] Blind Obedience
+1 [EMN:15a] Bruna, the Fading Light
+1 [ELD:333] Command Tower
+1 [ONC:63] Cut a Deal
+1 [LCC:191] Damn
+1 [PLC:85] Damnation
+1 [WAR:190] Despark
+1 [KLD:75] Diabolic Tutor
+1 [BRO:6] Disenchant
+1 [KHM:353] Eradicator Valkyrie
+1 [WOE:256] Evolving Wilds
+1 [M21:246] Fabled Passage
+1 [CMM:24] Flawless Maneuver
+1 [STX:188] Fracture
+1 [CHK:10] Ghostly Prison
+1 [SNC:14] Giada, Font of Hope
+1 [EMN:28] Gisela, the Broken Blade
+1 [M21:103] Grim Tutor
+1 [THB:19] Heliod's Intervention
+1 [LCC:304] Herald's Horn
+1 [SNC:18] Inspiring Overseer
+1 [MID:232] Liesa, Forgotten Archangel
+1 [EMN:33] Lone Rider
+1 [FUT:12] Magus of the Moat
+1 [C21:19] Monologue Tax
+1 [RNA:192] Mortify
+1 [5DN:55] Night's Whisper
+1 [SNC:252] Obscura Storefront
+1 [AKH:233] Oketra's Monument
+1 [CC2:3] Ophiomancer
+1 [CMM:966] Ornithopter of Paradise
+1 [CLU:241] Orzhov Basilica
+1 [ORI:114] Read the Bones
+1 [KHM:24] Righteous Valkyrie
+1 [M20:36] Sephara, Sky's Blade
+1 [CLU:208] Seraph of the Scales
+1 [M11:28] Serra Ascendant
+1 [VOW:264] Shattered Sanctum
+1 [MID:331] Sigardian Savior
+1 [KHM:380] Starnheim Aspirant
+1 [SOM:22] Sunblast Angel
+1 [M12:219] Swiftfoot Boots
+1 [ONE:261] Terramorphic Expanse
+1 [AFR:359] The Book of Exalted Deeds
+1 [KTK:210] Utter End
+1 [10E:60*] Windborn Muse
+1 [JMP:18] Witch of the Moors
+1 [LCC:315] Talisman of Hierarchy
+17 [SLD:415] Plains
+11 [SLD:417] Swamp
+1 [DMR:453] Urza's Incubator
+1 [CMM:696] Demonic Tutor
+1 [CMM:401] Pearl Medallion
+1 [CMR:656] Vampiric Tutor
+1 [C17:76] Swords to Plowshares
+1 [40K:249] Sol Ring
+1 [PUMA:U12] Reanimate
+1 [J22:124] Phyrexian Reclamation
+1 [SLD:299] Mother of Runes
+1 [BBD:94] Land Tax
+1 [DMR:426] Entomb
+1 [DMR:6] Enlightened Tutor
+1 [C20:73] Akroma, Angel of Wrath
+SB: 1 [CLB:32] Lulu, Loyal Hollyphant
+SB: 1 [CLB:145] Scion of Halaster
+LAYOUT MAIN:(1,9)(CMC,false,100)|([ELD:333],[WOE:256],[M21:246],[SNC:252],[CLU:241],[VOW:264],[ONE:261],[SLD:415],[SLD:415],[SLD:415],[SLD:415],[SLD:415],[SLD:415],[SLD:415],[SLD:415],[SLD:415],[SLD:415],[SLD:415],[SLD:415],[SLD:415],[SLD:415],[SLD:415],[SLD:415],[SLD:415],[SLD:417],[SLD:417],[SLD:417],[SLD:417],[SLD:417],[SLD:417],[SLD:417],[SLD:417],[SLD:417],[SLD:417],[SLD:417])([KLD:5],[M11:28],[C17:76],[40K:249],[PUMA:U12],[J22:124],[CMR:656],[SLD:299],[BBD:94],[DMR:6],[DMR:426])([M20:8],[GTC:6],[LCC:191],[WAR:190],[BRO:6],[STX:188],[SNC:14],[THB:19],[EMN:33],[5DN:55],[CMM:966],[M12:219],[LCC:315],[CMM:401],[CMM:696])([SOI:242],[LCC:181],[ONC:63],[CMM:24],[CHK:10],[M21:103],[LCC:304],[SNC:18],[C21:19],[RNA:192],[AKH:233],[CC2:3],[ORI:114],[KHM:24],[KHM:380],[AFR:359],[DMR:453])([MOC:169],[ORI:4],[CLB:9],[PLC:85],[KLD:75],[KHM:353],[EMN:28],[FUT:12],[CLU:208],[KTK:210],[10E:60*])([M21:340],[MID:232],[MID:331],[JMP:18])([GTC:3],[SOM:22])([EMN:15a],[M20:36])([C20:73])
+LAYOUT SIDEBOARD:(1,2)(NONE,false,100)|([CLB:32])([CLB:145])

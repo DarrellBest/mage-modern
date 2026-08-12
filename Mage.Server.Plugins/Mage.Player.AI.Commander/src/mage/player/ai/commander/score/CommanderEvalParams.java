@@ -102,6 +102,7 @@ public final class CommanderEvalParams {
             .declineLosingManaPayments(1)
             .smartMulligan(1)
             .stackObjectWeight(150)
+            .drawEngineBonus(400)
             .build();
 
     // --- life ---
@@ -118,6 +119,7 @@ public final class CommanderEvalParams {
     private final int declineLosingManaPayments;
     private final int smartMulligan;
     private final int stackObjectWeight;
+    private final int drawEngineBonus;
 
     // --- card definition ---
     private final int baseCardValue;
@@ -163,6 +165,7 @@ public final class CommanderEvalParams {
         this.declineLosingManaPayments = b.declineLosingManaPayments;
         this.smartMulligan = b.smartMulligan;
         this.stackObjectWeight = b.stackObjectWeight;
+        this.drawEngineBonus = b.drawEngineBonus;
         this.baseCardValue = b.baseCardValue;
         this.landBaseMultiplier = b.landBaseMultiplier;
         this.landPerManaSymbol = b.landPerManaSymbol;
@@ -210,6 +213,7 @@ public final class CommanderEvalParams {
         b.declineLosingManaPayments = this.declineLosingManaPayments;
         b.smartMulligan = this.smartMulligan;
         b.stackObjectWeight = this.stackObjectWeight;
+        b.drawEngineBonus = this.drawEngineBonus;
         b.baseCardValue = this.baseCardValue;
         b.landBaseMultiplier = this.landBaseMultiplier;
         b.landPerManaSymbol = this.landPerManaSymbol;
@@ -405,6 +409,23 @@ public final class CommanderEvalParams {
         return stackObjectWeight;
     }
 
+    /**
+     * DARRELLBEST-FORK: extra value for a permanent that GENERATES CARDS.
+     * <p>
+     * The evaluator scored Rhystic Study, Mystic Remora and Guardian Project exactly like any other
+     * 300-point enchantment: it has no concept that a permanent produces cards over time. So the bot
+     * had no reason to prioritise, protect, or build around a draw engine, and no reason to remove
+     * an opponent's -- it saw a card-advantage machine and a vanilla trinket as the same object.
+     * <p>
+     * This is missing model rather than a mis-set weight, the same shape as commander damage: no
+     * value of any existing parameter could express "this permanent keeps paying".
+     * <p>
+     * 0 (default) leaves the evaluator blind to draw engines, as upstream.
+     */
+    public int getDrawEngineBonus() {
+        return drawEngineBonus;
+    }
+
     // --- card definition ---
 
     public int getBaseCardValue() {
@@ -535,6 +556,7 @@ public final class CommanderEvalParams {
                 + ", declineLosingManaPayments=" + declineLosingManaPayments
                 + ", smartMulligan=" + smartMulligan
                 + ", stackObjectWeight=" + stackObjectWeight
+                + ", drawEngineBonus=" + drawEngineBonus
                 + ", baseCardValue=" + baseCardValue
                 + ", landBaseMultiplier=" + landBaseMultiplier
                 + ", landPerManaSymbol=" + landPerManaSymbol
@@ -581,6 +603,7 @@ public final class CommanderEvalParams {
         private int declineLosingManaPayments = 0;
         private int smartMulligan = 0;
         private int stackObjectWeight = 0;
+        private int drawEngineBonus = 0;
         private int baseCardValue = 3;
         private int landBaseMultiplier = 50;
         private int landPerManaSymbol = 50;
@@ -624,6 +647,11 @@ public final class CommanderEvalParams {
 
         public Builder lifeAboveMultiplier(int v) {
             this.lifeAboveMultiplier = v;
+            return this;
+        }
+
+        public Builder drawEngineBonus(int v) {
+            this.drawEngineBonus = v;
             return this;
         }
 

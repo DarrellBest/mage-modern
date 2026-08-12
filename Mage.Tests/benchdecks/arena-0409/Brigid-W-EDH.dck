@@ -1,0 +1,76 @@
+1 [STA:70] Gods Willing
+1 [STA:73] Swords to Plowshares
+1 [P11:2] Brave the Elements
+1 [TD2:23] Dispatch
+1 [CMM:624] Generous Gift
+1 [CMR:615] Akroma's Will
+1 [MID:1] Adeline, Resplendent Cathar
+1 [SLD:1031] Danitha Capashen, Paragon
+1 [MH2:328] Esper Sentinel
+1 [MOC:16] Guardian Scalelord
+1 [DMC:102] Jazal Goldmane
+1 [CMR:621] Keeper of the Accord
+1 [LCC:9] Illustrious Wanderglyph
+1 [C17:66] Leonin Shikari
+1 [NEO:368] Lion Sash
+1 [BRO:304] Loran of the Third Path
+1 [WOE:325] Moonshaker Cavalry
+1 [BRO:305] Myrel, Shield of Argive
+1 [DMC:103] Odric, Lunarch Marshal
+1 [C20:96] Odric, Master Tactician
+1 [CMM:627] Puresteel Paladin
+1 [SLD:1125] Serra Ascendant
+1 [MUL:6] Sram, Senior Edificer
+1 [2XM:337] Stoneforge Mystic
+1 [LTC:521] Stonehewer Giant
+1 [2X2:578] Weathered Wayfarer
+1 [VOW:46] Welcoming Vampire
+1 [CLB:49] White Plume Adventurer
+1 [KHM:340] Search for Glory
+1 [MM3:216] Basilisk Collar
+1 [40K:237] Endless Atlas
+1 [ONC:6] Glimmer Lens
+1 [BNG:158] Gorgon's Head
+1 [SNC:285] Halo Fountain
+1 [CMM:389] Haunted Cloak
+1 [DOM:217] Helm of the Host
+1 [SLD:1034] Loxodon Warhammer
+1 [AKH:233] Oketra's Monument
+1 [CLB:332] Patriar's Seal
+1 [C17:220] Quietus Spike
+1 [AFC:280] Robe of Stars
+1 [THB:345] Shadowspear
+1 [EVG:25] Slate of Ancestry
+1 [CMM:703] Sol Ring
+1 [SLD:606] Swiftfoot Boots
+1 [CMR:716] War Room
+1 [2XM:364] Sword of Feast and Famine
+1 [MH2:324] Sword of Hearth and Home
+1 [LTC:355] Sword of the Animist
+1 [MOR:145] Thornbite Staff
+1 [LTR:398] Trailblazer's Boots
+1 [MOC:107] Wand of the Worldsoul
+1 [C14:67] Cathars' Crusade
+1 [MOC:11] Chivalric Alliance
+1 [A25:23] Luminarch Ascension
+1 [SLD:731] Sigarda's Aid
+1 [C14:93] True Conviction
+1 [PPRO:2022-3] Nykthos, Shrine to Nyx
+1 [C14:293] Emeria, the Sky Ruin
+1 [CHK:275] Eiganjo Castle
+1 [WOC:162] Hall of Heliod's Generosity
+1 [KLD:247] Inventors' Fair
+1 [WHO:296] Reliquary Tower
+1 [WHO:320] Temple of the False God
+27 [UNF:240] Plains
+1 [SOI:32] Open the Armory
+1 [CMM:629] Steelshaper's Gift
+1 [WOC:145] Arcane Signet
+1 [LCC:309] Mind Stone
+1 [CN2:22] Recruiter of the Guard
+1 [SLC:2010] Sun Titan
+1 [WOT:12] Rest in Peace
+1 [GN3:113] Argentum Armor
+SB: 1 [LRW:6] Brigid, Hero of Kinsbaile
+LAYOUT MAIN:(1,8)(CMC,false,100)|([CHK:275],[C14:293],[WOC:162],[KLD:247],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[WHO:296],[WHO:320],[CMR:716],[PPRO:2022-3])([MM3:216],[P11:2],[TD2:23],[MH2:328],[STA:70],[BNG:158],[SLD:1125],[THB:345],[SLD:731],[CMM:703],[CMM:629],[STA:73],[2X2:578])([WOC:145],[MOC:11],[40K:237],[ONC:6],[C17:66],[NEO:368],[A25:23],[LCC:309],[SOI:32],[CMM:627],[AFC:280],[MUL:6],[2XM:337],[SLD:606],[LTC:355],[MOR:145],[LTR:398],[WOT:12])([MID:1],[SLD:1031],[CMM:624],[SNC:285],[CMM:389],[BRO:304],[SLD:1034],[AKH:233],[CLB:332],[C17:220],[KHM:340],[2XM:364],[MH2:324],[MOC:107],[VOW:46],[CLB:49],[CN2:22])([CMR:615],[DOM:217],[DMC:102],[CMR:621],[BRO:305],[DMC:103],[C20:96],[EVG:25])([C14:67],[MOC:16],[LCC:9],[LTC:521])([C14:93],[SLC:2010],[GN3:113])([WOE:325])
+LAYOUT SIDEBOARD:(1,1)(NONE,false,100)|([LRW:6])

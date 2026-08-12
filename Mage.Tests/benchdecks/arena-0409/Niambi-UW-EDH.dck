@@ -1,0 +1,102 @@
+1 [DTK:2] Anafenza, Kin-Tree Spirit
+1 [M21:348] Barrin, Tolarian Archmage
+1 [THB:260] Callaphe, Beloved of the Sea
+1 [KHM:303] Cosima, God of the Voyage
+1 [THS:191] Daxos of Meletis
+1 [THB:258] Daxos, Blessed by the Sun
+1 [MID:217] Dennick, Pious Apprentice
+1 [VOW:235] Dorothea, Vengeful Victim
+1 [CHK:8] Eight-and-a-Half-Tails
+1 [BNG:145] Ephara, God of the Polis
+1 [CMR:557] Esior, Wardwing Familiar
+1 [WAR:50] Fblthp, the Lost
+1 [THS:17] Heliod, God of the Sun
+1 [AER:154] Hope of Ghirapur
+1 [CHK:19] Isamaru, Hound of Konda
+1 [VOW:320] Jacob Hauken, Inspector
+1 [SOK:42] Kami of the Crescent Moon
+1 [CHK:30] Konda, Lord of Eiganjo
+1 [PL23:3] Kwain, Itinerant Meddler
+1 [DOM:272] Niambi, Faithful Healer
+1 [SOK:27] Rune-Tail, Kitsune Ascendant
+1 [THB:261] Thassa, Deep-Dwelling
+1 [THS:66] Thassa, God of the Sea
+1 [NEO:374] The Reality Chip
+1 [DOM:234] Traxos, Scourge of Kroog
+1 [NEC:32] Yoshimaru, Ever Faithful
+1 [RIX:176] Azor's Gateway
+1 [THS:42] Bident of Thassa
+1 [TSP:250] Candles of Leng
+1 [M21:228] Chromatic Orrery
+1 [KTK:219] Dragon Throne of Tarkir
+1 [AFR:243] Eye of Vecna
+1 [ISD:226] Grimoire of the Dead
+1 [AFR:246] Hand of Vecna
+1 [AER:153] Heart of Kiran
+1 [DKA:151] Helvault
+1 [BNG:159] Heroes' Podium
+1 [CHK:259] Konda's Banner
+1 [DOM:224] Mox Amber
+1 [SOM:179] Mox Opal
+1 [THB:235] Nyx Lotus
+1 [THB:236] Shadowspear
+1 [NEC:4] Shorikai, Genesis Engine
+1 [THS:33] Spear of Heliod
+1 [ORI:240] Sword of the Animist
+1 [AFR:365] The Blackstaff of Waterdeep
+1 [MID:252] The Celestus
+1 [DOM:233] Thran Temporal Gateway
+1 [BOK:163] Umezawa's Jitte
+1 [DOM:237] Weatherlight
+1 [THB:19] Heliod's Intervention
+1 [CLB:60] Candlekeep Sage
+1 [BOK:1] Day of Destiny
+1 [XLN:22] Legion's Landing
+1 [XLN:74] Search for Azcanta
+1 [CLB:96] Shameless Charlatan
+1 [DOM:8] Board the Weatherlight
+1 [DOM:55] Karn's Temporal Sundering
+1 [DOM:39] Urza's Ruinous Blast
+1 [TSP:269] Academy Ruins
+1 [CHK:273] Boseiju, Who Shelters All
+1 [ELD:333] Command Tower
+1 [CSP:145] Dark Depths
+1 [MID:260] Deserted Beach
+1 [CHK:275] Eiganjo Castle
+1 [NEO:268] Eiganjo, Seat of the Empire
+1 [CON:142] Exotic Orchard
+1 [TSP:272] Flagstones of Trokair
+1 [EMN:203] Geier Reach Sanitarium
+1 [TSP:274] Gemstone Caverns
+1 [KHM:257] Glacial Floodplain
+1 [BOK:164] Gods' Eye, Gate to the Reikai
+1 [WOC:162] Hall of Heliod's Generosity
+1 [CHK:277] Hall of the Bandit Lord
+1 [CLU:277] Hallowed Fountain
+1 [KHM:260] Hengegate Pathway
+1 [KLD:247] Inventors' Fair
+1 [AKH:245] Irrigated Farmland
+1 [SOK:162] Mikokoro, Center of the Sea
+1 [CHK:279] Minamo, School at Water's Edge
+1 [SOK:163] Miren, the Moaning Well
+1 [SHM:277] Mystic Gate
+1 [THS:223] Nykthos, Shrine to Nyx
+1 [SOK:164] Oboro, Palace in the Clouds
+1 [NEO:271] Otawara, Soaring City
+1 [BFZ:241] Prairie Stream
+1 [NEM:142] Rath's Edge
+1 [USG:325] Serra's Sanctum
+1 [MIR:330] Teferi's Isle
+1 [LEG:308] Tolaria
+1 [SUM:289] Tundra
+1 [CHK:285] Untaidake, the Cloud Keeper
+1 [M15:248] Urborg, Tomb of Yawgmoth
+1 [LTC:377] Yavimaya, Cradle of Growth
+1 [C14:263] Predator, Flagship
+1 [LTC:368] Kor Haven
+1 [CMM:580] Hanna, Ship's Navigator
+1 [SLD:331] Counterspell
+1 [DMC:192] Sword of the Chosen
+SB: 1 [M21:379] Niambi, Esteemed Speaker
+LAYOUT MAIN:(1,8)(CMC,false,100)|([DOM:224],[SOM:179],[TSP:269],[CHK:273],[ELD:333],[CSP:145],[MID:260],[CHK:275],[NEO:268],[CON:142],[TSP:272],[EMN:203],[TSP:274],[KHM:257],[BOK:164],[WOC:162],[CHK:277],[CLU:277],[KHM:260],[KLD:247],[AKH:245],[SOK:162],[CHK:279],[SOK:163],[SHM:277],[THS:223],[SOK:164],[NEO:271],[BFZ:241],[NEM:142],[USG:325],[MIR:330],[LEG:308],[SUM:289],[CHK:285],[M15:248],[LTC:377],[LTC:368])([AER:154],[CHK:19],[NEC:32],[THB:236],[AFR:365],[XLN:22])([DTK:2],[THB:258],[MID:217],[VOW:235],[CHK:8],[CMR:557],[WAR:50],[VOW:320],[SOK:42],[PL23:3],[NEO:374],[RIX:176],[TSP:250],[AFR:243],[AER:153],[CHK:259],[ORI:240],[BOK:163],[THB:19],[XLN:74],[CLB:96],[DOM:8],[SLD:331],[DMC:192])([M21:348],[THB:260],[KHM:303],[THS:191],[DOM:272],[SOK:27],[THS:66],[AFR:246],[DKA:151],[THS:33],[MID:252],[CLB:60],[CMM:580])([BNG:145],[THS:17],[THB:261],[DOM:234],[THS:42],[KTK:219],[ISD:226],[THB:235],[NEC:4],[DOM:233],[DOM:237],[BOK:1])([BNG:159],[DOM:39],[C14:263])([DOM:55])([CHK:30],[M21:228])
+LAYOUT SIDEBOARD:(1,1)(NONE,false,100)|([M21:379])

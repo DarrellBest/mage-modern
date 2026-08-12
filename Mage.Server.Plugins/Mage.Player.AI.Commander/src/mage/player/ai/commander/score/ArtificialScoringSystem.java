@@ -3,6 +3,7 @@ package mage.player.ai.commander.score;
 import mage.player.ai.score.MagicAbility;
 import mage.MageObject;
 import mage.abilities.Ability;
+import mage.abilities.effects.Effect;
 import mage.abilities.keyword.HasteAbility;
 import mage.cards.Card;
 import mage.constants.CardType;
@@ -76,9 +77,36 @@ public final class ArtificialScoringSystem {
         return score;
     }
 
+    /**
+     * DARRELLBEST-FORK: does this permanent generate cards?
+     * <p>
+     * Detected by effect type rather than a card list, so it covers Rhystic Study, Mystic Remora,
+     * Guardian Project, Esper Sentinel, Skullclamp and anything printed later, with no maintenance.
+     * <p>
+     * Deliberately counts any draw effect on the permanent, including enters-the-battlefield draws.
+     * Distinguishing "repeatable" from "one-shot" reliably would mean interpreting trigger
+     * conditions, and over-valuing a Mulldrifter body slightly is a far smaller error than the one
+     * being fixed -- which is valuing a Rhystic Study exactly like a vanilla trinket.
+     */
+    private static boolean isDrawEngine(final Game game, final Permanent permanent) {
+        for (Ability ability : permanent.getAbilities(game)) {
+            for (Effect effect : ability.getAllEffects()) {
+                String name = effect.getClass().getSimpleName();
+                if (name.contains("DrawCard")) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     public static int getDynamicPermanentScore(final Game game, final Permanent permanent, final CommanderEvalParams params) {
 
         int score = permanent.getCounters(game).getCount(CounterType.CHARGE) * params.getChargeCounterScore();
+        // DARRELLBEST-FORK: a permanent that keeps producing cards is worth more than its stats
+        if (params.getDrawEngineBonus() != 0 && isDrawEngine(game, permanent)) {
+            score += params.getDrawEngineBonus();
+        }
         score += permanent.getCounters(game).getCount(CounterType.LEVEL) * params.getLevelCounterScore();
         score -= permanent.getDamage() * params.getDamageMarkedPenalty();
         if (permanent.getCardType(game).contains(CardType.CREATURE)) {

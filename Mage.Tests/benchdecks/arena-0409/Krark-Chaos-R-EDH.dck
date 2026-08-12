@@ -1,0 +1,71 @@
+1 [CLB:855] Chaos Wand
+1 [C14:265] Ruby Medallion
+1 [C20:70] Twinning Staff
+1 [DGM:34] Possibility Storm
+1 [J22:801] Teferi's Puzzle Box
+1 [MRD:262] Timesifter
+1 [ODY:197] Impulsive Maneuvers
+1 [CHK:194] Tide of War
+1 [SCG:98] Grip of Chaos
+1 [M11:160] Wild Evocation
+1 [ONS:223] Risky Move
+1 [SNC:422] Arcane Bombardment
+1 [WTH:103] Goblin Bomb
+1 [UDS:83] Goblin Festival
+1 [WOT:46] Mana Flare
+1 [MED:RA4] Jaya Ballard
+1 [MOM:321] Chandra, Hope's Beacon
+1 [SS3:1] Chandra, Torch of Defiance
+1 [ZNE:29] Valakut, the Molten Pinnacle
+1 [CMM:663] Reliquary Tower
+1 [CMR:716] War Room
+1 [PPRO:2022-3] Nykthos, Shrine to Nyx
+32 [SLD:418] Mountain
+1 [SLD:249] Sol Ring
+1 [CLB:313] Fire Diamond
+1 [LCC:104] Arcane Signet
+1 [SLD:1066] Pyromancer's Goggles
+1 [LCC:309] Mind Stone
+1 [LCC:118] Thought Vessel
+1 [40K:231] Caged Sun
+1 [DMR:447] Gauntlet of Power
+1 [SNC:107] Glittering Stockpile
+1 [MMQ:291] Crooked Scales
+1 [WAR:127] Finale of Promise
+1 [CMM:550] Star of Extinction
+1 [SLD:383b] Krark's Thumb
+1 [PM19:145] Guttersnipe
+1 [STA:36] Chaos Warp
+1 [SLD:675] Lightning Bolt
+1 [C21:179] Seething Song
+1 [C21:176] Mana Geyser
+1 [CLB:204] Wand of Wonder
+1 [STA:46] Thrill of Possibility
+1 [STA:38] Faithless Looting
+1 [PZ2:70] Boompile
+1 [MH2:144] Tavern Scoundrel
+1 [MRD:90] Fiery Gambit
+1 [MH2:277] Chance Encounter
+1 [PZ2:65821] Game of Chaos
+1 [M21:365] Double Vision
+1 [SLD:380b] Okaun, Eye of Chaos
+1 [MH2:132] Harmonic Prodigy
+1 [SNC:102] Big Score
+1 [FMB1:57] Pyretic Ritual
+1 [CLB:206] Wild Magic Surge
+1 [CLB:196] Storm King's Thunder
+1 [KHM:360] Tibalt's Trickery
+1 [TD0:B23] Price of Progress
+1 [AFR:164] Unexpected Windfall
+1 [C15:146] Comet Storm
+1 [DOM:152] Wizard's Lightning
+1 [SLD:724] Lightning Strike
+1 [RNA:99] Electrodominance
+1 [SLD:188] Gamble
+1 [SLD:322] Blasphemous Act
+1 [CMR:668] Jeska's Will
+1 [RAV:150] Warp World
+1 [8ED:227] Thieves' Auction
+SB: 1 [CMR:189] Krark, the Thumbless
+LAYOUT MAIN:(1,7)(CARD_TYPE,false,100)|([LCC:104],[PZ2:70],[40K:231],[CLB:855],[MMQ:291],[CLB:313],[DMR:447],[SNC:107],[SLD:383b],[LCC:309],[SLD:1066],[C14:265],[SLD:249],[J22:801],[LCC:118],[MRD:262],[C20:70],[CLB:204])([PM19:145],[MH2:132],[SLD:380b],[MH2:144])([SNC:422],[MH2:277],[M21:365],[WTH:103],[UDS:83],[SCG:98],[ODY:197],[WOT:46],[DGM:34],[ONS:223],[CHK:194],[M11:160])([SNC:102],[STA:36],[C15:146],[RNA:99],[SLD:675],[SLD:724],[TD0:B23],[FMB1:57],[C21:179],[CLB:196],[STA:46],[KHM:360],[AFR:164],[CLB:206],[DOM:152])([SLD:418],[SLD:418],[SLD:418],[SLD:418],[SLD:418],[SLD:418],[SLD:418],[SLD:418],[SLD:418],[SLD:418],[SLD:418],[SLD:418],[SLD:418],[SLD:418],[SLD:418],[SLD:418],[SLD:418],[SLD:418],[SLD:418],[SLD:418],[SLD:418],[SLD:418],[SLD:418],[SLD:418],[SLD:418],[SLD:418],[SLD:418],[SLD:418],[SLD:418],[SLD:418],[SLD:418],[SLD:418],[PPRO:2022-3],[CMM:663],[ZNE:29],[CMR:716])([MOM:321],[SS3:1],[MED:RA4])([SLD:322],[STA:38],[MRD:90],[WAR:127],[SLD:188],[PZ2:65821],[CMR:668],[C21:176],[CMM:550],[8ED:227],[RAV:150])
+LAYOUT SIDEBOARD:(1,1)(NONE,false,100)|([CMR:189])

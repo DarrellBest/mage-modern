@@ -1,0 +1,78 @@
+1 [WWK:47] Abyssal Persecutor
+1 [THS:210] Akroan Horse
+1 [ONE:304] Archfiend of the Dross
+1 [ISD:88] Bitterheart Witch
+1 [STH:56] Dauthi Trapper
+1 [AVR:95] Demonic Taskmaster
+1 [5DN:48] Ebon Drake
+1 [SOI:162] Goldnight Castigator
+1 [MRD:183] Grid Monitor
+1 [FRF:104] Humble Defector
+1 [JOU:75] Master of the Feast
+1 [CMR:143] Plague Reaver
+1 [MRD:234] Rust Elemental
+1 [MBS:53] Sangromancer
+1 [10E:178] Sleeper Agent
+1 [10E:344] Steel Golem
+1 [MID:126] Vengeful Strangler
+1 [ONS:183] Wretched Anurid
+1 [CMM:362] Xantcha, Sleeper Agent
+1 [ELD:331] Arcane Signet
+1 [CMM:369] Assault Suit
+1 [C14:55] Crown of Doom
+1 [MRD:199] Lightning Greaves
+1 [C21:256] Pendant of Prosperity
+1 [M12:219] Swiftfoot Boots
+1 [M11:221] Whispersilk Cloak
+1 [RNA:157] Bedevil
+1 [MMQ:129] Dark Ritual
+1 [IKO:366] Heartless Act
+1 [ONE:102] Offer Immortality
+1 [ARB:46] Terminate
+1 [6ED:161] Vampiric Tutor
+1 [M15:127] Aggressive Mining
+1 [RNA:160] Captive Audience
+1 [DKA:85] Curse of Bloodletting
+1 [C21:138] Curse of Disturbance
+1 [C19:16] Curse of Fool's Wisdom
+1 [VOW:152] Curse of Hospitality
+1 [DKA:56] Curse of Misfortunes
+1 [MIC:35] Curse of Obsession
+1 [MOC:274] Curse of Opulence
+1 [MID:134] Curse of Shaken Faith
+1 [C13:71] Curse of Shallow Graves
+1 [ISD:136] Curse of Stalked Prey
+1 [DKA:57] Curse of Thirst
+1 [PZ2:23] Curse of Vengeance
+1 [ISD:137] Curse of the Nightly Hunt
+1 [ISD:138] Curse of the Pierced Heart
+1 [MIC:18] Curse of the Restless Dead
+1 [ONS:197] Custody Battle
+1 [CMR:118] Demonic Lore
+1 [ORI:92] Demonic Pact
+1 [6ED:132] Forbidden Crypt
+1 [AFC:301] Maddening Hex
+1 [CLB:140] Parasitic Impetus
+1 [AKH:112] Trespasser's Curse
+1 [GN3:88] Vow of Lightning
+1 [GN3:65] Vow of Torment
+1 [M15:122] Waste Not
+1 [SUM:105] Demonic Tutor
+1 [EMN:131] Harmless Offering
+1 [SUM:282] Badlands
+1 [RNA:245] Blood Crypt
+1 [KTK:230] Bloodstained Mire
+1 [ELD:333] Command Tower
+1 [XLN:252] Dragonskull Summit
+1 [CLB:355] Luxury Suite
+1 [DRK:117] Maze of Ith
+13 [MKM:275] Mountain
+1 [CHK:283] Shizo, Death's Storehouse
+1 [BFZ:247] Smoldering Marsh
+1 [DMU:256] Sulfurous Springs
+13 [MKM:274] Swamp
+1 [M15:248] Urborg, Tomb of Yawgmoth
+1 [C15:268] Sol Ring
+SB: 1 [CMR:272] Blim, Comedic Genius
+LAYOUT MAIN:(1,8)(CMC,false,70)|([SUM:282],[RNA:245],[KTK:230],[ELD:333],[XLN:252],[CLB:355],[DRK:117],[CHK:283],[BFZ:247],[DMU:256],[M15:248],[MKM:274],[MKM:274],[MKM:274],[MKM:274],[MKM:274],[MKM:274],[MKM:274],[MKM:274],[MKM:274],[MKM:274],[MKM:274],[MKM:274],[MKM:274],[MKM:275],[MKM:275],[MKM:275],[MKM:275],[MKM:275],[MKM:275],[MKM:275],[MKM:275],[MKM:275],[MKM:275],[MKM:275],[MKM:275],[MKM:275])([10E:178],[MMQ:129],[6ED:161],[MOC:274],[PZ2:23],[C15:268])([FRF:104],[MID:126],[ONS:183],[ELD:331],[MRD:199],[M12:219],[IKO:366],[ONE:102],[ARB:46],[MID:134],[ISD:136],[ISD:138],[ONS:197],[AKH:112],[M15:122],[SUM:105])([STH:56],[AVR:95],[5DN:48],[JOU:75],[CMR:143],[10E:344],[CMM:362],[C14:55],[C21:256],[M11:221],[RNA:157],[C21:138],[VOW:152],[C13:71],[ISD:137],[MIC:18],[CMR:118],[AFC:301],[CLB:140],[GN3:88],[GN3:65],[EMN:131])([WWK:47],[THS:210],[ONE:304],[SOI:162],[MRD:183],[MRD:234],[MBS:53],[CMM:369],[M15:127],[ORI:92])([ISD:88],[DKA:85],[DKA:56],[MIC:35],[DKA:57],[6ED:132])([C19:16])([RNA:160])
+LAYOUT SIDEBOARD:(1,1)(NONE,false,100)|([CMR:272])

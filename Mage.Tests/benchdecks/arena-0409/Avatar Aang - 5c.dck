@@ -1,0 +1,102 @@
+NAME:Avatar Aang
+1 [TLE:315] Arcane Signet
+1 [JOU:163] Mana Confluence
+1 [TLA:389] Fire Nation Palace
+1 [TLA:255] Bender's Waterskin
+1 [TLA:198] Toph, the Blind Bandit
+1 [CLU:276] Godless Shrine
+1 [TLE:70] Toph, Greatest Earthbender
+1 [TLA:390] Jasmine Dragon Tea Shop
+1 [TLA:384] Toph, Hardheaded Teacher
+1 [TLA:351] Katara, Water Tribe's Hope
+1 [TLE:317] Swiftfoot Boots
+1 [TLA:326] Badgermole Cub
+1 [PRM:102275] Bloom Tender
+1 [TLE:48] Eladamri's Call
+1 [TLA:352] Sokka, Tenacious Tactician
+1 [MH3:465] Polluted Delta
+1 [TLE:68] Mai and Zuko
+1 [MH2:479] Verdant Catacombs
+1 [TLE:173] Monk Gyatso
+1 [AFC:254] Path of Ancestry
+1 [MH3:466] Windswept Heath
+1 [MH3:467] Wooded Foothills
+1 [TLA:320] Wan Shi Tong, Librarian
+1 [TLE:26] Blasphemous Act
+1 [FCA:61] Chromatic Lantern
+1 [TLA:348] Bumi, Unleashed
+1 [TLA:182] Haru, Hidden Talent
+1 [PRM:91405] Arid Mesa
+1 [MH3:464] Flooded Strand
+1 [TLE:7] Teferi's Protection
+1 [RVR:300] Temple Garden
+1 [TLE:16] Mystic Remora
+1 [TLA:316] Appa, Steadfast Guardian
+1 [TLA:336] Aang's Iceberg
+1 [DMR:170] Nature's Lore
+1 [SLD:7063] Command Tower
+1 [TLE:183] Waterbender's Restoration
+1 [TLA:353] Toph, the First Metalbender
+1 [SPG:117] Scalding Tarn
+1 [RVR:296] Overgrown Tomb
+1 [TLE:306] Flawless Maneuver
+1 [CLU:279] Sacred Foundry
+1 [TLA:350] Katara, the Fearless
+1 [TLE:171] Aang, Airbending Master
+1 [CMR:686] Three Visits
+1 [UNF:286] Breeding Pool
+1 [TLE:311] Deflecting Swat
+1 [RVR:301] Watery Grave
+1 [LTR:158] Delighted Halfling
+1 [CMM:657] Fellwar Stone
+1 [SPG:116] Misty Rainforest
+1 [RVR:299] Stomping Ground
+1 [TLA:8] Airbending Lesson
+1 [TLA:365] Avatar's Wrath
+1 [ECL:349] Blood Crypt
+1 [2XM:360] Lightning Greaves
+1 [TLA:392] Secret Tunnel
+1 [TLA:388] Ba Sing Se
+1 [TLE:313] Obscuring Haze
+1 [TLE:209] Toph, Earthbending Master
+1 [TLE:307] Fierce Guardianship
+1 [ISD:195] Moonmist
+1 [TLA:4] Aang, the Last Airbender
+1 [TLA:338] Yue, the Moon Spirit
+1 [TLA:366] Hakoda, Selfless Commander
+1 [TLA:386] Abandoned Air Temple
+1 [SLD:2058] Sylvan Library
+1 [TLE:43] Heroic Intervention
+1 [TLE:316] Sol Ring
+1 [TLA:343] Redirect Lightning
+1 [MH3:463] Bloodstained Mire
+1 [RVR:432] Birds of Paradise
+1 [TLA:300] Crashing Wave
+1 [UNF:283] Steam Vents
+1 [TLA:345] Great Divide Guide
+1 [SPG:115] Marsh Flats
+1 [TLA:304] Aang, at the Crossroads
+1 [TLA:7] Airbender's Reversal
+1 [TLA:307] Earthbender Ascension
+1 [TLA:310] Waterbender Ascension
+1 [TLA:359] Aang, Swift Savior
+1 [TLA:370] Spirit Water Revival
+1 [TLA:364] Airbender Ascension
+1 [TLA:59] Katara, Bending Prodigy
+1 [TLE:13] Force of Negation
+1 [CLU:277] Hallowed Fountain
+1 [THB:251] Island
+1 [THB:250] Plains
+1 [THB:252] Swamp
+1 [THB:253] Mountain
+2 [THB:254] Forest
+1 [SLD:1591] Swan Song
+1 [PF25:12] Swords to Plowshares
+1 [SLD:2298] Anguished Unmaking
+1 [FCA:45] Farseek
+1 [WOT:69] Kindred Discovery
+1 [SOA:77] Winds of Abandon
+1 [WOT:71] Rhystic Study
+SB: 1 [TLA:363] Avatar Aang
+LAYOUT MAIN:(1,7)(CMC,false,46)|([JOU:163],[TLA:389],[CLU:276],[TLA:390],[MH3:465],[MH2:479],[AFC:254],[MH3:466],[MH3:467],[PRM:91405],[MH3:464],[RVR:300],[SLD:7063],[SPG:117],[RVR:296],[CLU:279],[UNF:286],[RVR:301],[SPG:116],[RVR:299],[ECL:349],[TLA:392],[TLA:388],[TLA:386],[MH3:463],[UNF:283],[SPG:115],[CLU:277],[THB:251],[THB:250],[THB:252],[THB:253],[THB:254],[THB:254])([TLE:16],[TLE:316],[TLA:343],[RVR:432],[SLD:1591],[PF25:12])([TLE:315],[TLE:317],[TLA:326],[PRM:102275],[TLE:48],[TLA:320],[TLA:182],[TLE:183],[CMR:686],[CMM:657],[2XM:360],[ISD:195],[SLD:2058],[TLE:43],[TLA:300],[TLA:345],[TLA:7],[TLA:310],[TLA:364],[FCA:45],[SOA:77])([TLA:255],[TLA:198],[FCA:61],[TLE:7],[TLA:336],[DMR:170],[TLE:306],[TLA:350],[TLE:311],[TLA:8],[TLE:313],[TLE:307],[WOT:71],[TLA:307],[TLA:359],[TLA:370],[TLA:59],[TLE:13],[SLD:2298])([TLE:70],[TLA:384],[TLA:352],[TLE:68],[TLE:173],[TLA:316],[TLA:353],[LTR:158],[TLA:365],[TLE:209],[TLA:4],[TLA:338],[TLA:366])([TLA:351],[TLA:348],[TLE:171],[TLA:304],[WOT:69])([TLE:26])
+LAYOUT SIDEBOARD:(1,1)(NONE,false,46)|([TLA:363])
