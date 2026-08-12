@@ -170,9 +170,23 @@ public class ComputerPlayer7 extends ComputerPlayer6 {
      * cap fired on the fourth land as though it were the same land four times. {@code getSourceId()}
      * is a UUID that survives game copies AND distinguishes two different permanents, so it is
      * strictly better on both counts.
+     * <p>
+     * DARRELLBEST-FORK: the turn and step are part of the identity, which makes the cap
+     * PER-STEP rather than global. Without them the counter only ever reset when some
+     * <em>different</em> ability was activated, so a permanent whose ability is meant to be used
+     * once every turn -- Lord of Lineage making a Vampire, a Clue being cracked, any repeatable
+     * engine -- accumulated across turns and got refused forever from its fourth use onward.
+     * Arena logs caught it doing exactly that. Since a refusal also makes {@code act()} abandon the
+     * turn, the bot then passed whole turns rather than run its own engine.
+     * <p>
+     * A no-progress loop is by definition the same ability firing repeatedly while the game state
+     * stands still, which cannot span a step boundary: if the step advanced, the game progressed.
+     * So scoping the count to one step is what the cap always meant, and it leaves the real loop
+     * (Basalt Monolith untapping itself for net-zero mana) capped exactly as before.
      */
     private String signatureOf(ActivatedAbility ability, Game game) {
-        return ability.getSourceId() + "|" + ability.getRule();
+        return game.getTurnNum() + "/" + game.getTurnStepType() + "|"
+                + ability.getSourceId() + "|" + ability.getRule();
     }
 
     /**
