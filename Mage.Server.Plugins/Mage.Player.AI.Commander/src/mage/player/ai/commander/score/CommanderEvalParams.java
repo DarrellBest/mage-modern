@@ -108,6 +108,7 @@ public final class CommanderEvalParams {
     private final int commanderDamageWeight;
     private final int opponentSelectionMode;
     private final int modeSelectionMode;
+    private final int attackAggression;
 
     // --- card definition ---
     private final int baseCardValue;
@@ -148,6 +149,7 @@ public final class CommanderEvalParams {
         this.commanderDamageWeight = b.commanderDamageWeight;
         this.opponentSelectionMode = b.opponentSelectionMode;
         this.modeSelectionMode = b.modeSelectionMode;
+        this.attackAggression = b.attackAggression;
         this.baseCardValue = b.baseCardValue;
         this.landBaseMultiplier = b.landBaseMultiplier;
         this.landPerManaSymbol = b.landPerManaSymbol;
@@ -190,6 +192,7 @@ public final class CommanderEvalParams {
         b.commanderDamageWeight = this.commanderDamageWeight;
         b.opponentSelectionMode = this.opponentSelectionMode;
         b.modeSelectionMode = this.modeSelectionMode;
+        b.attackAggression = this.attackAggression;
         b.baseCardValue = this.baseCardValue;
         b.landBaseMultiplier = this.landBaseMultiplier;
         b.landPerManaSymbol = this.landPerManaSymbol;
@@ -292,6 +295,31 @@ public final class CommanderEvalParams {
      */
     public int getModeSelectionMode() {
         return modeSelectionMode;
+    }
+
+    /**
+     * DARRELLBEST-FORK: how willing the bot is to attack into possible blockers.
+     * <p>
+     * {@code 0} (default) is upstream, and it is extremely passive. {@code declareAttackers} attacks
+     * only when it can kill an opponent OUTRIGHT, or with creatures that are "safe" — meaning no
+     * possible blocker could kill them. One large untapped blocker therefore shuts down the entire
+     * attack step. Caught in a live audit log as
+     * {@code NO ATTACKS | T6 | 3 untapped creature(s) available}.
+     * <p>
+     * {@code 1} additionally attacks when the board is WIDER than the defence: if there are more
+     * available attackers than possible blockers, the surplus connects no matter how blocks are
+     * assigned, so the attack is profitable even though individual attackers are not "safe". This is
+     * the mode that suits token and go-wide decks, where the whole plan is to out-number.
+     * <p>
+     * {@code 2} also accepts a FAVOURABLE TRADE: attack even into a lethal blocker when the attacker
+     * is worth materially less than the blocker that would have to eat it. Trading a 1/1 token for a
+     * 5/5 is good play that mode 0 refuses on principle.
+     * <p>
+     * Never bypasses the 0-power check — attacking with a 0-power creature is pointless at any
+     * aggression level.
+     */
+    public int getAttackAggression() {
+        return attackAggression;
     }
 
     // --- card definition ---
@@ -419,6 +447,7 @@ public final class CommanderEvalParams {
                 + ", commanderDamageWeight=" + commanderDamageWeight
                 + ", opponentSelectionMode=" + opponentSelectionMode
                 + ", modeSelectionMode=" + modeSelectionMode
+                + ", attackAggression=" + attackAggression
                 + ", baseCardValue=" + baseCardValue
                 + ", landBaseMultiplier=" + landBaseMultiplier
                 + ", landPerManaSymbol=" + landPerManaSymbol
@@ -460,6 +489,7 @@ public final class CommanderEvalParams {
         private int commanderDamageWeight = 0;
         private int opponentSelectionMode = 0;
         private int modeSelectionMode = 0;
+        private int attackAggression = 0;
         private int baseCardValue = 3;
         private int landBaseMultiplier = 50;
         private int landPerManaSymbol = 50;
@@ -503,6 +533,14 @@ public final class CommanderEvalParams {
 
         public Builder lifeAboveMultiplier(int v) {
             this.lifeAboveMultiplier = v;
+            return this;
+        }
+
+        public Builder attackAggression(int v) {
+            if (v < 0 || v > 2) {
+                throw new IllegalArgumentException("attackAggression must be 0 (safe only), 1 (also go wide) or 2 (also favourable trades), got " + v);
+            }
+            this.attackAggression = v;
             return this;
         }
 

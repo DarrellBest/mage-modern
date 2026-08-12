@@ -1409,6 +1409,34 @@ public class ComputerPlayer6 extends ComputerPlayer {
                         }
                     }
 
+                    // DARRELLBEST-FORK: attack when it is PROFITABLE, not only when it is risk-free.
+                    //
+                    // Upstream only attacks with creatures no possible blocker could kill, so a
+                    // single large untapped blocker shuts down the whole attack step. Caught in a
+                    // live audit log as "NO ATTACKS | T6 | 3 untapped creature(s) available".
+                    //
+                    // Level 1 -- outnumbering: if there are more available attackers than possible
+                    // blockers, the surplus connects however blocks are assigned, so attacking is
+                    // profitable even though no individual attacker is "safe". This is the whole
+                    // plan of a go-wide deck.
+                    //
+                    // Level 2 -- favourable trades: attack into a lethal blocker when the attacker
+                    // is worth materially less than the blocker that must eat it. Trading a 1/1
+                    // token for a 5/5 is good play that level 0 refuses on principle.
+                    if (!safeToAttack && evalParams.getAttackAggression() >= 1
+                            && attackersList.size() > possibleBlockers.size()) {
+                        safeToAttack = true;
+                    }
+                    if (!safeToAttack && evalParams.getAttackAggression() >= 2) {
+                        int best = 0;
+                        for (Permanent blocker : possibleBlockers) {
+                            best = Math.max(best, eval.evaluate(blocker, game));
+                        }
+                        if (best > attackerValue * 2) {
+                            safeToAttack = true;
+                        }
+                    }
+
                     // 0 power, don't bother attacking
                     if (attacker.getPower().getValue() == 0) {
                         safeToAttack = false;
