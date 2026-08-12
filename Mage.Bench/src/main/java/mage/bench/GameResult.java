@@ -34,6 +34,16 @@ public final class GameResult {
      */
     public final int seatA;
     /**
+     * DARRELLBEST-FORK: how many players sat at this table.
+     * <p>
+     * Without it a result file cannot be scored correctly. "Side A won 30% of games" is a strong
+     * result at a table of four (the null is 25%, since one of four seats wins) and a bad one at a
+     * table of two (the null is 50%). A reader that assumes a duel would call a good pod bot a
+     * failure. The baseline is a property of the game that produced the record, so the record
+     * carries it rather than leaving it to be remembered alongside the file.
+     */
+    public final int seats;
+    /**
      * DARRELLBEST-FORK: which evaluator weights side A played with -- {@code "default"}, or the
      * params file's absolute path plus a hash of the resolved values (see
      * {@link EvalParamsLoader#describe}). Recorded on EVERY row, not once per run, because
@@ -61,6 +71,13 @@ public final class GameResult {
     public GameResult(int gameIndex, long seed, String winner, int winnerSeat, int turns, long wallTimeMs,
                       Termination termination, String errorMessage, boolean seatSwapped, int seatA,
                       String paramsA, String paramsB) {
+        this(gameIndex, seed, winner, winnerSeat, turns, wallTimeMs, termination, errorMessage,
+                seatSwapped, seatA, 2, paramsA, paramsB);
+    }
+
+    public GameResult(int gameIndex, long seed, String winner, int winnerSeat, int turns, long wallTimeMs,
+                      Termination termination, String errorMessage, boolean seatSwapped, int seatA,
+                      int seats, String paramsA, String paramsB) {
         this.gameIndex = gameIndex;
         this.seed = seed;
         this.winner = winner;
@@ -71,6 +88,7 @@ public final class GameResult {
         this.errorMessage = errorMessage;
         this.seatSwapped = seatSwapped;
         this.seatA = seatA;
+        this.seats = seats;
         this.paramsA = paramsA;
         this.paramsB = paramsB;
     }

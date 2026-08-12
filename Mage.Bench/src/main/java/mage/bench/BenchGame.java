@@ -337,7 +337,7 @@ public final class BenchGame {
 
             long wallMs = (System.nanoTime() - startNanos) / 1_000_000L;
             return new GameResult(gameIndex, seed, winnerKey, winnerSeat, turns, wallMs,
-                    termination, null, seatSwapped, seats.seatOfSideA(),
+                    termination, null, seatSwapped, seats.seatOfSideA(), seats.seats.size(),
                     EvalParamsLoader.describe(config.paramsA), EvalParamsLoader.describe(config.paramsB));
 
         } catch (Throwable e) {
