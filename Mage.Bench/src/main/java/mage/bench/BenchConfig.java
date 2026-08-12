@@ -9,6 +9,8 @@ public final class BenchConfig {
 
     public static final String GAME_TYPE_TWOPLAYER = "twoplayer";
     public static final String GAME_TYPE_COMMANDER = "commander";
+    /** DARRELLBEST-FORK: multiplayer commander pod (3+ seats), free for all. */
+    public static final String GAME_TYPE_COMMANDER_FFA = "commanderffa";
 
     public final int games;
     public final long baseSeed;
@@ -32,6 +34,16 @@ public final class BenchConfig {
     public final String out;
     public final String deckDir;
     public final String gameType;
+    /**
+     * DARRELLBEST-FORK: every seat's deck, in seat order, for a Free For All. Element 0 is side A
+     * (the bot under test); every later element is a side B opponent. Null for a duel, where
+     * {@link #deckA}/{@link #deckB} carry the same information.
+     * <p>
+     * Side A is deliberately ONE seat against N-1 opponents rather than an even split. The
+     * multiplayer-only parameters exist to answer "how does one tuned bot fare in a real pod",
+     * and a pod half-full of the bot under test measures it partly against itself.
+     */
+    public final java.util.List<String> deckList;
     /** Path to write the per-deck card-play report to, or null when --trackCards was not given
      * (the default): off by default, and BenchRunner/BenchGame register no extra instrumentation
      * at all when this is null, so an ordinary run pays zero cost for this feature. */
@@ -51,6 +63,16 @@ public final class BenchConfig {
                        int turnCap, int maxGameSeconds, String out, String deckDir,
                        String gameType, String trackCards,
                        String paramsA, String paramsB) {
+        this(games, baseSeed, deckA, deckB, playerA, playerB, skill, turnCap, maxGameSeconds,
+                out, deckDir, gameType, trackCards, paramsA, paramsB, null);
+    }
+
+    public BenchConfig(int games, long baseSeed, String deckA, String deckB,
+                       String playerA, String playerB, int skill,
+                       int turnCap, int maxGameSeconds, String out, String deckDir,
+                       String gameType, String trackCards,
+                       String paramsA, String paramsB, java.util.List<String> deckList) {
+        this.deckList = deckList;
         this.games = games;
         this.baseSeed = baseSeed;
         this.deckA = deckA;
@@ -82,6 +104,7 @@ public final class BenchConfig {
         String deckDir = "Mage.Tests";
         String gameType = GAME_TYPE_TWOPLAYER;
         String trackCards = null;
+        java.util.List<String> deckList = null;
         String paramsA = null; // null = CommanderEvalParams.DEFAULT
         String paramsB = null;
 
@@ -121,6 +144,13 @@ public final class BenchConfig {
                 gameType = parseGameType(value);
             } else if ("trackCards".equals(key)) {
                 trackCards = value;
+            } else if ("decks".equals(key)) {
+                deckList = new java.util.ArrayList<>();
+                for (String d : value.split(",")) {
+                    if (!d.trim().isEmpty()) {
+                        deckList.add(d.trim());
+                    }
+                }
             } else if ("paramsA".equals(key)) {
                 paramsA = value;
             } else if ("paramsB".equals(key)) {
@@ -129,9 +159,23 @@ public final class BenchConfig {
                 throw new IllegalArgumentException("Unknown argument '--" + key + "'");
             }
         }
+        if (deckList != null) {
+            if (deckList.size() < 2 || deckList.size() > 6) {
+                throw new IllegalArgumentException("--decks needs 2 to 6 deck names, got " + deckList.size());
+            }
+            if (deckList.size() > 2 && !GAME_TYPE_COMMANDER_FFA.equals(gameType)) {
+                throw new IllegalArgumentException("--decks with more than 2 decks requires --gameType="
+                        + GAME_TYPE_COMMANDER_FFA + ", got '" + gameType + "'");
+            }
+            deckA = deckList.get(0);
+            deckB = deckList.get(1);
+        } else if (GAME_TYPE_COMMANDER_FFA.equals(gameType)) {
+            throw new IllegalArgumentException("--gameType=" + GAME_TYPE_COMMANDER_FFA
+                    + " requires --decks=<seat1>,<seat2>,... (one deck per seat)");
+        }
         return new BenchConfig(games, baseSeed, deckA, deckB, playerA, playerB,
                 skill, turnCap, maxGameSeconds, out, deckDir, gameType, trackCards,
-                paramsA, paramsB);
+                paramsA, paramsB, deckList);
     }
 
     private static int parseInt(String key, String value) {
@@ -151,10 +195,22 @@ public final class BenchConfig {
     }
 
     private static String parseGameType(String value) {
-        if (GAME_TYPE_TWOPLAYER.equals(value) || GAME_TYPE_COMMANDER.equals(value)) {
+        if (GAME_TYPE_TWOPLAYER.equals(value) || GAME_TYPE_COMMANDER.equals(value)
+                || GAME_TYPE_COMMANDER_FFA.equals(value)) {
             return value;
         }
         throw new IllegalArgumentException("--gameType must be one of: "
-                + GAME_TYPE_TWOPLAYER + ", " + GAME_TYPE_COMMANDER + "; got '" + value + "'");
+                + GAME_TYPE_TWOPLAYER + ", " + GAME_TYPE_COMMANDER + ", " + GAME_TYPE_COMMANDER_FFA
+                + "; got '" + value + "'");
+    }
+
+    /** DARRELLBEST-FORK: true when this config describes a multiplayer pod rather than a duel. */
+    public boolean isFreeForAll() {
+        return GAME_TYPE_COMMANDER_FFA.equals(gameType);
+    }
+
+    /** DARRELLBEST-FORK: number of seats -- 2 for any duel, {@code deckList.size()} for a pod. */
+    public int seatCount() {
+        return deckList == null ? 2 : deckList.size();
     }
 }

@@ -34,6 +34,12 @@
             <artifactId>mage-game-commanderduel</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <!-- DARRELLBEST-FORK: multiplayer commander pods (gameType commanderffa) -->
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>mage-game-commanderfreeforall</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>mage-player-ai</artifactId>

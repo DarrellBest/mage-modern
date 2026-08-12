@@ -10,6 +10,8 @@ import mage.constants.PhaseStep;
 import mage.constants.RangeOfInfluence;
 import mage.game.CommanderDuel;
 import mage.game.CommanderDuelMatch;
+import mage.game.CommanderFreeForAll;
+import mage.game.CommanderFreeForAllMatch;
 import mage.game.Game;
 import mage.game.GameOptions;
 import mage.game.TwoPlayerDuel;
@@ -24,7 +26,10 @@ import org.apache.log4j.Logger;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
@@ -100,10 +105,31 @@ public final class BenchGame {
 
         final Seat seat1;
         final Seat seat2;
+        /**
+         * DARRELLBEST-FORK: every seat in seat order. For a duel this is exactly
+         * {@code [seat1, seat2]} and the two fields above are the same objects, so the duel path is
+         * unchanged; a Free For All simply has more entries.
+         */
+        final List<Seat> seats;
 
         SeatPlan(Seat seat1, Seat seat2) {
-            this.seat1 = seat1;
-            this.seat2 = seat2;
+            this(Arrays.asList(seat1, seat2));
+        }
+
+        SeatPlan(List<Seat> seats) {
+            this.seats = seats;
+            this.seat1 = seats.get(0);
+            this.seat2 = seats.get(1);
+        }
+
+        /** 1-based seat index of side A, which is the one seat the bot under test occupies. */
+        int seatOfSideA() {
+            for (int i = 0; i < seats.size(); i++) {
+                if ("A".equals(seats.get(i).side)) {
+                    return i + 1;
+                }
+            }
+            return 0;
         }
 
         /** One side of the matchup, and everything that defines it. */
@@ -131,9 +157,41 @@ public final class BenchGame {
     static SeatPlan assignSeats(BenchConfig config, boolean seatSwapped) {
         SeatPlan.Seat sideA = new SeatPlan.Seat("A", config.playerA, config.deckA,
                 EvalParamsLoader.paramsFor(config.paramsA));
+        if (config.isFreeForAll()) {
+            return assignPodSeats(config, sideA, seatSwapped);
+        }
         SeatPlan.Seat sideB = new SeatPlan.Seat("B", config.playerB, config.deckB,
                 EvalParamsLoader.paramsFor(config.paramsB));
         return seatSwapped ? new SeatPlan(sideB, sideA) : new SeatPlan(sideA, sideB);
+    }
+
+    /**
+     * DARRELLBEST-FORK: one side A seat and N-1 side B seats, rotated so side A does not always
+     * play first.
+     * <p>
+     * Turn order is a real edge in a pod -- the first player unfolds a whole turn before anyone can
+     * answer, and the last player faces three developed boards -- so leaving side A parked in seat 1
+     * would measure the seat as much as the bot. The duel's seat swap exists for the same reason;
+     * this is that idea with more than two chairs. The rotation is driven by the caller's
+     * alternating flag rather than a random draw so that a run of games covers the seats evenly.
+     * <p>
+     * Deck order is preserved relative to the seats: {@code deckList.get(0)} is side A's deck and
+     * the rest stay in their given order among the side B seats, so rotating the pod never pairs a
+     * deck with another seat's weights.
+     */
+    private static SeatPlan assignPodSeats(BenchConfig config, SeatPlan.Seat sideA, boolean seatSwapped) {
+        List<SeatPlan.Seat> ordered = new ArrayList<>();
+        ordered.add(sideA);
+        for (int i = 1; i < config.deckList.size(); i++) {
+            ordered.add(new SeatPlan.Seat("B", config.playerB, config.deckList.get(i),
+                    EvalParamsLoader.paramsFor(config.paramsB)));
+        }
+        int rotation = seatSwapped ? ordered.size() / 2 : 0;
+        List<SeatPlan.Seat> rotated = new ArrayList<>(ordered.size());
+        for (int i = 0; i < ordered.size(); i++) {
+            rotated.add(ordered.get((i - rotation + ordered.size()) % ordered.size()));
+        }
+        return new SeatPlan(rotated);
     }
 
     public static GameResult run(BenchConfig config, int gameIndex, long seed, boolean seatSwapped) {
@@ -182,7 +240,17 @@ public final class BenchGame {
             RandomUtil.setSeed(seed);
 
             Match match;
-            if (BenchConfig.GAME_TYPE_COMMANDER.equals(config.gameType)) {
+            if (config.isFreeForAll()) {
+                // DARRELLBEST-FORK: a real commander pod. RangeOfInfluence.ALL, not ONE: with
+                // ONE a player can only see and target its immediate neighbours, which is not
+                // how a commander pod is played and would make the multiplayer attack-splitting
+                // this game type exists to measure untestable -- the bot would be unable to
+                // choose the third opponent at all.
+                game = new CommanderFreeForAll(MultiplayerAttackOption.MULTIPLE, RangeOfInfluence.ALL,
+                        MulliganType.GAME_DEFAULT.getMulligan(0), 40, 7);
+                match = new CommanderFreeForAllMatch(
+                        new MatchOptions("bench match", "bench game type", true));
+            } else if (BenchConfig.GAME_TYPE_COMMANDER.equals(config.gameType)) {
                 // Commander life/hand size per the test framework's own Commander base
                 // (CardTestCommanderDuelBase): 40 life, 7 cards. CommanderDuel's
                 // constructor takes no minimum-deck-size argument -- its super
@@ -239,12 +307,14 @@ public final class BenchGame {
             int turns = game.getState().getTurnNum();
             String winnerKey = null;
             int winnerSeat = 0;
-            if (seat1.hasWon()) {
-                winnerKey = seats.seat1.playerKey;
-                winnerSeat = 1;
-            } else if (seat2.hasWon()) {
-                winnerKey = seats.seat2.playerKey;
-                winnerSeat = 2;
+            // DARRELLBEST-FORK: scan every seat rather than the two duel seats, so a pod's
+            // winner is found wherever it sits.
+            for (int i = 0; i < players.length; i++) {
+                if (players[i].hasWon()) {
+                    winnerKey = seats.seats.get(i).playerKey;
+                    winnerSeat = i + 1;
+                    break;
+                }
             }
 
             Termination termination;
@@ -263,17 +333,17 @@ public final class BenchGame {
                 termination = Termination.DRAW;
             }
 
-            recordCardPlays(cardTracker, cardPlayCollector, seats.seat1.deck, seats.seat2.deck);
+            recordCardPlays(cardTracker, cardPlayCollector, seats);
 
             long wallMs = (System.nanoTime() - startNanos) / 1_000_000L;
             return new GameResult(gameIndex, seed, winnerKey, winnerSeat, turns, wallMs,
-                    termination, null, seatSwapped,
+                    termination, null, seatSwapped, seats.seatOfSideA(),
                     EvalParamsLoader.describe(config.paramsA), EvalParamsLoader.describe(config.paramsB));
 
         } catch (Throwable e) {
             // best-effort: whatever was cast before the error is still useful signal for a
             // never-cast list, so record it here too rather than only on the success path
-            recordCardPlays(cardTracker, cardPlayCollector, seats.seat1.deck, seats.seat2.deck);
+            recordCardPlays(cardTracker, cardPlayCollector, seats);
 
             long wallMs = (System.nanoTime() - startNanos) / 1_000_000L;
             int turns = game == null ? 0 : game.getState().getTurnNum();
@@ -392,15 +462,22 @@ public final class BenchGame {
      * translating the raw "Seat1"/"Seat2" log labels to the deck that was actually on each seat
      * for this game. No-op when card tracking isn't enabled for this run.
      */
+    /**
+     * DARRELLBEST-FORK: takes the whole seat plan rather than two deck names, so a pod attributes
+     * every seat's plays to that seat's deck. Attributing only seats 1 and 2 would have quietly
+     * dropped half a four-player game's card data.
+     */
     private static void recordCardPlays(CardPlayTracker cardTracker, CardPlayCollector cardPlayCollector,
-                                        String seat1Deck, String seat2Deck) {
+                                        SeatPlan seats) {
         if (cardTracker == null || cardPlayCollector == null) {
             return;
         }
         try {
             Map<String, Map<String, Integer>> snapshot = cardPlayCollector.snapshot();
-            cardTracker.recordGame(seat1Deck, snapshot.getOrDefault(SEAT1_LABEL, Collections.emptyMap()));
-            cardTracker.recordGame(seat2Deck, snapshot.getOrDefault(SEAT2_LABEL, Collections.emptyMap()));
+            for (int i = 0; i < seats.seats.size(); i++) {
+                cardTracker.recordGame(seats.seats.get(i).deck,
+                        snapshot.getOrDefault("Seat" + (i + 1), Collections.emptyMap()));
+            }
         } catch (RuntimeException e) {
             // optional instrumentation must never break or double-fail a benchmark game
             logger.warn("Bench game card-play recording failed: " + e, e);
@@ -418,9 +495,11 @@ public final class BenchGame {
      */
     static Player[] addPlayers(Game game, Match match, BenchConfig config, SeatPlan seats)
             throws Exception {
-        Player seat1 = addPlayer(game, match, config, seats.seat1, SEAT1_LABEL);
-        Player seat2 = addPlayer(game, match, config, seats.seat2, SEAT2_LABEL);
-        return new Player[]{seat1, seat2};
+        Player[] players = new Player[seats.seats.size()];
+        for (int i = 0; i < players.length; i++) {
+            players[i] = addPlayer(game, match, config, seats.seats.get(i), "Seat" + (i + 1));
+        }
+        return players;
     }
 
     private static Player addPlayer(Game game, Match match, BenchConfig config,

@@ -56,7 +56,9 @@ public final class SummaryReporter {
             } else {
                 // decisive game: attribute by seat, not by key -- player A occupies seat 1
                 // on a non-swapped game and seat 2 on a swapped one
-                int seatA = result.seatSwapped ? 2 : 1;
+                // DARRELLBEST-FORK: prefer the recorded seat (works at any table size); fall back
+                // to the duel derivation for result files written before the field existed.
+                int seatA = result.seatA > 0 ? result.seatA : (result.seatSwapped ? 2 : 1);
                 if (result.winnerSeat == seatA) {
                     winsA++;
                 } else {

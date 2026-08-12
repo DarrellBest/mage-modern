@@ -23,6 +23,17 @@ public final class GameResult {
     public final String errorMessage;
     public final boolean seatSwapped;
     /**
+     * DARRELLBEST-FORK: 1-based seat that side A occupied this game, so "did side A win?" is
+     * {@code winnerSeat == seatA} at any table size.
+     * <p>
+     * A duel could always derive this from {@link #seatSwapped} ({@code swapped ? 2 : 1}), and for
+     * a duel this field holds exactly that. A pod cannot: side A may sit in any of N seats, and a
+     * boolean has nowhere to put that. Recording it per game also means a reader never has to know
+     * the rotation rule that produced it -- if the rotation ever changes, old result files stay
+     * correctly interpretable.
+     */
+    public final int seatA;
+    /**
      * DARRELLBEST-FORK: which evaluator weights side A played with -- {@code "default"}, or the
      * params file's absolute path plus a hash of the resolved values (see
      * {@link EvalParamsLoader#describe}). Recorded on EVERY row, not once per run, because
@@ -43,6 +54,13 @@ public final class GameResult {
     public GameResult(int gameIndex, long seed, String winner, int winnerSeat, int turns, long wallTimeMs,
                       Termination termination, String errorMessage, boolean seatSwapped,
                       String paramsA, String paramsB) {
+        this(gameIndex, seed, winner, winnerSeat, turns, wallTimeMs, termination, errorMessage,
+                seatSwapped, seatSwapped ? 2 : 1, paramsA, paramsB);
+    }
+
+    public GameResult(int gameIndex, long seed, String winner, int winnerSeat, int turns, long wallTimeMs,
+                      Termination termination, String errorMessage, boolean seatSwapped, int seatA,
+                      String paramsA, String paramsB) {
         this.gameIndex = gameIndex;
         this.seed = seed;
         this.winner = winner;
@@ -52,6 +70,7 @@ public final class GameResult {
         this.termination = termination;
         this.errorMessage = errorMessage;
         this.seatSwapped = seatSwapped;
+        this.seatA = seatA;
         this.paramsA = paramsA;
         this.paramsB = paramsB;
     }
