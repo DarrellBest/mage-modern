@@ -16,6 +16,8 @@ import mage.game.events.GameEvent;
 import mage.game.match.MatchPlayer;
 import mage.game.permanent.Permanent;
 import mage.game.stack.StackAbility;
+import mage.player.ai.commander.score.CommanderEvalParams;
+import mage.player.ai.commander.score.GameStateEvaluator2;
 import mage.players.Player;
 import mage.players.net.UserData;
 import mage.target.Target;
@@ -54,6 +56,15 @@ public final class SimulatedPlayer2 extends ComputerPlayer {
      * which only fires when {@code !game.isSimulation()} and therefore never bounds the search.
      */
     private static final int MAX_CHAINED_SAME_ACTIONS = 3;
+
+    /**
+     * DARRELLBEST-FORK: how many target options to keep for a single ability, best-first.
+     * <p>
+     * See {@link #pruneToBestTargets}. Eight is deliberately generous relative to how many targets
+     * a decision realistically turns on, while still bounding an ability whose legal target set is
+     * the whole battlefield. Live stalls were observed at 48-96 permanents.
+     */
+    private static final int MAX_TARGET_OPTIONS_KEPT = 8;
 
     // warning, simulated player do not restore own data by game rollback
     private final boolean isSimulatedPlayer;
@@ -280,7 +291,68 @@ public final class SimulatedPlayer2 extends ComputerPlayer {
             }
         }
 
-        return options;
+        return pruneToBestTargets(game, options, bad);
+    }
+
+    /**
+     * DARRELLBEST-FORK: keep only the most VALUABLE target options for an ability, discarding the
+     * rest, rather than handing the search every legal combination.
+     * <p>
+     * Diagnosed from the live server. On large boards the search would emit
+     * {@code "unknown use case (too many possible targets?)"} — which
+     * {@link ComputerPlayer6#printFreezeNode} only prints when the root node has NO CHILDREN, i.e.
+     * the think-time budget was spent before a single node was expanded. So the cost was in
+     * ENUMERATING options, not in searching them. Observed across six live games at battlefield
+     * sizes of 23 to 96 permanents, most stalls at 48+.
+     * <p>
+     * The existing caps do not prevent this. {@code MAX_TOTAL_ACTIONS_FORK_FIX} is checked only
+     * BETWEEN abilities, so one ability with a large target space blows the whole budget before the
+     * cap is consulted; and the good/bad filtering above removes illegal-ish targets without ever
+     * bounding how many remain.
+     * <p>
+     * Targeting a 7/7 is not 40 times more interesting than targeting each of 40 tokens. Ranking by
+     * the evaluator's own permanent score and keeping the top few loses almost nothing in decision
+     * quality while making enumeration bounded — the search gets a short list of the choices that
+     * actually matter and can then afford to explore them properly.
+     * <p>
+     * Ranking uses {@link CommanderEvalParams#DEFAULT} rather than the player's tuned weights: this
+     * class extends {@code ComputerPlayer} and holds no params, and this is an ordering heuristic
+     * for which options to look at, not the evaluation the search ultimately scores with.
+     */
+    private List<Ability> pruneToBestTargets(Game game, List<Ability> options, boolean badEffect) {
+        if (options.size() <= MAX_TARGET_OPTIONS_KEPT) {
+            return options;
+        }
+        List<Ability> ranked = new ArrayList<>(options);
+        ranked.sort((a, b) -> Integer.compare(
+                targetValue(game, b, badEffect), targetValue(game, a, badEffect)));
+        if (logger.isDebugEnabled()) {
+            logger.debug("simulating -- pruned target options " + options.size()
+                    + " -> " + MAX_TARGET_OPTIONS_KEPT);
+        }
+        return new ArrayList<>(ranked.subList(0, MAX_TARGET_OPTIONS_KEPT));
+    }
+
+    /**
+     * How much this option's targets are worth to us. For a detrimental effect the best target is
+     * the opponent's most valuable permanent; for a beneficial one it is our own. Players as targets
+     * score 0, so a permanent is always preferred over a face hit when both are legal.
+     */
+    private int targetValue(Game game, Ability option, boolean badEffect) {
+        int total = 0;
+        for (Target target : option.getTargets()) {
+            for (UUID id : target.getTargets()) {
+                Permanent permanent = game.getPermanent(id);
+                if (permanent == null) {
+                    continue;
+                }
+                int worth = GameStateEvaluator2.evaluatePermanent(
+                        permanent, game, true, CommanderEvalParams.DEFAULT);
+                boolean theirs = !permanent.getControllerId().equals(playerId);
+                total += (theirs == badEffect) ? worth : -worth;
+            }
+        }
+        return total;
     }
 
     public List<Combat> addAttackers(Game game) {
