@@ -1732,8 +1732,21 @@ public class ComputerPlayer6 extends ComputerPlayer {
             return;
         }
         try {
+            // DARRELLBEST-FORK: how many creatures COULD have acted, logged on every combat line.
+            // Without it a "BLOCK" line that assigns no blockers is unreadable: declining to block
+            // with nothing untapped is forced, declining with three untapped is a decision worth
+            // auditing, and the old line looked identical either way. Arena logs had the bot
+            // letting a 6/6 lifelinker through on four consecutive turns with no way to tell which
+            // of the two it was.
+            int idle = 0;
+            for (Permanent p : game.getBattlefield().getAllActivePermanents(playerId)) {
+                if (p.isCreature(game) && !p.isTapped()) {
+                    idle++;
+                }
+            }
             StringBuilder sb = new StringBuilder();
             int groups = 0;
+            int used = 0;
             for (CombatGroup group : game.getCombat().getGroups()) {
                 List<String> attackers = new ArrayList<>();
                 for (UUID id : group.getAttackers()) {
@@ -1755,23 +1768,20 @@ public class ComputerPlayer6 extends ComputerPlayer {
                 sb.append(" [").append(String.join(", ", attackers)).append(" -> ").append(defender);
                 if (!blockers.isEmpty()) {
                     sb.append(" blocked by ").append(String.join(", ", blockers));
+                    used += blockers.size();
                 }
                 sb.append(']');
                 groups++;
             }
             if (groups == 0) {
-                int available = 0;
-                for (Permanent p : game.getBattlefield().getAllActivePermanents(playerId)) {
-                    if (p.isCreature(game) && !p.isTapped()) {
-                        available++;
-                    }
-                }
+                int available = idle;
                 playLog.info(String.format("NO %sS %s | T%d.%s | %d untapped creature(s) available | score %d",
                         what, getName(), game.getTurnNum(), game.getTurnStepType(), available,
                         evaluateState(game)));
             } else {
-                playLog.info(String.format("%s %s | T%d.%s |%s | score %d",
+                playLog.info(String.format("%s %s | T%d.%s |%s | %d of %d untapped used | score %d",
                         what, getName(), game.getTurnNum(), game.getTurnStepType(), sb,
+                        "BLOCK".equals(what) ? used : groups, idle,
                         evaluateState(game)));
             }
         } catch (Exception e) {
