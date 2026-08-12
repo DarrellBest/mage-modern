@@ -195,7 +195,44 @@ public class ComputerPlayer6 extends ComputerPlayer {
     @Override
     public boolean choose(Outcome outcome, Target target, Ability source, Game game,
             java.util.Map<String, java.io.Serializable> options) {
-        if (evalParams.getSmartMulligan() >= 1
+        if (bottomWorstCards(target, source, game)) {
+            return true;
+        }
+        return super.choose(outcome, target, source, game, options);
+    }
+
+    /**
+     * DARRELLBEST-FORK: the London mulligan asks which cards to put on the bottom through
+     * {@link #chooseTarget}, NOT through {@code choose}.
+     * <p>
+     * This override is the whole reason the bottoming logic works at all. It was originally written
+     * only on {@code choose(Outcome, Target, Ability, Game, Map)}, and {@code LondonMulligan} calls
+     * {@code player.chooseTarget(Outcome.Discard, target, null, game)} -- a different method. The
+     * land protection was therefore dead code from the day it was written: every mulligan in every
+     * game, benchmark and live, still bottomed cards through the generic AI target logic, which is
+     * exactly the path that throws away lands. The reported symptom it was meant to fix (a kept hand
+     * with no lands, then six turns of Pass) was never actually addressed.
+     * <p>
+     * Nothing detected this. The bench has no mulligan assertion, the parameter sweeps could not
+     * separate a dead setting from an ineffective one, and {@code smartMulligan} sat in TUNED
+     * looking like a measured win the entire time.
+     */
+    @Override
+    public boolean chooseTarget(Outcome outcome, Target target, Ability source, Game game) {
+        if (bottomWorstCards(target, source, game)) {
+            return true;
+        }
+        return super.chooseTarget(outcome, target, source, game);
+    }
+
+    /**
+     * Bottoms the worst cards for a London mulligan, protecting a workable land count.
+     *
+     * @return true when this call answered the target (so the caller must not fall through)
+     */
+    private boolean bottomWorstCards(Target target, Ability source, Game game) {
+        {
+            if (evalParams.getSmartMulligan() >= 1
                 && target instanceof TargetCardInHand
                 && target.getMessage(game) != null
                 && target.getMessage(game).contains("bottom of your library")) {
@@ -244,8 +281,9 @@ public class ComputerPlayer6 extends ComputerPlayer {
                 }
                 return true;
             }
+            }
         }
-        return super.choose(outcome, target, source, game, options);
+        return false;
     }
 
     /**
