@@ -274,7 +274,11 @@ public final class StateFeatures {
         w[11] = 0;                                                     // library_size_diff: not tuned
         w[12] = 0;                                                     // turn_number: not tuned
         w[13] = p.getDeployedManaValueWeight() * LOGIT_SCALE;          // deployed_mana_value_diff
-        w[14] = -p.getUnspentManaPenalty() * LOGIT_SCALE;              // unspent_mana_own_turn
+        // DARRELLBEST-FORK: this feature counts untapped sources on the bot's own turn. The
+        // evaluator now VALUES those (manaSourceValue) rather than penalising them, so the seed
+        // follows the sign of whichever term is active -- otherwise the learner would start out
+        // believing the opposite of what the evaluator believes.
+        w[14] = (p.getManaSourceValue() - p.getUnspentManaPenalty()) * LOGIT_SCALE;
         w[15] = p.getDrawEngineBonus() * LOGIT_SCALE;                  // draw_engine_count_diff
         return w;
     }

@@ -226,7 +226,7 @@ public class CommanderEvalParamsCopyTest {
                         .stackObjectWeight(150)
                         .drawEngineBonus(400)
                         .lifeAboveMultiplier(20)
-                        .unspentManaPenalty(120)
+                        .manaSourceValue(60)
                         .deployedManaValueWeight(40)
                         .commanderPermanentBonus(900)
                         .blockTradeMode(1)

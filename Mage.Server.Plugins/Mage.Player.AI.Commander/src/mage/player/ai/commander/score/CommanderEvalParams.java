@@ -104,7 +104,7 @@ public final class CommanderEvalParams {
             .stackObjectWeight(150)
             .drawEngineBonus(400)
             .lifeAboveMultiplier(20)
-            .unspentManaPenalty(120)
+            .manaSourceValue(60)
             .deployedManaValueWeight(40)
             .commanderPermanentBonus(900)
             .blockTradeMode(1)
@@ -128,6 +128,7 @@ public final class CommanderEvalParams {
     private final int commanderPermanentBonus;
     private final int blockTradeMode;
     private final int commanderBlockPenalty;
+    private final int manaSourceValue;
     private final int unspentManaPenalty;
     private final int deployedManaValueWeight;
     private final int drawEngineBonus;
@@ -179,6 +180,7 @@ public final class CommanderEvalParams {
         this.commanderPermanentBonus = b.commanderPermanentBonus;
         this.blockTradeMode = b.blockTradeMode;
         this.commanderBlockPenalty = b.commanderBlockPenalty;
+        this.manaSourceValue = b.manaSourceValue;
         this.unspentManaPenalty = b.unspentManaPenalty;
         this.deployedManaValueWeight = b.deployedManaValueWeight;
         this.drawEngineBonus = b.drawEngineBonus;
@@ -232,6 +234,7 @@ public final class CommanderEvalParams {
         b.commanderPermanentBonus = this.commanderPermanentBonus;
         b.blockTradeMode = this.blockTradeMode;
         b.commanderBlockPenalty = this.commanderBlockPenalty;
+        b.manaSourceValue = this.manaSourceValue;
         b.unspentManaPenalty = this.unspentManaPenalty;
         b.deployedManaValueWeight = this.deployedManaValueWeight;
         b.drawEngineBonus = this.drawEngineBonus;
@@ -519,6 +522,29 @@ public final class CommanderEvalParams {
         return commanderBlockPenalty;
     }
 
+    /**
+     * DARRELLBEST-FORK: value of one untapped mana source, so SPENDING mana costs something.
+     * <p>
+     * Activating an ability was free to this evaluator. {@code ArtificialScoringSystem.getManaScore}
+     * exists and has no caller anywhere in the repo, so a cost of {1} scored the same as a cost of
+     * {0}, and any ability that added board presence looked like free value. Measured over 10 mirror
+     * games: Mutavault re-animated <b>2026 times</b> (it is already a creature after the first, so
+     * every later one is pure burn), Goblin Bombardment sacrificed 486 times, Immersturm Predator
+     * 497 -- the bot eating its own board because the outlet appeared to cost nothing.
+     * <p>
+     * <b>This is the same axis as {@link #getUnspentManaPenalty()}, with the opposite sign.</b>
+     * Penalising untapped sources rewards dumping mana into ANY activation, including no-ops; giving
+     * untapped sources value makes a no-op cost exactly what it should. Setting both is
+     * contradictory, so TUNED now uses this and leaves the penalty at 0.
+     * <p>
+     * The value is deliberately modest. A real play -- a creature, a removal spell -- is worth
+     * several hundred points, far more than the mana it costs, so this does not discourage casting.
+     * It only makes the difference where the gain is near zero, which is exactly the no-op case.
+     */
+    public int getManaSourceValue() {
+        return manaSourceValue;
+    }
+
     public int getUnspentManaPenalty() {
         return unspentManaPenalty;
     }
@@ -672,6 +698,7 @@ public final class CommanderEvalParams {
                 + ", commanderPermanentBonus=" + commanderPermanentBonus
                 + ", blockTradeMode=" + blockTradeMode
                 + ", commanderBlockPenalty=" + commanderBlockPenalty
+                + ", manaSourceValue=" + manaSourceValue
                 + ", unspentManaPenalty=" + unspentManaPenalty
                 + ", deployedManaValueWeight=" + deployedManaValueWeight
                 + ", drawEngineBonus=" + drawEngineBonus
@@ -724,6 +751,7 @@ public final class CommanderEvalParams {
         private int commanderPermanentBonus = 0;
         private int blockTradeMode = 0;
         private int commanderBlockPenalty = 0;
+        private int manaSourceValue = 0;
         private int unspentManaPenalty = 0;
         private int deployedManaValueWeight = 0;
         private int drawEngineBonus = 0;
@@ -785,6 +813,11 @@ public final class CommanderEvalParams {
 
         public Builder commanderBlockPenalty(int v) {
             this.commanderBlockPenalty = v;
+            return this;
+        }
+
+        public Builder manaSourceValue(int v) {
+            this.manaSourceValue = v;
             return this;
         }
 

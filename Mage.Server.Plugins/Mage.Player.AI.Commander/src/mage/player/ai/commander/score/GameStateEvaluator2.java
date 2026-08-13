@@ -170,6 +170,25 @@ public final class GameStateEvaluator2 {
                 developmentScore += p.getManaValue() * params.getDeployedManaValueWeight();
             }
         }
+        // DARRELLBEST-FORK: untapped mana is a RESOURCE, so spending it costs its value. Without
+        // this, activating an ability was free and the bot burned mana on no-ops -- Mutavault
+        // re-animated 2026 times in 10 games, sacrifice outlets fired ~490 times each.
+        //
+        // Counted in every phase and on every turn, unlike the penalty below: mana you still have
+        // is worth something whoever's turn it is, which is also what makes holding up an instant
+        // score sensibly instead of looking like waste.
+        int manaValueScore = 0;
+        if (params.getManaSourceValue() != 0) {
+            int sources = 0;
+            for (Permanent p : game.getBattlefield().getAllActivePermanents(playerId)) {
+                if (!p.isTapped() && p.getAbilities(game).stream()
+                        .anyMatch(a -> a instanceof mage.abilities.mana.ManaAbility)) {
+                    sources++;
+                }
+            }
+            manaValueScore = sources * params.getManaSourceValue();
+        }
+
         int unspentScore = 0;
         if (params.getUnspentManaPenalty() != 0
                 && playerId.equals(game.getActivePlayerId())
@@ -186,6 +205,7 @@ public final class GameStateEvaluator2 {
         }
 
         int score = developmentScore
+                + manaValueScore
                 + unspentScore
                 + stackScore
                 + (playerLifeScore - opponentLifeScore)
