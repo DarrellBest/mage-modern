@@ -1,6 +1,8 @@
 package mage.player.ai.commander.learn;
 
 import mage.constants.CardType;
+import mage.constants.CommanderCardType;
+import java.util.Set;
 import mage.game.Game;
 import mage.game.permanent.Permanent;
 import mage.players.Player;
@@ -189,12 +191,36 @@ public final class StateFeatures {
         return f;
     }
 
+    /**
+     * DARRELLBEST-FORK: how many of this player's commanders are on the battlefield.
+     * <p>
+     * This threw a NullPointerException on every call that reached it, which is what "the learner
+     * AI is broken" turned out to be. The old code called
+     * {@code getCommanderCardsFromAnyZones(player, null, null)}; the third parameter is a
+     * {@code Zone...} varargs, and an explicit null becomes a null array, so the method's own
+     * {@code Arrays.stream(searchZones)} threw immediately. It only reached that call once the
+     * player controlled a permanent, so opening turns looked fine and the failure appeared later.
+     * <p>
+     * The exception was swallowed upstream: games continued, a weights file was still written, and
+     * nothing reported an error -- so the learner appeared to run while its feature vector was
+     * never actually produced. Any weights trained before this fix are meaningless.
+     * <p>
+     * Uses getCommandersIds directly, which is also cheaper: the old version re-queried every
+     * commander for every permanent, inside a method called on every state evaluation.
+     */
     private static int commanderOnBattlefield(UUID playerId, Game game) {
+        Player player = game.getPlayer(playerId);
+        if (player == null) {
+            return 0;
+        }
+        Set<UUID> commanderIds = game.getCommandersIds(player, CommanderCardType.ANY, true);
+        if (commanderIds.isEmpty()) {
+            return 0;
+        }
         int count = 0;
-        for (Permanent p : game.getBattlefield().getAllActivePermanents()) {
-            if (playerId.equals(p.getControllerId()) && game.getCommanderCardsFromAnyZones(
-                    game.getPlayer(playerId), null, null).stream()
-                    .anyMatch(c -> c.getId().equals(p.getId()))) {
+        for (Permanent p : game.getBattlefield().getAllActivePermanents(playerId)) {
+            if (commanderIds.contains(p.getId())
+                    || (p.getMainCard() != null && commanderIds.contains(p.getMainCard().getId()))) {
                 count++;
             }
         }

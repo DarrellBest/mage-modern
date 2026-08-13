@@ -50,7 +50,26 @@ public final class OnlineTDLearner {
             1,    // commander_on_battlefield_diff
             60,   // library_size_diff
             30,   // turn_number
+            // DARRELLBEST-FORK: appended alongside the StateFeatures entries of the same names.
+            25,   // deployed_mana_value_diff -- total mana value of permanents, a developed board is ~20-30
+            4,    // unspent_mana_own_turn    -- untapped sources left on its own main phase
+            3,    // draw_engine_count_diff   -- few permanents draw cards repeatedly
     };
+
+    static {
+        // DARRELLBEST-FORK: SCALE is a SECOND array parallel to StateFeatures.NAMES, and appending a
+        // feature to NAMES without appending here throws ArrayIndexOutOfBoundsException from logit()
+        // on the first evaluation -- which is exactly what happened: three features were added, the
+        // learner crashed 61 times in three games, wrote no weights, and the surrounding code
+        // swallowed it so the games still "completed". StateFeatures documents its own order as a
+        // wire format but says nothing about this array, so the trap is invisible from there.
+        // Fail loudly at class load instead.
+        if (SCALE.length != StateFeatures.SIZE) {
+            throw new ExceptionInInitializerError("OnlineTDLearner.SCALE has " + SCALE.length
+                    + " entries but StateFeatures has " + StateFeatures.SIZE
+                    + " features -- append a scale for every feature added to StateFeatures.NAMES");
+        }
+    }
 
     private static final double DEFAULT_LEARNING_RATE = 0.01;
     private static final double DEFAULT_LAMBDA = 0.7;
