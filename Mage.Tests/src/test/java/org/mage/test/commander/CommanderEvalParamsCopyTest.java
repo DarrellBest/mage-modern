@@ -183,18 +183,29 @@ public class CommanderEvalParamsCopyTest {
     public void deployedCommanderBotUsesTunedWeights() {
         CommanderEvalParams live = new ComputerPlayerCommander("c", RangeOfInfluence.ALL, SKILL).getEvalParams();
         Assert.assertSame("the deployed bot must use TUNED", CommanderEvalParams.TUNED, live);
-        Assert.assertEquals("TUNED's measured change is handCardScore 5 -> 150",
-                150, live.getHandCardScore());
+        // handCardScore history, kept explicit because the number moved for two different reasons:
+        //   5 -> 150  measured 57.8% over 42 games (p=0.058) -- but measured BEFORE the evaluator
+        //             scored the stack, when casting a spell looked like losing a card outright, so
+        //             part of what 150 bought was compensating for that bug.
+        //   150 -> 60 stack scoring removed that bias, and a later isolated A/B put 150 against 40
+        //             at 52.9% over 34 games: no detectable strength difference either way. 60 is
+        //             chosen inside that indifference band to bias toward deploying cards rather
+        //             than holding them, which is a deliberate play-feel choice and NOT a measured
+        //             strength win. If a future measurement separates them, this is the line to revisit.
+        Assert.assertEquals("TUNED biases toward deploying (see the history note above)",
+                60, live.getHandCardScore());
+        Assert.assertEquals("TUNED attacks on favourable trades, not only when safe",
+                2, live.getAttackAggression());
         Assert.assertEquals("TUNED enables the commander-damage death clock",
                 8000, live.getCommanderDamageWeight());
         Assert.assertEquals("TUNED evaluates modal abilities instead of taking the first legal mode",
                 1, live.getModeSelectionMode());
         Assert.assertEquals("TUNED must differ from DEFAULT in exactly these nine settings",
                 CommanderEvalParams.DEFAULT.toBuilder()
-                        .handCardScore(150)
+                        .handCardScore(60)
                         .commanderDamageWeight(8000)
                         .modeSelectionMode(1)
-                        .attackAggression(1)
+                        .attackAggression(2)
                         .multiplayerAttackSplit(1)
                         .declineLosingManaPayments(1)
                         .smartMulligan(1)

@@ -94,10 +94,10 @@ public final class CommanderEvalParams {
      * harness supports Free For All.
      */
     public static final CommanderEvalParams TUNED = DEFAULT.toBuilder()
-            .handCardScore(150)
+            .handCardScore(60)
             .commanderDamageWeight(8000)
             .modeSelectionMode(1)
-            .attackAggression(1)
+            .attackAggression(2)
             .multiplayerAttackSplit(1)
             .declineLosingManaPayments(1)
             .smartMulligan(1)

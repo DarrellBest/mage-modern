@@ -225,6 +225,28 @@ public class ComputerPlayer6 extends ComputerPlayer {
         return super.chooseTarget(outcome, target, source, game);
     }
 
+    /** DARRELLBEST-FORK: does this card make mana? Sol Ring, signets, dorks -- the ramp a slow hand needs. */
+    private static boolean producesMana(Card c, Game game) {
+        for (mage.abilities.Ability a : c.getAbilities(game)) {
+            if (a instanceof mage.abilities.mana.ManaAbility) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** DARRELLBEST-FORK: does this card draw? Detected by effect type, so it needs no card list. */
+    private static boolean drawsCards(Card c, Game game) {
+        for (mage.abilities.Ability a : c.getAbilities(game)) {
+            for (mage.abilities.effects.Effect e : a.getAllEffects()) {
+                if (e.getClass().getSimpleName().contains("DrawCard")) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     /**
      * Bottoms the worst cards for a London mulligan, protecting a workable land count.
      *
@@ -246,16 +268,48 @@ public class ComputerPlayer6 extends ComputerPlayer {
                 }
             }
             final int lands = landsHeld;
-            // worst-first: keep lands until we are down to a workable count, then shed the most
-            // expensive spells, since an unaffordable bomb is the same as a blank card.
+            // DARRELLBEST-FORK: keep a hand that always has SOMETHING to do, not merely one that
+            // has lands.
+            //
+            // Protecting lands alone still left hands of three lands and four uncastable bombs,
+            // which play out as a land drop and a pass for the first six turns -- the bot has cards
+            // and does nothing with them, which is exactly how it feels to play against.
+            //
+            // So the shed order is by category, worst first: expensive spells go before cheap ones,
+            // and mana rocks and card draw are protected alongside lands, because those are what
+            // turn a slow hand into an operating one. Ramp finds the next land, draw finds the next
+            // play, and cheap spells are things it can actually cast on curve.
+            //
+            // This only chooses among cards already drawn -- it is the London mulligan's own
+            // question ("which of these go to the bottom"), answered well rather than arbitrarily.
             final int keepLands = Math.min(lands, 3);
-            ordered.sort((a, b) -> {
-                int aLand = a.isLand(game) ? 1 : 0;
-                int bLand = b.isLand(game) ? 1 : 0;
-                if (aLand != bLand) {
-                    return aLand - bLand; // non-lands are shed before lands
+            final java.util.Map<java.util.UUID, Integer> keepRank = new java.util.HashMap<>();
+            int rocksKept = 0;
+            int drawKept = 0;
+            for (Card c : ordered) {
+                int rank;
+                if (c.isLand(game)) {
+                    rank = 0;                       // never shed first
+                } else if (producesMana(c, game) && rocksKept < 2) {
+                    rank = 1;                       // ramp: finds the rest of the hand
+                    rocksKept++;
+                } else if (drawsCards(c, game) && drawKept < 2) {
+                    rank = 1;                       // draw: finds the next play
+                    drawKept++;
+                } else if (c.getManaValue() <= 3) {
+                    rank = 2;                       // castable on curve
+                } else {
+                    rank = 3;                       // expensive and situational: shed first
                 }
-                return b.getManaValue() - a.getManaValue(); // most expensive first
+                keepRank.put(c.getId(), rank);
+            }
+            ordered.sort((a, b) -> {
+                int ra = keepRank.getOrDefault(a.getId(), 3);
+                int rb = keepRank.getOrDefault(b.getId(), 3);
+                if (ra != rb) {
+                    return rb - ra;                 // highest rank (worst) shed first
+                }
+                return b.getManaValue() - a.getManaValue();
             });
             int chosen = 0;
             int landsBottomed = 0;
