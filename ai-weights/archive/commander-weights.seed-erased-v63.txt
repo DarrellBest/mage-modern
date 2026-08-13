@@ -1,0 +1,19 @@
+# commander bot federated weights -- written by FederatedWeights.merge
+version=63
+bias=0.016209868685942697
+life_diff=0.028393453283633713
+hand_size_diff=0.004114837554234986
+creature_count_diff=0.03149811235761018
+creature_power_diff=0.06285164141864395
+creature_toughness_diff=0.04770930683455772
+land_count_diff=0.009939378248575312
+untapped_land_diff=-0.0034058798759494134
+artifact_count_diff=0.001713053842033929
+enchantment_count_diff=0.0029927065405139417
+planeswalker_count_diff=0.001238705416824016
+commander_on_battlefield_diff=0.01556332492315017
+library_size_diff=8.370385493398502E-5
+turn_number=0.008325819948879666
+deployed_mana_value_diff=0.03395794292994585
+unspent_mana_own_turn=0.0022027651922957897
+draw_engine_count_diff=0.015047039770400991

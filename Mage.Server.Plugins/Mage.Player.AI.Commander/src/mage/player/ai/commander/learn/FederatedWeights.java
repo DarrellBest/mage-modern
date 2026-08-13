@@ -166,7 +166,19 @@ public final class FederatedWeights {
 
     private Snapshot readLocked(RandomAccessFile raf) throws IOException {
         raf.seek(0);
-        double[] w = new double[StateFeatures.SIZE];
+        // DARRELLBEST-FORK: absent keys default to the HAND-TUNED value, not to zero.
+        //
+        // This is load-bearing for seeding. merge() reads the file through here, and with a zero
+        // start the very first merge wrote 0 + delta -- discarding the seed that checkout() had
+        // handed the client, because the seed only ever existed in memory. Every later checkout
+        // then read the near-zero file back. Observed directly: 61 games dragged
+        // commander_on_battlefield_diff from 0.900 to 0.016 and flipped unspent_mana_own_turn's
+        // sign, which looks like learning and is actually the seed being erased.
+        //
+        // Seeding here also makes a partial file safe: a model written before a feature was
+        // appended keeps the hand-tuned value for the new feature instead of asserting zero.
+        double[] w = StateFeatures.seedFromParams(
+                mage.player.ai.commander.score.CommanderEvalParams.TUNED);
         double bias = 0;
         long version = 0;
         String line;
