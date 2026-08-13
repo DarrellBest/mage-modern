@@ -709,12 +709,70 @@ public class ComputerPlayer6 extends ComputerPlayer {
      */
     private static final int MAX_REFUSALS_PER_CHAIN = 3;
 
+    /**
+     * DARRELLBEST-FORK: emit a feature snapshot for EVERY seat, once per turn, so real games become
+     * training data -- including games this bot is merely a participant in.
+     * <p>
+     * The learner only ever learned from its OWN games: won()/lost() fire on a ComputerPlayerLearner
+     * instance, so a human playing against Computer - commander produced nothing at all. That threw
+     * away the most valuable data available, because a human winning is a demonstration of a line
+     * worth imitating, and there is no supply of those in self-play.
+     * <p>
+     * Recording every seat and labelling each trajectory with that seat's actual result at game end
+     * also gives a strictly better target than the online TD update: TD bootstraps toward the
+     * learner's OWN prediction, which is how a model reinforces what it already believes, whereas a
+     * finished game supplies the real answer for every player in it -- winner and losers alike.
+     * <p>
+     * Emitted to the audit stream rather than trained inline: training belongs offline where it can
+     * see whole games, and the server should not be running gradient updates on a game thread.
+     */
+    private void logFeatureSnapshot(Game game) {
+        if (game.isSimulation() || !AuditLog.enabled()) {
+            return;
+        }
+        try {
+            // once per turn, and only from one seat, so N bots in a pod do not emit N copies
+            if (game.getTurnStepType() != PhaseStep.PRECOMBAT_MAIN
+                    || !playerId.equals(game.getActivePlayerId())
+                    || game.getTurnNum() == lastSnapshotTurn) {
+                return;
+            }
+            lastSnapshotTurn = game.getTurnNum();
+            for (java.util.UUID seat : game.getState().getPlayerList(game.getStartingPlayerId())) {
+                mage.players.Player p = game.getPlayer(seat);
+                if (p == null) {
+                    continue;
+                }
+                double[] f = mage.player.ai.commander.learn.StateFeatures.extract(seat, game);
+                if (f == null) {
+                    continue;
+                }
+                StringBuilder vec = new StringBuilder("\"features\":[");
+                for (int i = 0; i < f.length; i++) {
+                    if (i > 0) {
+                        vec.append(',');
+                    }
+                    vec.append(String.format(java.util.Locale.ROOT, "%.4f", f[i]));
+                }
+                vec.append(']');
+                AuditLog.event("FEATURES", game, p.getName(), null, null, vec.toString());
+            }
+        } catch (Exception e) {
+            logger.debug("feature snapshot failed", e);
+        }
+    }
+
+    /** DARRELLBEST-FORK: last turn a feature snapshot was emitted, so it happens once per turn. */
+    private int lastSnapshotTurn = -1;
+
     protected void act(Game game) {
         if (actions == null
                 || actions.isEmpty()) {
+            logFeatureSnapshot(game);
             logIdlePass(game);
             pass(game);
         } else {
+            logFeatureSnapshot(game);
             boolean usedStack = false;
             boolean refusedAction = false;
             int refusals = 0;
