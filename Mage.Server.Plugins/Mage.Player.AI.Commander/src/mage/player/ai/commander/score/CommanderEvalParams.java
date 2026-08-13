@@ -103,6 +103,9 @@ public final class CommanderEvalParams {
             .smartMulligan(1)
             .stackObjectWeight(150)
             .drawEngineBonus(400)
+            .commanderPermanentBonus(900)
+            .blockTradeMode(1)
+            .commanderBlockPenalty(1200)
             .build();
 
     // --- life ---
@@ -119,6 +122,9 @@ public final class CommanderEvalParams {
     private final int declineLosingManaPayments;
     private final int smartMulligan;
     private final int stackObjectWeight;
+    private final int commanderPermanentBonus;
+    private final int blockTradeMode;
+    private final int commanderBlockPenalty;
     private final int unspentManaPenalty;
     private final int deployedManaValueWeight;
     private final int drawEngineBonus;
@@ -167,6 +173,9 @@ public final class CommanderEvalParams {
         this.declineLosingManaPayments = b.declineLosingManaPayments;
         this.smartMulligan = b.smartMulligan;
         this.stackObjectWeight = b.stackObjectWeight;
+        this.commanderPermanentBonus = b.commanderPermanentBonus;
+        this.blockTradeMode = b.blockTradeMode;
+        this.commanderBlockPenalty = b.commanderBlockPenalty;
         this.unspentManaPenalty = b.unspentManaPenalty;
         this.deployedManaValueWeight = b.deployedManaValueWeight;
         this.drawEngineBonus = b.drawEngineBonus;
@@ -217,6 +226,9 @@ public final class CommanderEvalParams {
         b.declineLosingManaPayments = this.declineLosingManaPayments;
         b.smartMulligan = this.smartMulligan;
         b.stackObjectWeight = this.stackObjectWeight;
+        b.commanderPermanentBonus = this.commanderPermanentBonus;
+        b.blockTradeMode = this.blockTradeMode;
+        b.commanderBlockPenalty = this.commanderBlockPenalty;
         b.unspentManaPenalty = this.unspentManaPenalty;
         b.deployedManaValueWeight = this.deployedManaValueWeight;
         b.drawEngineBonus = this.drawEngineBonus;
@@ -440,6 +452,54 @@ public final class CommanderEvalParams {
      * correct play -- that is how instants and counterspells work -- so penalising untapped mana
      * generally would teach it to tap out into open opposing mana.
      */
+    /**
+     * DARRELLBEST-FORK: 1 = a losing block must beat NOT blocking, not merely score >= 0.
+     * <p>
+     * The old acceptance was {@code diffBlockingScore >= 0 || diffBlockingScore > diffNonBlockingScore}.
+     * That first clause is the bug: an even trade scores about zero, passes {@code >= 0}, and blocks --
+     * without ever comparing against how cheap taking the damage would have been. Reported from a live
+     * game: the bot blocked a 3/3 Goblin with its own 3/3 Krenko, throwing away its commander to
+     * prevent 3 damage at a life total where 3 damage is close to free.
+     * <p>
+     * Life is a RESOURCE in commander, not a wall to defend. The life table this evaluator inherits
+     * was built for 20-life formats: at 40 life, 3 damage still scores 300 (lifeAboveMultiplier 100),
+     * which is the same order as a creature, so even trades keep looking acceptable. Requiring the
+     * block to actually beat the alternative fixes the comparison without re-tuning that whole table.
+     */
+    /**
+     * DARRELLBEST-FORK: extra value for having your OWN commander on the battlefield.
+     * <p>
+     * In most commander decks the commander is the deck -- the engine, the win condition, or the
+     * thing every other card supports. The evaluator saw a 3/3 legend and scored it like any 3/3.
+     * <p>
+     * Deliberately an evaluator term rather than combat-specific logic, because it then applies
+     * everywhere the search reasons: it stops the bot trading the commander away in blocks, stops it
+     * attacking into a losing trade with it, makes it prefer other sacrifice fodder, and makes
+     * protecting it score better than an equivalent-stat permanent. One term, every code path.
+     * <p>
+     * Distinct from {@link #getCommanderBlockPenalty()}, which is the extra cost of specifically
+     * LOSING it in a block, and from {@link #getCommanderDamageWeight()}, which is about the damage
+     * clock the bot puts on opponents.
+     */
+    public int getCommanderPermanentBonus() {
+        return commanderPermanentBonus;
+    }
+
+    public int getBlockTradeMode() {
+        return blockTradeMode;
+    }
+
+    /**
+     * DARRELLBEST-FORK: extra score charged for losing your OWN commander in a block.
+     * <p>
+     * A commander that dies is not a creature that dies. It goes back to the command zone and costs
+     * 2 more mana every time it is recast, and most commander decks are built so that the commander
+     * IS the deck's engine. The permanent score cannot express any of that -- it sees a 3/3.
+     */
+    public int getCommanderBlockPenalty() {
+        return commanderBlockPenalty;
+    }
+
     public int getUnspentManaPenalty() {
         return unspentManaPenalty;
     }
@@ -590,6 +650,9 @@ public final class CommanderEvalParams {
                 + ", declineLosingManaPayments=" + declineLosingManaPayments
                 + ", smartMulligan=" + smartMulligan
                 + ", stackObjectWeight=" + stackObjectWeight
+                + ", commanderPermanentBonus=" + commanderPermanentBonus
+                + ", blockTradeMode=" + blockTradeMode
+                + ", commanderBlockPenalty=" + commanderBlockPenalty
                 + ", unspentManaPenalty=" + unspentManaPenalty
                 + ", deployedManaValueWeight=" + deployedManaValueWeight
                 + ", drawEngineBonus=" + drawEngineBonus
@@ -639,6 +702,9 @@ public final class CommanderEvalParams {
         private int declineLosingManaPayments = 0;
         private int smartMulligan = 0;
         private int stackObjectWeight = 0;
+        private int commanderPermanentBonus = 0;
+        private int blockTradeMode = 0;
+        private int commanderBlockPenalty = 0;
         private int unspentManaPenalty = 0;
         private int deployedManaValueWeight = 0;
         private int drawEngineBonus = 0;
@@ -685,6 +751,21 @@ public final class CommanderEvalParams {
 
         public Builder lifeAboveMultiplier(int v) {
             this.lifeAboveMultiplier = v;
+            return this;
+        }
+
+        public Builder commanderPermanentBonus(int v) {
+            this.commanderPermanentBonus = v;
+            return this;
+        }
+
+        public Builder blockTradeMode(int v) {
+            this.blockTradeMode = v;
+            return this;
+        }
+
+        public Builder commanderBlockPenalty(int v) {
+            this.commanderBlockPenalty = v;
             return this;
         }
 

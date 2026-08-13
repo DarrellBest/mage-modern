@@ -236,7 +236,23 @@ public final class CombatUtil {
                 if (blocker != null) {
                     int diffBlockingScore = blockingDiffScore.getOrDefault(blocker, 0);
                     int diffNonBlockingScore = nonBlockingDiffScore.getOrDefault(blocker, 0);
-                    if (diffBlockingScore >= 0 || diffBlockingScore > diffNonBlockingScore) {
+                    // DARRELLBEST-FORK: losing your own commander is not losing a creature -- it
+                    // returns to the command zone and costs 2 more mana on every recast, and in most
+                    // decks it IS the engine. The permanent score sees only a 3/3.
+                    mage.players.Player blockerOwner = game.getPlayer(blocker.getControllerId());
+                    if (params.getCommanderBlockPenalty() != 0
+                            && blockerOwner != null
+                            && game.isCommanderObject(blockerOwner, blocker)) {
+                        diffBlockingScore -= params.getCommanderBlockPenalty();
+                    }
+                    // DARRELLBEST-FORK: a block that merely scores >= 0 is not good enough; it has
+                    // to beat NOT blocking. The old first clause ignored the alternative entirely,
+                    // so an even trade was always taken even when taking the damage was nearly free
+                    // -- live game: 3/3 Krenko blocking a 3/3 Goblin to stop 3 damage at 40 life.
+                    boolean worthIt = params.getBlockTradeMode() >= 1
+                            ? diffBlockingScore > diffNonBlockingScore
+                            : (diffBlockingScore >= 0 || diffBlockingScore > diffNonBlockingScore);
+                    if (worthIt) {
                         // it's good - can sacrifice and get better game state, also protect from game loose
                         combatInfo.addPair(attacker, blocker);
                         removeWorstCreature(blocker, blockers, diedBlockers);

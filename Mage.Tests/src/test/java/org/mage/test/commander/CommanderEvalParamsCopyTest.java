@@ -200,7 +200,7 @@ public class CommanderEvalParamsCopyTest {
                 8000, live.getCommanderDamageWeight());
         Assert.assertEquals("TUNED evaluates modal abilities instead of taking the first legal mode",
                 1, live.getModeSelectionMode());
-        Assert.assertEquals("TUNED must differ from DEFAULT in exactly these nine settings",
+        Assert.assertEquals("TUNED must differ from DEFAULT in exactly these twelve settings",
                 CommanderEvalParams.DEFAULT.toBuilder()
                         .handCardScore(60)
                         .commanderDamageWeight(8000)
@@ -211,6 +211,9 @@ public class CommanderEvalParamsCopyTest {
                         .smartMulligan(1)
                         .stackObjectWeight(150)
                         .drawEngineBonus(400)
+                        .commanderPermanentBonus(900)
+                        .blockTradeMode(1)
+                        .commanderBlockPenalty(1200)
                         .build().toString(),
                 CommanderEvalParams.TUNED.toString());
     }

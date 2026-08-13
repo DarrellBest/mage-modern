@@ -103,6 +103,14 @@ public final class ArtificialScoringSystem {
     public static int getDynamicPermanentScore(final Game game, final Permanent permanent, final CommanderEvalParams params) {
 
         int score = permanent.getCounters(game).getCount(CounterType.CHARGE) * params.getChargeCounterScore();
+        // DARRELLBEST-FORK: your own commander is worth more than its stats -- it is usually the
+        // deck's engine and win condition, and it costs 2 more mana on every recast.
+        if (params.getCommanderPermanentBonus() != 0) {
+            mage.players.Player owner = game.getPlayer(permanent.getControllerId());
+            if (owner != null && game.isCommanderObject(owner, permanent)) {
+                score += params.getCommanderPermanentBonus();
+            }
+        }
         // DARRELLBEST-FORK: a permanent that keeps producing cards is worth more than its stats
         if (params.getDrawEngineBonus() != 0 && isDrawEngine(game, permanent)) {
             score += params.getDrawEngineBonus();
