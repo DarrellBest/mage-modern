@@ -51,6 +51,16 @@ public final class StateFeatures {
             "commander_on_battlefield_diff",
             "library_size_diff",
             "turn_number",
+            // DARRELLBEST-FORK: appended (never reordered -- the order above is a wire format, and
+            // an old weights file must keep lining up with the features it was trained on).
+            //
+            // These mirror the evaluator terms of the same name, which is the point of the design:
+            // the learner tunes weights over the SAME basis the hand-tuned bot reasons in, so what
+            // it learns is directly interpretable as "this term mattered more than we thought"
+            // rather than living in a parallel feature space nobody can reconcile.
+            "deployed_mana_value_diff",
+            "unspent_mana_own_turn",
+            "draw_engine_count_diff",
     };
 
     public static final int SIZE = NAMES.length;
@@ -124,6 +134,58 @@ public final class StateFeatures {
         f[10] = commanderOnBattlefield(playerId, game) - othersCommandersOnBattlefield(playerId, game) / div;
         f[11] = me.getLibrary().size() - oppLibrary / div;
         f[12] = game.getTurnNum();
+
+        // DARRELLBEST-FORK: appended features, mirroring the evaluator terms of the same names.
+        double myDeployed = 0;
+        double myDraw = 0;
+        int myUnspent = 0;
+        boolean ownMain = playerId.equals(game.getActivePlayerId())
+                && (game.getTurnStepType() == mage.constants.PhaseStep.PRECOMBAT_MAIN
+                    || game.getTurnStepType() == mage.constants.PhaseStep.POSTCOMBAT_MAIN);
+        for (mage.game.permanent.Permanent p : game.getBattlefield().getAllActivePermanents(playerId)) {
+            myDeployed += p.getManaValue();
+            boolean mana = false;
+            for (mage.abilities.Ability a : p.getAbilities(game)) {
+                if (a instanceof mage.abilities.mana.ManaAbility) {
+                    mana = true;
+                }
+                for (mage.abilities.effects.Effect e : a.getAllEffects()) {
+                    if (e.getClass().getSimpleName().contains("DrawCard")) {
+                        myDraw++;
+                        break;
+                    }
+                }
+            }
+            if (mana && !p.isTapped() && ownMain) {
+                myUnspent++;
+            }
+        }
+        double oppDeployed = 0;
+        double oppDraw = 0;
+        int seen = 0;
+        for (UUID oppId2 : game.getOpponents(playerId)) {
+            if (game.getPlayer(oppId2) == null) {
+                continue;
+            }
+            seen++;
+            for (mage.game.permanent.Permanent p : game.getBattlefield().getAllActivePermanents(oppId2)) {
+                oppDeployed += p.getManaValue();
+                for (mage.abilities.Ability a : p.getAbilities(game)) {
+                    for (mage.abilities.effects.Effect e : a.getAllEffects()) {
+                        if (e.getClass().getSimpleName().contains("DrawCard")) {
+                            oppDraw++;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        // averaged across opponents for the same reason the existing features are: a feature must
+        // mean the same thing in a duel and in a four-player pod.
+        double oppDiv = seen == 0 ? 1 : seen;
+        f[13] = myDeployed - (oppDeployed / oppDiv);
+        f[14] = myUnspent;
+        f[15] = myDraw - (oppDraw / oppDiv);
         return f;
     }
 

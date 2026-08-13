@@ -8,6 +8,7 @@ import org.apache.log4j.Logger;
 import java.util.UUID;
 import mage.abilities.Ability;
 import mage.abilities.effects.Effect;
+import mage.constants.PhaseStep;
 import mage.constants.Outcome;
 
 /**
@@ -161,7 +162,32 @@ public final class GameStateEvaluator2 {
             }
         }
 
-        int score = stackScore
+        // DARRELLBEST-FORK: board development and wasted tempo -- neither expressible by any
+        // existing weight. See CommanderEvalParams for the logged behaviour behind each.
+        int developmentScore = 0;
+        if (params.getDeployedManaValueWeight() != 0) {
+            for (Permanent p : game.getBattlefield().getAllActivePermanents(playerId)) {
+                developmentScore += p.getManaValue() * params.getDeployedManaValueWeight();
+            }
+        }
+        int unspentScore = 0;
+        if (params.getUnspentManaPenalty() != 0
+                && playerId.equals(game.getActivePlayerId())
+                && (game.getTurnStepType() == PhaseStep.PRECOMBAT_MAIN
+                    || game.getTurnStepType() == PhaseStep.POSTCOMBAT_MAIN)) {
+            int openSources = 0;
+            for (Permanent p : game.getBattlefield().getAllActivePermanents(playerId)) {
+                if (!p.isTapped() && p.getAbilities(game).stream()
+                        .anyMatch(a -> a instanceof mage.abilities.mana.ManaAbility)) {
+                    openSources++;
+                }
+            }
+            unspentScore = -openSources * params.getUnspentManaPenalty();
+        }
+
+        int score = developmentScore
+                + unspentScore
+                + stackScore
                 + (playerLifeScore - opponentLifeScore)
                 + (playerPermanentsScore - opponentPermanentsScore)
                 + (playerHandScore - opponentHandScore);

@@ -119,6 +119,8 @@ public final class CommanderEvalParams {
     private final int declineLosingManaPayments;
     private final int smartMulligan;
     private final int stackObjectWeight;
+    private final int unspentManaPenalty;
+    private final int deployedManaValueWeight;
     private final int drawEngineBonus;
 
     // --- card definition ---
@@ -165,6 +167,8 @@ public final class CommanderEvalParams {
         this.declineLosingManaPayments = b.declineLosingManaPayments;
         this.smartMulligan = b.smartMulligan;
         this.stackObjectWeight = b.stackObjectWeight;
+        this.unspentManaPenalty = b.unspentManaPenalty;
+        this.deployedManaValueWeight = b.deployedManaValueWeight;
         this.drawEngineBonus = b.drawEngineBonus;
         this.baseCardValue = b.baseCardValue;
         this.landBaseMultiplier = b.landBaseMultiplier;
@@ -213,6 +217,8 @@ public final class CommanderEvalParams {
         b.declineLosingManaPayments = this.declineLosingManaPayments;
         b.smartMulligan = this.smartMulligan;
         b.stackObjectWeight = this.stackObjectWeight;
+        b.unspentManaPenalty = this.unspentManaPenalty;
+        b.deployedManaValueWeight = this.deployedManaValueWeight;
         b.drawEngineBonus = this.drawEngineBonus;
         b.baseCardValue = this.baseCardValue;
         b.landBaseMultiplier = this.landBaseMultiplier;
@@ -422,6 +428,34 @@ public final class CommanderEvalParams {
      * <p>
      * 0 (default) leaves the evaluator blind to draw engines, as upstream.
      */
+    /**
+     * DARRELLBEST-FORK: penalty per untapped mana source left over on the bot's OWN main phase.
+     * <p>
+     * Mana that goes unspent on your own turn is tempo thrown away, and the evaluator had no way to
+     * see it: a board with eleven untapped sources and a full hand scored identically to one that
+     * had spent everything. Live logs caught the bot passing its own main phase with 13 untapped
+     * sources and 4 cards in hand, and 14% of all its idle passes held 4+ mana and 3+ cards.
+     * <p>
+     * Restricted to the bot's own main phases on purpose. Holding mana on someone else's turn is
+     * correct play -- that is how instants and counterspells work -- so penalising untapped mana
+     * generally would teach it to tap out into open opposing mana.
+     */
+    public int getUnspentManaPenalty() {
+        return unspentManaPenalty;
+    }
+
+    /**
+     * DARRELLBEST-FORK: weight per point of mana value across the permanents the bot controls.
+     * <p>
+     * Board DEVELOPMENT, distinct from board quality. The existing permanent scores value what a
+     * creature does; this values having converted cards into permanents at all, which is the thing
+     * a hand full of uncast spells is failing to do. It is also the feature a learner needs to tell
+     * "ahead on board" from "ahead on cards" -- the hand-tuned evaluator conflates them.
+     */
+    public int getDeployedManaValueWeight() {
+        return deployedManaValueWeight;
+    }
+
     public int getDrawEngineBonus() {
         return drawEngineBonus;
     }
@@ -556,6 +590,8 @@ public final class CommanderEvalParams {
                 + ", declineLosingManaPayments=" + declineLosingManaPayments
                 + ", smartMulligan=" + smartMulligan
                 + ", stackObjectWeight=" + stackObjectWeight
+                + ", unspentManaPenalty=" + unspentManaPenalty
+                + ", deployedManaValueWeight=" + deployedManaValueWeight
                 + ", drawEngineBonus=" + drawEngineBonus
                 + ", baseCardValue=" + baseCardValue
                 + ", landBaseMultiplier=" + landBaseMultiplier
@@ -603,6 +639,8 @@ public final class CommanderEvalParams {
         private int declineLosingManaPayments = 0;
         private int smartMulligan = 0;
         private int stackObjectWeight = 0;
+        private int unspentManaPenalty = 0;
+        private int deployedManaValueWeight = 0;
         private int drawEngineBonus = 0;
         private int baseCardValue = 3;
         private int landBaseMultiplier = 50;
@@ -647,6 +685,16 @@ public final class CommanderEvalParams {
 
         public Builder lifeAboveMultiplier(int v) {
             this.lifeAboveMultiplier = v;
+            return this;
+        }
+
+        public Builder unspentManaPenalty(int v) {
+            this.unspentManaPenalty = v;
+            return this;
+        }
+
+        public Builder deployedManaValueWeight(int v) {
+            this.deployedManaValueWeight = v;
             return this;
         }
 
