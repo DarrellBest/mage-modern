@@ -28,11 +28,16 @@ games=${version:-unknown}
 
 git add -- "$W"
 # --only: commit just this path, leaving anything else staged untouched
-git commit --only -- "$W" -q -m "ai-weights: learner model at version ${games}
+# git options MUST come before the "--" pathspec separator; with them after, git treats
+# -q, -m and the message itself as pathspecs and the commit fails with
+# "error: pathspec '-q' did not match any file(s)". It failed that way every hour, silently,
+# because cron output went to a log nobody reads.
+git commit -q -m "ai-weights: learner model at version ${games}
 
 Global model for Computer - learner, merged at the end of every game it plays
 (FedAvg on deltas, damped by checkout staleness). version= is the number of games
 that have contributed, and is the honest measure of how much training this has had.
 
 Committed by tools/commit-weights.sh on a timer -- the file itself updates per game." \
+  -- "$W" \
   && echo "$(date '+%F %T') committed weights at version ${games}"
