@@ -29,7 +29,7 @@ can learn -- it predicts "is this side winning", not "what would a human play he
 MERGING IS DELTA-BASED AND LOCKED, exactly like FederatedWeights.merge, so this can run
 while the server is playing games without either side losing the other's learning.
 """
-import json, sys, math, os, fcntl, collections
+import json, sys, math, os, fcntl, collections, re
 
 FULL_TRUST_VERSION = 500
 WEIGHTS = "/home/user/projects/mage-modern/ai-weights/commander-weights.txt"
@@ -50,10 +50,13 @@ def load(paths):
             for line in fh:
                 line = line.strip()
                 if not line.startswith("{"):
-                    i = line.find('{"kind"')
-                    if i < 0:
+                    # log4j appends "  =>[GAME <id>] Class.method" AFTER the json, so slicing from
+                    # the opening brace to end-of-line leaves trailing text and every parse fails
+                    # silently -- which reads as "no training data" rather than as a bug.
+                    m = re.search(r'\{"kind".*\}', line)
+                    if not m:
                         continue
-                    line = line[i:]
+                    line = m.group(0)
                 try:
                     r = json.loads(line)
                 except ValueError:

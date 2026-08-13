@@ -335,6 +335,39 @@ public final class BenchGame {
 
             recordCardPlays(cardTracker, cardPlayCollector, seats);
 
+            // DARRELLBEST-FORK: emit the same RESULT record the server writes, so a BENCH game is
+            // trainable too.
+            //
+            // Without it the audit stream carried FEATURES snapshots with no outcome to label them
+            // against, and the jsonl carries no game id to join on -- so thousands of simulated
+            // games produced feature vectors that could never be used for supervised training. Only
+            // real server games could train offline, and there are far fewer of those.
+            try {
+                org.apache.log4j.Logger audit = org.apache.log4j.Logger.getLogger("mage.ai.audit");
+                if (audit.isInfoEnabled()) {
+                    StringBuilder js = new StringBuilder();
+                    js.append("{\"kind\":\"RESULT\",\"game\":\"").append(game.getId()).append('"');
+                    js.append(",\"turn\":").append(turns);
+                    js.append(",\"winner\":\"").append(winnerKey == null ? "" : winnerKey).append('"');
+                    js.append(",\"seats\":[");
+                    for (int i = 0; i < players.length; i++) {
+                        if (i > 0) {
+                            js.append(',');
+                        }
+                        Player p = players[i];
+                        js.append("{\"name\":\"").append(p.getName())
+                          .append("\",\"won\":").append(p.hasWon())
+                          .append(",\"lost\":").append(p.hasLost())
+                          .append(",\"human\":false")
+                          .append(",\"life\":").append(p.getLife()).append('}');
+                    }
+                    js.append("]}");
+                    audit.info(js);
+                }
+            } catch (Exception e) {
+                logger.debug("bench result audit failed", e);
+            }
+
             long wallMs = (System.nanoTime() - startNanos) / 1_000_000L;
             return new GameResult(gameIndex, seed, winnerKey, winnerSeat, turns, wallMs,
                     termination, null, seatSwapped, seats.seatOfSideA(), seats.seats.size(),
