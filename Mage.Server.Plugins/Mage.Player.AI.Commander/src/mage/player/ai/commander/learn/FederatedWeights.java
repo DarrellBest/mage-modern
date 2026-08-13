@@ -131,10 +131,31 @@ public final class FederatedWeights {
      * @param updateCount  how many TD updates produced that delta; the client's sample weight
      * @param checkoutVersion the version this client started from, for staleness damping
      */
-    public synchronized void merge(double[] delta, double biasDelta, int updateCount, long checkoutVersion) {
+    public void merge(double[] delta, double biasDelta, int updateCount, long checkoutVersion) {
         if (delta == null || updateCount <= 0 || delta.length != StateFeatures.SIZE) {
             return;
         }
+        // DARRELLBEST-FORK: serialise merges WITHIN this JVM before touching the OS lock.
+        //
+        // FileLock is per-JVM, not per-thread: a second thread in the same process asking for a
+        // lock this process already holds gets OverlappingFileLockException, not a wait. The catch
+        // below then swallows it and that game's learning is gone, silently.
+        //
+        // Separate bench processes were always fine -- cross-process is exactly what FileLock does.
+        // The LIVE SERVER is the broken case: every game runs in one JVM, so two games finishing at
+        // the same moment collided and one lost its update. `synchronized` did not help because it
+        // was per-INSTANCE and every ComputerPlayerLearner constructs its own FederatedWeights.
+        //
+        // Measured before the fix: 8 threads x 40 merges = 320 attempted, 41 landed, 279 lost.
+        synchronized (JVM_MERGE_LOCK) {
+            mergeLocked(delta, biasDelta, updateCount, checkoutVersion);
+        }
+    }
+
+    /** DARRELLBEST-FORK: one lock for the whole JVM; the OS FileLock still guards other processes. */
+    private static final Object JVM_MERGE_LOCK = new Object();
+
+    private void mergeLocked(double[] delta, double biasDelta, int updateCount, long checkoutVersion) {
         try (RandomAccessFile raf = new RandomAccessFile(path.toFile(), "rw");
              FileChannel channel = raf.getChannel();
              FileLock lock = channel.lock()) {
