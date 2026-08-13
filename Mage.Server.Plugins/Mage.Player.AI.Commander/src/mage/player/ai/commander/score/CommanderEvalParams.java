@@ -104,6 +104,8 @@ public final class CommanderEvalParams {
             .stackObjectWeight(150)
             .drawEngineBonus(400)
             .lifeAboveMultiplier(20)
+            .unspentManaPenalty(120)
+            .deployedManaValueWeight(40)
             .commanderPermanentBonus(900)
             .blockTradeMode(1)
             .commanderBlockPenalty(1200)

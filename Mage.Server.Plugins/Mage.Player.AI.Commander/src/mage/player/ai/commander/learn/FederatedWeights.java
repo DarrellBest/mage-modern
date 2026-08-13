@@ -84,7 +84,13 @@ public final class FederatedWeights {
         double bias = 0;
         long version = 0;
         if (!Files.exists(path)) {
-            return new Snapshot(w, bias, version);
+            // DARRELLBEST-FORK: a brand-new model starts AS the hand-tuned evaluator, not as zero.
+            // A zero vector predicts 0.5 everywhere and knows none of what the tuning established,
+            // so the model would have to rediscover commander damage, the life curve, stack scoring
+            // and draw engines before even reaching break-even. Seeded, every update departs from a
+            // good position instead of crawling toward one.
+            return new Snapshot(StateFeatures.seedFromParams(
+                    mage.player.ai.commander.score.CommanderEvalParams.TUNED), 0, 0);
         }
         try {
             for (String line : Files.readAllLines(path, StandardCharsets.UTF_8)) {
@@ -110,8 +116,9 @@ public final class FederatedWeights {
                 }
             }
         } catch (IOException | NumberFormatException e) {
-            logger.warn("Federated weights unreadable, starting from zero: " + e);
-            return new Snapshot(new double[StateFeatures.SIZE], 0, 0);
+            logger.warn("Federated weights unreadable, restarting from the hand-tuned seed: " + e);
+            return new Snapshot(StateFeatures.seedFromParams(
+                    mage.player.ai.commander.score.CommanderEvalParams.TUNED), 0, 0);
         }
         return new Snapshot(w, bias, version);
     }

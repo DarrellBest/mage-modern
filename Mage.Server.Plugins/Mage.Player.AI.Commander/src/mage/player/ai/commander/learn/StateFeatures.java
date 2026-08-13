@@ -234,4 +234,55 @@ public final class StateFeatures {
         }
         return count;
     }
+
+    /**
+     * DARRELLBEST-FORK: the hand-tuned evaluator expressed as a weight vector over these features,
+     * so the learned model STARTS as the tuned bot instead of starting from nothing.
+     * <p>
+     * This is the point of the whole design. A zero vector predicts 0.5 everywhere and knows none of
+     * what the hand tuning established -- commander damage, the life curve, stack scoring, draw
+     * engines, board development. Starting there means the model has to rediscover all of it before
+     * it is even break-even, which is why trust had to ramp over 500 games and why a 16-feature
+     * linear model looked likely to LOSE to the evaluator it was blending against.
+     * <p>
+     * Seeded instead, the model begins equivalent to the tuned evaluator and every update is a
+     * departure from a good position rather than a crawl toward one. Learning can then only be
+     * measured as "better or worse than hand-tuned", which is the question that actually matters.
+     * <p>
+     * The scale factor exists because the two live in different spaces: the evaluator returns raw
+     * score (thousands), while this model feeds a sigmoid and wants a logit of order 1. LOGIT_SCALE
+     * maps a typical evaluator advantage onto a sensible probability, and is calibration, not
+     * tuning -- getting it wrong makes the model over- or under-confident, not wrong about which
+     * side is ahead.
+     * <p>
+     * Features with no corresponding tuned weight (turn_number) seed to 0: the tuned evaluator does
+     * not use them, so the model starts agnostic and may learn them.
+     */
+    public static double[] seedFromParams(mage.player.ai.commander.score.CommanderEvalParams p) {
+        double[] w = new double[SIZE];
+        w[0]  = p.getLifeAboveMultiplier() * LOGIT_SCALE;              // life_diff
+        w[1]  = p.getHandCardScore() * LOGIT_SCALE;                    // hand_size_diff
+        w[2]  = p.getPermanentOnBattlefieldBonus() * LOGIT_SCALE;      // creature_count_diff
+        w[3]  = p.getCreaturePowerMultiplier() * LOGIT_SCALE;          // creature_power_diff
+        w[4]  = p.getCreatureToughnessMultiplier() * LOGIT_SCALE;      // creature_toughness_diff
+        w[5]  = p.getLandBaseMultiplier() * LOGIT_SCALE;               // land_count_diff
+        w[6]  = -p.getTappedLandPenalty() * LOGIT_SCALE;               // untapped_land_diff
+        w[7]  = p.getPermanentOnBattlefieldBonus() * LOGIT_SCALE;      // artifact_count_diff
+        w[8]  = p.getPermanentOnBattlefieldBonus() * LOGIT_SCALE;      // enchantment_count_diff
+        w[9]  = p.getPermanentOnBattlefieldBonus() * LOGIT_SCALE;      // planeswalker_count_diff
+        w[10] = p.getCommanderPermanentBonus() * LOGIT_SCALE;          // commander_on_battlefield_diff
+        w[11] = 0;                                                     // library_size_diff: not tuned
+        w[12] = 0;                                                     // turn_number: not tuned
+        w[13] = p.getDeployedManaValueWeight() * LOGIT_SCALE;          // deployed_mana_value_diff
+        w[14] = -p.getUnspentManaPenalty() * LOGIT_SCALE;              // unspent_mana_own_turn
+        w[15] = p.getDrawEngineBonus() * LOGIT_SCALE;                  // draw_engine_count_diff
+        return w;
+    }
+
+    /**
+     * Maps evaluator score units onto logit units. A commanding position in this evaluator is worth
+     * a few thousand points; a logit of about 3 is a 95% win probability, so roughly 1e-3 puts a
+     * decisive board at high-but-not-saturated confidence and leaves room to learn.
+     */
+    private static final double LOGIT_SCALE = 1.0e-3;
 }
