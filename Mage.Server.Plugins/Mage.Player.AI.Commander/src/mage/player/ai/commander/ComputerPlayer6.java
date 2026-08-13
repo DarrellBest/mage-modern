@@ -278,6 +278,9 @@ public class ComputerPlayer6 extends ComputerPlayer {
                 if (!game.isSimulation() && playLog.isInfoEnabled()) {
                     playLog.info(String.format("MULLIGAN %s | bottomed %d card(s), keeping %d land(s) of %d",
                             getName(), chosen, lands - landsBottomed, lands));
+                    AuditLog.event("MULLIGAN", game, getName(), null, null,
+                            String.format("\"bottomed\":%d,\"landsKept\":%d,\"landsHeld\":%d",
+                                    chosen, lands - landsBottomed, lands));
                 }
                 return true;
             }
@@ -633,9 +636,12 @@ public class ComputerPlayer6 extends ComputerPlayer {
                     openMana++;
                 }
             }
+            int idleScore = evaluateState(game);
             playLog.info(String.format("IDLE %s | T%d.%s | %d card(s) in hand, %d untapped mana source(s) | score %d",
                     getName(), game.getTurnNum(), game.getTurnStepType(),
-                    getHand().size(), openMana, evaluateState(game)));
+                    getHand().size(), openMana, idleScore));
+            AuditLog.event("IDLE", game, getName(), null, idleScore,
+                    String.format("\"hand\":%d,\"mana\":%d", getHand().size(), openMana));
         } catch (Exception e) {
             logger.debug("idle-pass log failed", e);
         }
@@ -672,6 +678,7 @@ public class ComputerPlayer6 extends ComputerPlayer {
                         game.getTurnStepType(),
                         getAbilityAndSourceInfo(game, ability, true)
                 ));
+                AuditLog.event("PLAY", game, getName(), getAbilityAndSourceInfo(game, ability, true), null, null);
                 if (!ability.getTargets().isEmpty()) {
                     for (Target target : ability.getTargets()) {
                         for (UUID id : target.getTargets()) {
@@ -1894,14 +1901,18 @@ public class ComputerPlayer6 extends ComputerPlayer {
             }
             if (groups == 0) {
                 int available = idle;
+                int noneScore = evaluateState(game);
                 playLog.info(String.format("NO %sS %s | T%d.%s | %d untapped creature(s) available | score %d",
-                        what, getName(), game.getTurnNum(), game.getTurnStepType(), available,
-                        evaluateState(game)));
+                        what, getName(), game.getTurnNum(), game.getTurnStepType(), available, noneScore));
+                AuditLog.event("NO_" + what, game, getName(), null, noneScore,
+                        String.format("\"used\":0,\"available\":%d", available));
             } else {
+                int combatScore = evaluateState(game);
                 playLog.info(String.format("%s %s | T%d.%s |%s | %d of %d untapped used | score %d",
                         what, getName(), game.getTurnNum(), game.getTurnStepType(), sb,
-                        blocking ? used : groups, idle,
-                        evaluateState(game)));
+                        blocking ? used : groups, idle, combatScore));
+                AuditLog.event(what, game, getName(), sb.toString().trim(), combatScore,
+                        String.format("\"used\":%d,\"available\":%d", blocking ? used : groups, idle));
             }
         } catch (Exception e) {
             // an audit log must never be able to break a live game

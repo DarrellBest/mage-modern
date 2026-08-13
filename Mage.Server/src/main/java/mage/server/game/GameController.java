@@ -764,6 +764,25 @@ public class GameController implements GameCallback {
         }
     }
 
+    /** DARRELLBEST-FORK: minimal JSON escaping for the audit record; player names are user input. */
+    private static String jsonEscape(String v) {
+        if (v == null) {
+            return "";
+        }
+        StringBuilder out = new StringBuilder(v.length() + 8);
+        for (int i = 0; i < v.length(); i++) {
+            char c = v.charAt(i);
+            if (c == '"' || c == '\\') {
+                out.append('\\').append(c);
+            } else if (c < 0x20) {
+                out.append(String.format("\\u%04x", (int) c));
+            } else {
+                out.append(c);
+            }
+        }
+        return out.toString();
+    }
+
     public void endGame(final String message) throws MageException {
         // DARRELLBEST-FORK: record the result, because nothing else does.
         //
@@ -793,6 +812,33 @@ public class GameController implements GameCallback {
                         + " | turns " + g.getState().getTurnNum()
                         + " | winner: " + g.getWinner()
                         + " | " + seats);
+                // DARRELLBEST-FORK: same record on the machine-readable stream, so a game's
+                // decisions and its outcome can be joined on the game id without regex-mining.
+                org.apache.log4j.Logger audit = org.apache.log4j.Logger.getLogger("mage.ai.audit");
+                if (audit.isInfoEnabled()) {
+                    StringBuilder js = new StringBuilder();
+                    js.append("{\"kind\":\"RESULT\",\"game\":\"").append(g.getId()).append('"');
+                    js.append(",\"turn\":").append(g.getState().getTurnNum());
+                    js.append(",\"winner\":\"").append(jsonEscape(String.valueOf(g.getWinner()))).append('"');
+                    js.append(",\"seats\":[");
+                    boolean first = true;
+                    for (UUID pid : g.getState().getPlayerList(g.getStartingPlayerId())) {
+                        Player p = g.getPlayer(pid);
+                        if (p == null) {
+                            continue;
+                        }
+                        if (!first) {
+                            js.append(',');
+                        }
+                        first = false;
+                        js.append("{\"name\":\"").append(jsonEscape(p.getName()))
+                          .append("\",\"won\":").append(p.hasWon())
+                          .append(",\"lost\":").append(p.hasLost())
+                          .append(",\"life\":").append(p.getLife()).append('}');
+                    }
+                    js.append("]}");
+                    audit.info(js);
+                }
             }
         } catch (Exception e) {
             // a result line must never be able to break the end of a game
