@@ -61,15 +61,35 @@ def load(paths):
                 if r.get("kind") == "FEATURES" and r.get("features"):
                     feats[r.get("game")].append((r.get("player"), r["features"]))
                 elif r.get("kind") == "RESULT":
-                    results[r.get("game")] = {s["name"]: bool(s.get("won"))
+                    results[r.get("game")] = {s["name"]: (bool(s.get("won")), bool(s.get("human")))
                                               for s in r.get("seats", [])}
     return feats, results
 
 
+# How much each kind of trajectory counts. A human WIN is the scarcest and most
+# informative thing this system ever sees: a person who beat the bots demonstrated a line
+# that self-play cannot manufacture, and there will only ever be a handful of them against
+# thousands of simulated games. Without weighting, those rows would be statistically
+# invisible -- 20 human games against 5000 self-play games is 0.4% of the gradient.
+#
+# Human LOSSES are weighted up too, but less. "A human lost from here" is real evidence,
+# though a human losing to bots says more about that game than about good play.
+WEIGHT_HUMAN_WIN = 20.0
+WEIGHT_HUMAN_LOSS = 5.0
+WEIGHT_BOT = 1.0
+
+
+def sample_weight(won, human):
+    if human:
+        return WEIGHT_HUMAN_WIN if won else WEIGHT_HUMAN_LOSS
+    return WEIGHT_BOT
+
+
 def build(feats, results):
     """One training row per (seat, turn) snapshot, labelled with that seat's real result."""
-    X, y = [], []
+    X, y, W = [], [], []
     used_games = 0
+    stats = collections.Counter()
     for gid, rows in feats.items():
         outcome = results.get(gid)
         if not outcome:
@@ -78,11 +98,14 @@ def build(feats, results):
         for player, f in rows:
             if player not in outcome or len(f) != len(NAMES):
                 continue
+            won, human = outcome[player]
             X.append(f)
-            y.append(1.0 if outcome[player] else 0.0)
+            y.append(1.0 if won else 0.0)
+            W.append(sample_weight(won, human))
+            stats[("human" if human else "bot") + ("-win" if won else "-loss")] += 1
             hit = True
         used_games += hit
-    return X, y, used_games
+    return X, y, W, used_games, stats
 
 
 def read_weights(path):
@@ -116,10 +139,17 @@ def main():
         return 1
 
     feats, results = load(paths)
-    X, y, games = build(feats, results)
+    X, y, W, games, stats = build(feats, results)
     print(f"{len(feats)} games with features, {len(results)} with results")
     print(f"-> {len(X)} training rows from {games} finished games "
           f"({sum(y):.0f} winner rows, {len(y)-sum(y):.0f} loser rows)")
+    if stats:
+        print("   by source:", dict(stats))
+        hw = stats.get("human-win", 0)
+        if hw:
+            share = 100.0 * hw * WEIGHT_HUMAN_WIN / sum(W)
+            print(f"   human wins are {hw} rows but {share:.0f}% of the gradient "
+                  f"(weighted {WEIGHT_HUMAN_WIN}x)")
     if len(X) < 50:
         print("\nNot enough data yet. Play or simulate more games -- FEATURES records only")
         print("appear for games played since feature snapshots were added.")
@@ -130,17 +160,17 @@ def main():
     lr = 0.05
     for ep in range(epochs):
         loss = 0.0
-        for xi, yi in zip(X, y):
+        for xi, yi, wi in zip(X, y, W):
             z = bias + sum(w[i] * xi[i] / SCALE[i] for i in range(len(w)))
             z = max(-30.0, min(30.0, z))
             p = 1.0 / (1.0 + math.exp(-z))
-            err = yi - p
-            loss += -(yi * math.log(max(p, 1e-9)) + (1 - yi) * math.log(max(1 - p, 1e-9)))
+            err = (yi - p) * wi
+            loss += wi * -(yi * math.log(max(p, 1e-9)) + (1 - yi) * math.log(max(1 - p, 1e-9)))
             for i in range(len(w)):
                 w[i] += lr * err * xi[i] / SCALE[i]
             bias += lr * err
         if ep in (0, epochs - 1):
-            print(f"  epoch {ep+1}: log-loss {loss/len(X):.4f}")
+            print(f"  epoch {ep+1}: weighted log-loss {loss/sum(W):.4f}")
 
     acc = sum(1 for xi, yi in zip(X, y)
               if (1.0 / (1.0 + math.exp(-max(-30, min(30, bias + sum(w[i]*xi[i]/SCALE[i] for i in range(len(w))))))) >= 0.5) == (yi >= 0.5))

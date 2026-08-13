@@ -831,9 +831,14 @@ public class GameController implements GameCallback {
                             js.append(',');
                         }
                         first = false;
+                        // DARRELLBEST-FORK: human flag comes from the engine, not from guessing at
+                        // the seat name -- bots are named "Computer N" by convention, and a human
+                        // who picks that name would otherwise be mistaken for one, silently
+                        // mislabelling exactly the training rows that matter most.
                         js.append("{\"name\":\"").append(jsonEscape(p.getName()))
                           .append("\",\"won\":").append(p.hasWon())
                           .append(",\"lost\":").append(p.hasLost())
+                          .append(",\"human\":").append(p.isHuman())
                           .append(",\"life\":").append(p.getLife()).append('}');
                     }
                     js.append("]}");
