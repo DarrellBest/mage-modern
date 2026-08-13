@@ -53,8 +53,22 @@ public class ComputerPlayerLearner extends ComputerPlayer7 {
      */
     private LearningSession session;
 
+    /**
+     * DARRELLBEST-FORK: the no-params constructor uses TUNED, matching ComputerPlayerCommander.
+     * <p>
+     * It used to fall through to ComputerPlayer7's 3-arg constructor, which leaves DEFAULT in place.
+     * So the learner played every game with UNTUNED weights while the bot it was measured against
+     * used TUNED -- a handicap match that had nothing to do with learning, and it made the learned
+     * model look like the problem when it was carrying the deficit.
+     * <p>
+     * The measurement that exposed it: 615 games at 39.0% overall, which reads as a clear loss, but
+     * broken down by trust it went 34.5% at near-zero trust and 45.6% at full trust. A learned model
+     * that HURT would degrade in the other direction. The ~34.5% floor is simply DEFAULT vs TUNED --
+     * close to the 63% the tuned bot measures against untuned opposition in the arena -- and the
+     * climb to 45.6% is the learned evaluation clawing that deficit back.
+     */
     public ComputerPlayerLearner(String name, RangeOfInfluence range, int skill) {
-        super(name, range, skill);
+        super(name, range, skill, CommanderEvalParams.TUNED);
         this.federation = new FederatedWeights();
     }
 

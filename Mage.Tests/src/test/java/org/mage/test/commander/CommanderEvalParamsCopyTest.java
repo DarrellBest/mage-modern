@@ -156,8 +156,16 @@ public class CommanderEvalParamsCopyTest {
 
     /**
      * The legacy three-argument constructors are what config.xml and the bench harness call, so what
-     * they hand back IS what live games play with. Every class except the deployed Commander bot
-     * must keep producing the historical behaviour.
+     * they hand back IS what live games play with. Every class except the two DEPLOYED bots --
+     * Commander and Learner -- must keep producing the historical behaviour.
+     * <p>
+     * DARRELLBEST-FORK: Learner moved into the tuned group. It used to fall through to
+     * ComputerPlayer7's three-arg constructor and get DEFAULT, so it played every game with UNTUNED
+     * weights against a Commander bot using TUNED -- a handicap match that had nothing to do with
+     * learning. It measured 39.0% over 615 games, which read as "the learned model is worse", while
+     * the breakdown by trust told the real story: 34.5% at near-zero trust rising to 45.6% at full
+     * trust. A harmful model degrades the other way; that floor was DEFAULT vs TUNED and the climb
+     * was the learned evaluation recovering the deficit.
      */
     @Test
     public void constructorsWithoutParamsGetTheDefaults() {
@@ -165,8 +173,6 @@ public class CommanderEvalParamsCopyTest {
                 new ComputerPlayer6("a", RangeOfInfluence.ALL, SKILL).getEvalParams());
         Assert.assertSame(CommanderEvalParams.DEFAULT,
                 new ComputerPlayer7("b", RangeOfInfluence.ALL, SKILL).getEvalParams());
-        Assert.assertSame(CommanderEvalParams.DEFAULT,
-                new ComputerPlayerLearner("d", RangeOfInfluence.ALL, SKILL).getEvalParams());
         Assert.assertSame(CommanderEvalParams.DEFAULT,
                 new ComputerPlayerControllableProxy("e", RangeOfInfluence.ALL, SKILL).getEvalParams());
     }
@@ -179,6 +185,14 @@ public class CommanderEvalParamsCopyTest {
      * edit would silently revert the only tuning result we have measured evidence for, and nothing
      * else in the build would notice.
      */
+    /** The learner is deployed too, and must not be handicapped against the bot it is measured on. */
+    @Test
+    public void deployedLearnerBotAlsoUsesTunedWeights() {
+        Assert.assertSame("the learner must play with the same weights as the commander bot",
+                CommanderEvalParams.TUNED,
+                new ComputerPlayerLearner("learner", RangeOfInfluence.ALL, SKILL).getEvalParams());
+    }
+
     @Test
     public void deployedCommanderBotUsesTunedWeights() {
         CommanderEvalParams live = new ComputerPlayerCommander("c", RangeOfInfluence.ALL, SKILL).getEvalParams();
