@@ -10,7 +10,7 @@ QUIET_CHECKS=${QUIET_CHECKS:-10}     # consecutive clear readings required
 INTERVAL=${INTERVAL:-30}             # seconds between readings
 MAX_WAIT=${MAX_WAIT:-86400}
 
-conns() { ss -tn 2>/dev/null | grep -cE ':17171|:17172' || true; }
+conns() { bash "$(dirname "$0")/active-games.sh" >/dev/null 2>&1 && bash "$(dirname "$0")/active-games.sh" | head -1 || echo 0; }
 
 clear_count=0
 waited=0
@@ -19,12 +19,12 @@ while [ "$waited" -lt "$MAX_WAIT" ]; do
   if [ "$c" -eq 0 ]; then
     clear_count=$((clear_count+1))
   else
-    [ "$clear_count" -gt 0 ] && echo "$(date +%H:%M:%S) someone connected ($c) - resetting quiet counter"
+    [ "$clear_count" -gt 0 ] && echo "$(date +%H:%M:%S) a game started ($c) - resetting quiet counter"
     clear_count=0
   fi
   if [ "$clear_count" -ge "$QUIET_CHECKS" ]; then
     if [ "$(conns)" -ne 0 ]; then      # final re-check, closes the race
-      echo "$(date +%H:%M:%S) connection appeared at the last moment - continuing to wait"
+      echo "$(date +%H:%M:%S) a game started at the last moment - continuing to wait"
       clear_count=0
       continue
     fi

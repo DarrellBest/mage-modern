@@ -9,14 +9,14 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-conns=$(ss -tn 2>/dev/null | grep -cE ':17171|:17172' || true)
+conns=$(bash "$(dirname "$0")/active-games.sh" | head -1)
 if [ "${FORCE:-0}" != "1" ] && [ "$conns" -gt 0 ]; then
-  echo "REFUSING TO DEPLOY: $conns connection(s) on the XMage ports."
-  ss -tn 2>/dev/null | grep -E ':17171|:17172' | awk '{print "   " $1, $5}' | head
+  echo "REFUSING TO DEPLOY: $conns game(s) in progress."
+  bash "$(dirname "$0")/active-games.sh" | tail -n +2
   echo
-  echo "Someone is connected and a deploy restarts the server mid-game."
+  echo "A game is in progress and a deploy restarts the server mid-game."
   echo "Re-run when it is clear, or FORCE=1 $0 to override deliberately."
   exit 1
 fi
-echo ">> $conns connections; clear to deploy"
+echo ">> no games in progress; clear to deploy"
 exec bash tools/deploy-fork.sh "$@"
