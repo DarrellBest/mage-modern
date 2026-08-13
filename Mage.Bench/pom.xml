@@ -3,10 +3,16 @@
 
     <modelVersion>4.0.0</modelVersion>
 
+    <!-- DARRELLBEST-FORK (bump on every upstream version change): this module has no upstream
+         counterpart, so upstream's version-bump commits update every OTHER pom and silently leave
+         this one behind. The build then fails only at Mage.Tests, with a confusing
+         "mage-bench:jar:<new> has not been downloaded" error that looks like a repository problem
+         rather than a stale parent version. Same applies to Mage.Bridge and
+         Mage.Player.AI.Commander. -->
     <parent>
         <groupId>org.mage</groupId>
         <artifactId>mage-root</artifactId>
-        <version>1.4.60</version>
+        <version>1.4.61</version>
     </parent>
 
     <artifactId>mage-bench</artifactId>
