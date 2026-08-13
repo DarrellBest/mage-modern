@@ -765,6 +765,40 @@ public class GameController implements GameCallback {
     }
 
     public void endGame(final String message) throws MageException {
+        // DARRELLBEST-FORK: record the result, because nothing else does.
+        //
+        // The server logs "GAME started" and never logs how it finished, so there is no way to ask
+        // the plainest question about the AI -- did it actually win? Every assessment of the
+        // commander bot on real games has had to be inferred from its own decision logs, while the
+        // outcome sat one line away.
+        //
+        // saveGameActivated is not the answer: it serialises the whole game object graph to a
+        // binary blob, and this config's own documentation calls it "not working correctly yet".
+        // One greppable line per game costs nothing and is what the question actually needs.
+        try {
+            Game g = game;
+            if (g != null && !g.isSimulation()) {
+                StringBuilder seats = new StringBuilder();
+                for (UUID pid : g.getState().getPlayerList(g.getStartingPlayerId())) {
+                    Player p = g.getPlayer(pid);
+                    if (p == null) {
+                        continue;
+                    }
+                    if (seats.length() > 0) {
+                        seats.append(", ");
+                    }
+                    seats.append(p.getName()).append(p.hasWon() ? "=WON" : (p.hasLost() ? "=lost" : "=?"));
+                }
+                logger.info("GAME FINISHED " + g.getId()
+                        + " | turns " + g.getState().getTurnNum()
+                        + " | winner: " + g.getWinner()
+                        + " | " + seats);
+            }
+        } catch (Exception e) {
+            // a result line must never be able to break the end of a game
+            logger.debug("game result logging failed", e);
+        }
+
         // send end game message/dialog
         for (final GameSessionPlayer gameSession : getGameSessions()) {
             gameSession.gameOver(message);
