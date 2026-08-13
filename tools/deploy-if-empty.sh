@@ -9,7 +9,8 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-conns=$(bash "$(dirname "$0")/active-games.sh" | head -1)
+conns=$(bash "$(dirname "$0")/active-games.sh" 2>/dev/null | head -1 || echo 0)
+[ -n "$conns" ] || conns=0
 if [ "${FORCE:-0}" != "1" ] && [ "$conns" -gt 0 ]; then
   echo "REFUSING TO DEPLOY: $conns game(s) in progress."
   bash "$(dirname "$0")/active-games.sh" | tail -n +2

@@ -10,7 +10,7 @@ QUIET_CHECKS=${QUIET_CHECKS:-10}     # consecutive clear readings required
 INTERVAL=${INTERVAL:-30}             # seconds between readings
 MAX_WAIT=${MAX_WAIT:-86400}
 
-conns() { bash "$(dirname "$0")/active-games.sh" >/dev/null 2>&1 && bash "$(dirname "$0")/active-games.sh" | head -1 || echo 0; }
+conns() { bash "$(dirname "$0")/active-games.sh" 2>/dev/null | head -1 || echo 0; }
 
 clear_count=0
 waited=0

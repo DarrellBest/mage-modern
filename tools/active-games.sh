@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
-# Is a real game in progress? Prints the count and lists them; exit 0 if any, 1 if none.
+# Is a real game in progress? Prints the count on stdout, then any game ids.
+#
+# ALWAYS exits 0. It previously exited 1 for "no games", which combined with the callers'
+# `set -euo pipefail` to kill the deploy script at the assignment -- so the gate silently
+# skipped the deploy in exactly the case where it was supposed to allow it, with no output
+# and a success exit. Callers branch on the COUNT, never on the exit status.
 #
 # TCP connections are the WRONG signal: a client parked in the lobby holds sockets open
 # indefinitely, so a connection-based gate blocks deploys forever on people who are AFK.
@@ -12,7 +17,7 @@ set -uo pipefail
 LOG=${LOG:-/home/user/Documents/xmage/xmage/mage-server/mageserver.log}
 WINDOW=${WINDOW:-300}   # seconds of quiet before a game counts as over
 
-[ -f "$LOG" ] || { echo "0"; exit 1; }
+[ -f "$LOG" ] || { echo "0"; exit 0; }
 
 now=$(date +%s)
 cutoff=$(date -d "@$((now - WINDOW))" '+%Y-%m-%d %H:%M:%S')
@@ -28,6 +33,5 @@ n=$(printf '%s' "$active" | grep -c . || true)
 echo "$n"
 if [ "$n" -gt 0 ]; then
   printf '%s\n' "$active" | sed 's/^/  live game: /'
-  exit 0
 fi
-exit 1
+exit 0
