@@ -103,6 +103,7 @@ public final class CommanderEvalParams {
             .smartMulligan(1)
             .stackObjectWeight(150)
             .drawEngineBonus(400)
+            .lifeAboveMultiplier(20)
             .commanderPermanentBonus(900)
             .blockTradeMode(1)
             .commanderBlockPenalty(1200)
@@ -278,7 +279,23 @@ public final class CommanderEvalParams {
         return lifeScores[life];
     }
 
-    /** Score per point of life ABOVE {@link #getMaxTabulatedLife()}, where the curve goes flat. */
+    /**
+     * Score per point of life ABOVE {@link #getMaxTabulatedLife()}, where the curve goes flat.
+     * <p>
+     * DARRELLBEST-FORK: TUNED lowers this from 100 to 20, because the whole table is inherited from
+     * 20-life formats and the region above 20 is where Commander actually lives. At 100, taking 3
+     * damage at 40 life scored 300 -- the same order as an entire creature -- so the bot defended a
+     * resource it had 40 of as though it were about to die. That is what produced the reported line:
+     * blocking a 3/3 Goblin with its own 3/3 Krenko, spending its commander to save 3 life.
+     * <p>
+     * At 20 the same 3 damage scores 60, comfortably below a creature, while everything BELOW 20
+     * life still uses the tabulated curve untouched -- 20 to 17 is still 600, 10 to 7 is still 1500.
+     * So life stays cheap while you have plenty and gets expensive exactly when it starts to matter,
+     * which is the shape a 40-life format wants.
+     * <p>
+     * DEFAULT keeps 100 so historical behaviour, the equivalence tests and the G0 control are
+     * unaffected.
+     */
     public int getLifeAboveMultiplier() {
         return lifeAboveMultiplier;
     }
