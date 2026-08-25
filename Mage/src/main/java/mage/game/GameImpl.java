@@ -1313,7 +1313,7 @@ public abstract class GameImpl implements Game {
         boolean wasPaused = state.isPaused();
         state.resume();
         if (!checkIfGameIsOver()) {
-            fireInformEvent("Turn " + state.getTurnNum());
+            informPlayers("Turn " + state.getTurnNum());
             if (checkStopOnTurnOption()) {
                 return;
             }
@@ -1663,7 +1663,7 @@ public abstract class GameImpl implements Game {
             playerId = players[RandomUtil.nextInt(players.length)]; // test game
             Player player = getPlayer(playerId);
             if (player != null && player.canRespond()) {
-                fireInformEvent(state.getPlayer(playerId).getLogName() + " won the toss");
+                informPlayers(state.getPlayer(playerId).getLogName() + " won the toss");
                 return player.getId();
             }
         }
@@ -1761,7 +1761,7 @@ public abstract class GameImpl implements Game {
         Player player = state.getPlayer(playerId);
         if (player != null && !player.hasLost()) {
             logger.debug("Player " + player.getName() + " concedes game " + this.getId());
-            fireInformEvent(player.getLogName() + " has conceded.");
+            informPlayers(player.getLogName() + " has conceded.");
             player.concede(this);
         }
     }
@@ -1925,7 +1925,7 @@ public abstract class GameImpl implements Game {
                             continue;
                         } else {
                             // tests - try to fail fast
-                            throw new MageException(UNIT_TESTS_ERROR_TEXT);
+                            throw new MageException(UNIT_TESTS_ERROR_TEXT + ": " + e.getMessage(), e);
                         }
                     }
                     state.getPlayerList().getNext();
@@ -1939,8 +1939,8 @@ public abstract class GameImpl implements Game {
             this.end();
 
             // re-raise error in unit tests, so framework can catch it (example: errors in AI simulations)
-            if (UNIT_TESTS_ERROR_TEXT.equals(e.getMessage())) {
-                throw new IllegalStateException(UNIT_TESTS_ERROR_TEXT);
+            if (e.getMessage() != null && e.getMessage().contains(UNIT_TESTS_ERROR_TEXT)) {
+                throw new IllegalStateException(e.getMessage(), e);
             }
         } finally {
             resetLKI();
@@ -1951,10 +1951,11 @@ public abstract class GameImpl implements Game {
     protected void resolve() {
         StackObject top = null;
         boolean wasError = false;
+        boolean applied = false;
         try {
             top = state.getStack().peek();
-            DataCollectorServices.getInstance().onTestsStackResolve(this);
-            top.resolve(this);
+            DataCollectorServices.getInstance().onTestsStackResolveStart(this, top);
+            applied = top.resolve(this);
             resetControlAfterSpellResolve(top.getId());
         } catch (Throwable e) {
             // workaround to show real error in tests instead checkInfiniteLoop
@@ -1972,6 +1973,7 @@ public abstract class GameImpl implements Game {
                     }
                 }
             }
+            DataCollectorServices.getInstance().onTestsStackResolveEnd(this, top, applied);
         }
     }
 
@@ -3309,26 +3311,17 @@ public abstract class GameImpl implements Game {
     public void informPlayers(String message) {
         DataCollectorServices.getInstance().onGameLog(this, message);
 
-        // Uncomment to print game messages
-        // System.out.println(message.replaceAll("\\<.*?\\>", ""));
         if (simulation) {
             return;
         }
-        fireInformEvent(message);
+
+        makeSureCalledOutsideLayerEffects();
+        tableEventSource.fireTableEvent(EventType.INFO, message, this);
     }
 
     @Override
     public void debugMessage(String message) {
         logger.warn(message);
-    }
-
-    @Override
-    public void fireInformEvent(String message) {
-        if (simulation) {
-            return;
-        }
-        makeSureCalledOutsideLayerEffects();
-        tableEventSource.fireTableEvent(EventType.INFO, message, this);
     }
 
     @Override
