@@ -1708,11 +1708,52 @@ public class ComputerPlayer6 extends ComputerPlayer {
             return super.choose(outcome, choice, game);
         }
         if (!choice.isChosen()) {
-            if (!choice.setChoiceByAnswers(choices, true)) {
+            if (!setChoiceByAnswers(choice, choices)) {
                 choice.setRandomChoice();
             }
         }
         return true;
+    }
+
+    // DARRELLBEST-FORK: reimplements Choice.setChoiceByAnswers(List<String>, boolean), removed
+    // upstream in 6436f19597 with no replacement (TestPlayer.tryToChooseByChoices() is a
+    // test-only equivalent that throws on no match, which is wrong for a live AI player).
+    // Matches the old removeSelectAnswerFromList=true behavior exactly.
+    private static boolean setChoiceByAnswers(Choice choice, List<String> answers) {
+        if (choice.isKeyChoice()) {
+            for (String needChoice : answers) {
+                for (Map.Entry<String, String> currentChoice : choice.getKeyChoices().entrySet()) {
+                    if (currentChoice.getKey().equals(needChoice)) {
+                        choice.setChoiceByKey(needChoice, false);
+                        answers.remove(needChoice);
+                        return true;
+                    }
+                }
+            }
+            for (String needChoice : answers) {
+                for (Map.Entry<String, String> currentChoice : choice.getKeyChoices().entrySet()) {
+                    String choiceValue = currentChoice.getValue();
+                    String cleanedChoiceValue = choiceValue.replaceAll("<[^<>]*>", "");
+                    if (choiceValue.startsWith(needChoice) || cleanedChoiceValue.startsWith(needChoice)) {
+                        choice.setChoiceByKey(currentChoice.getKey(), false);
+                        answers.remove(needChoice);
+                        return true;
+                    }
+                }
+            }
+        } else {
+            for (String needChoice : answers) {
+                for (String currentChoice : choice.getChoices()) {
+                    String cleanedChoiceValue = currentChoice.replaceAll("<[^<>]*>", "");
+                    if (currentChoice.equals(needChoice) || cleanedChoiceValue.equals(needChoice)) {
+                        choice.setChoice(needChoice, false);
+                        answers.remove(needChoice);
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     @Override
