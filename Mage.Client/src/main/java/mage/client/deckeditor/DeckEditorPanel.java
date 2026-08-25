@@ -108,6 +108,11 @@ public class DeckEditorPanel extends javax.swing.JPanel {
         deckArea.setOpaque(false);
         panelLeft.setOpaque(false);
         panelRight.setOpaque(false);
+        // DARRELLBEST-FORK: cardSelector is hidden during sideboarding, so force it visible before jumping its search box to this card
+        deckArea.addSearchCardListener(card -> {
+            cardSelector.setVisible(true);
+            cardSelector.searchCardByName(card.getName());
+        });
         countdown = new javax.swing.Timer(1000,
                 e -> {
                     if (--timeout > 0) {

@@ -80,7 +80,19 @@ public final class FederatedWeights {
      *         using the hand-tuned evaluator until the model has learned something.
      */
     public synchronized Snapshot checkout() {
-        double[] w = new double[StateFeatures.SIZE];
+        // DARRELLBEST-FORK: start from the SEED, not from zeros, so that a feature the file does not
+        // mention keeps its hand-tuned value instead of silently becoming 0.
+        //
+        // This used to be `new double[SIZE]` while the merge path (readLocked) started from the seed.
+        // The asymmetry was invisible while the file listed every feature, and became a live bug the
+        // moment features were appended: a weights file written before the append has no line for the
+        // new names, so a GAME would play them at 0 while a MERGE blended them against the seed. The
+        // model would then be pulled toward a value the games were never played with, and the ten new
+        // features would look inert while appearing to train.
+        //
+        // Same reasoning as the brand-new-model branch below, which already did this correctly.
+        double[] w = StateFeatures.seedFromParams(
+                mage.player.ai.commander.score.CommanderEvalParams.TUNED);
         double bias = 0;
         long version = 0;
         if (!Files.exists(path)) {
@@ -135,6 +147,20 @@ public final class FederatedWeights {
         if (delta == null || updateCount <= 0 || delta.length != StateFeatures.SIZE) {
             return;
         }
+        if (FROZEN) {
+            // DARRELLBEST-FORK: -Dxmage.learner.freeze=true makes the model read-only for this JVM.
+            //
+            // A measurement whose subject changes while it is being measured describes nothing. Every
+            // A/B so far had five worker JVMs federating into the same file DURING the run, so the
+            // model at game 1 and the model at game 900 were different players and the reported win
+            // rate averaged over both.
+            //
+            // The obvious workaround -- chmod 444 the file -- does not work: mergeLocked opens it
+            // "rw", the resulting IOException is caught and logged at warn, and the run continues
+            // looking healthy while silently discarding every update. A real flag fails loudly at
+            // the top instead of quietly at the bottom.
+            return;
+        }
         // DARRELLBEST-FORK: serialise merges WITHIN this JVM before touching the OS lock.
         //
         // FileLock is per-JVM, not per-thread: a second thread in the same process asking for a
@@ -154,6 +180,18 @@ public final class FederatedWeights {
 
     /** DARRELLBEST-FORK: one lock for the whole JVM; the OS FileLock still guards other processes. */
     private static final Object JVM_MERGE_LOCK = new Object();
+
+    /** DARRELLBEST-FORK: {@code -Dxmage.learner.freeze=true} -- read the model, never write it. */
+    private static final boolean FROZEN = frozen();
+
+    private static boolean frozen() {
+        boolean f = Boolean.parseBoolean(System.getProperty("xmage.learner.freeze", "false"));
+        if (f) {
+            org.apache.log4j.Logger.getLogger(FederatedWeights.class)
+                    .info("Commander learner model FROZEN -- games will not federate");
+        }
+        return f;
+    }
 
     private void mergeLocked(double[] delta, double biasDelta, int updateCount, long checkoutVersion) {
         try (RandomAccessFile raf = new RandomAccessFile(path.toFile(), "rw");

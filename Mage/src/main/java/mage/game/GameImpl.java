@@ -120,6 +120,13 @@ public abstract class GameImpl implements Game {
     protected transient PlayerQueryEventSource playerQueryEventSource = new PlayerQueryEventSource();
 
     protected Map<UUID, Card> gameCards = new HashMap<>();
+
+    // DARRELLBEST-FORK (keep on merge/rebase from upstream): true when gameCards is shared with
+    // another GameImpl instead of privately owned, so it must be cloned before any structural
+    // change. See the gameCards sharing note in the copy constructor for why sharing happens at
+    // all, and mutableGameCards() for the invariant this flag maintains.
+    protected boolean gameCardsShared = false;
+
     protected Map<UUID, MeldCard> meldCards = new HashMap<>(0);
 
     protected Map<Zone, Map<UUID, MageObject>> lki = new EnumMap<>(Zone.class);
@@ -204,7 +211,76 @@ public abstract class GameImpl implements Game {
         //this.tableEventSource = game.tableEventSource; // client-server part, not need on copy/simulations
         //this.playerQueryEventSource = game.playerQueryEventSource; // client-server part, not need on copy/simulations
 
-        this.gameCards = CardUtil.deepCopyObject(game.gameCards);
+        // DARRELLBEST-FORK (keep on merge/rebase from upstream): share the card blueprints between
+        // SIMULATION copies instead of deep copying them on every search node.
+        //
+        // Why: JFR on the commander AI in a 4-player pod put GameImpl.<init> at 65% of all AI time,
+        // and this single deepCopyObject(gameCards) line at 43% -- more than everything else in the
+        // engine and the evaluator (1.5%) combined. A 4-player pod holds ~400 card blueprints and
+        // the search copies the whole Game per node, so every node was rebuilding 400 complete
+        // ability->mode->cost->effect graphs. The leaf frames were exactly that graph:
+        // Modes.<init> 6.1%, Mode.copy 6.1%, Effects.<init> 4.0%, ManaCostsImpl.copy 3.9%.
+        //
+        // What makes this mostly safe: a card in gameCards is a BLUEPRINT. Nearly everything that
+        // varies per game -- zone, face-down, counters, added/lost abilities, type/colour
+        // attributes, zone change counter -- is keyed by objectId in GameState/CardState rather
+        // than stored on the Card (CardImpl.setZone -> game.setZone, CardImpl.setFaceDown ->
+        // game.getState().getCardState(...), MageObject.addCardType(game, ..) ->
+        // getCreateMageObjectAttribute, and so on), and GameState is still copied in full below.
+        // The two objects that alias a blueprint, Spell.card and PermanentCard.card, are deep
+        // copied by their own copy constructors ("this.card = spell.card.copy()" /
+        // "this.card = permanent.card.copy()"), so a game copy never inherits a live alias into
+        // another game's blueprint. The 30k+ card classes under Mage.Sets are stateless: exactly
+        // four declare an instance field at all and none of them write one during play.
+        //
+        // Why ONLY simulations, and not the real game: because "blueprints are immutable" is NOT
+        // actually true, and it is not close enough to true to bet a live game on. Confirmed
+        // mid-game writers onto a card that lives in gameCards:
+        //   - SetBasePowerToughnessSourceEffect calls game.getObject(source), which falls through
+        //     to getCard() for a characteristic-defining card outside the battlefield, then writes
+        //     getPower()/getToughness().setModifiedBaseValue(..) -- on every applyEffects pass.
+        //   - SplitCard.cast / DoubleFacedCard.cast / AdventureCard.cast / OmenCard.cast write
+        //     setControllerId onto the blueprint halves' spell abilities at cast time.
+        //   - RoomCard.lastCastHalf is written by RoomCardHalfImpl.cast(), which the engine's own
+        //     TODO there already flags as suspect "due game states isolation".
+        //   - Narrower ones: OgreBattlecaster adds a mana cost to a blueprint's spell ability,
+        //     CardImpl.turnFaceUp flips ruleVisible on the blueprint's own abilities.
+        // Sharing a REAL game's blueprints with the search would therefore let a simulated cast
+        // scribble on the game people are actually playing. On top of that the search runs on a
+        // pool thread that can outlive its own timeout (ComputerPlayer6.addActionsTimed does
+        // task.get(maxSeconds) and the interrupt after it is cooperative), so an abandoned search
+        // could still be writing after the real game moved on.
+        //
+        // Keying off game.simulation removes that entire class of failure structurally instead of
+        // by audit: simulation is assigned in exactly two places, both immediately after copy() in
+        // createSimulationForAI/createSimulationForPlayableCalc, there is no setter, and the field
+        // is read here from the SOURCE game -- so a game real players sit at is never the source of
+        // a shared copy, keeps gameCardsShared == false forever, and behaves exactly as before this
+        // change. The residual is confined to the search: two sibling branches now share blueprint
+        // scratch state, so a mutation like the ones above can be read by a sibling before that
+        // branch's own applyEffects overwrites it. That can only ever change which move the bot
+        // picks, never the state of a real game.
+        //
+        // Note for whoever tries to A/B this: the commander bench CANNOT measure that residual.
+        // It does not reproduce at a fixed seed -- card and ability object ids come from
+        // UUID.randomUUID (MageObjectImpl/AbilityImpl), which RandomUtil.setSeed does not cover, so
+        // every process gets different ids, every UUID-keyed HashMap iterates in a different order,
+        // and the bot's tie-breaking follows. Measured: the SAME jar at seeds 700021/700022 played
+        // 13 and 16 turns on one run and 17 and 14 on the next. What does check this change is the
+        // org.mage.test.AI/rollback/cards JUnit slice (190 tests, byte-identical results on both
+        // builds) plus a direct assertion that a simulation cannot reach a real game's blueprints.
+        //
+        // Cost: one full deep copy per AI decision (the search root, ComputerPlayer7's
+        // "Game sim = createSimulation(game)") and every node below it free, which is where
+        // essentially all of the copies are.
+        if (game.simulation) {
+            this.gameCards = game.gameCards;
+            this.gameCardsShared = true;
+            game.gameCardsShared = true; // the source must stop mutating it in place too
+        } else {
+            this.gameCards = CardUtil.deepCopyObject(game.gameCards);
+            this.gameCardsShared = false;
+        }
         this.meldCards = CardUtil.deepCopyObject(game.meldCards);
 
         this.lki = CardUtil.deepCopyObject(game.lki);
@@ -364,14 +440,35 @@ public abstract class GameImpl implements Game {
         }
     }
 
+    // DARRELLBEST-FORK (keep on merge/rebase from upstream): call before EVERY structural change to
+    // gameCards (put/remove/clear). The map itself is genuinely mutated during play -- cards are
+    // added mid-game by ConjureCardEffect and DraftFromSpellbookEffect via loadCards, and removed
+    // wholesale when a player leaves (see leave()) -- so the map can never be shared raw even
+    // though its Card values can be. Copying here keeps the invariant that a map reachable from
+    // more than one GameImpl is never written in place: whoever writes first takes a private
+    // clone, and the other holders keep the untouched original. Clearing the flag afterwards is
+    // correct because the fresh clone is, by construction, referenced by this game alone; the copy
+    // constructor is what re-marks it shared if this game is copied again.
+    private void mutableGameCards() {
+        if (gameCardsShared) {
+            gameCards = new HashMap<>(gameCards);
+            gameCardsShared = false;
+        }
+    }
+
     private void addCardToState(Card card) {
+        mutableGameCards();
         gameCards.put(card.getId(), card);
         state.addCard(card);
     }
 
     @Override
     public Collection<Card> getCards() {
-        return gameCards.values();
+        // DARRELLBEST-FORK (keep on merge/rebase from upstream): unmodifiable because this map may
+        // be shared with other GameImpl copies (see the copy constructor), so a structural change
+        // made through this view would bypass mutableGameCards() and silently corrupt them. The
+        // only caller in the engine, TargetCard.getAllPossibleTargetInAnyZone, just reads.
+        return Collections.unmodifiableCollection(gameCards.values());
     }
 
     @Override
@@ -1067,6 +1164,7 @@ public abstract class GameImpl implements Game {
 
     @Override
     public void cleanUp() {
+        mutableGameCards(); // DARRELLBEST-FORK: never clear a map another copy may still be reading
         gameCards.clear();
         meldCards.clear();
     }
@@ -3486,6 +3584,7 @@ public abstract class GameImpl implements Game {
                 }
             }
         }
+        mutableGameCards(); // DARRELLBEST-FORK: it.remove() below is a structural change, so take a private copy first
         Iterator<Entry<UUID, Card>> it = gameCards.entrySet().iterator();
 
         while (it.hasNext()) {

@@ -38,6 +38,7 @@ import mage.players.Player;
 import mage.target.Target;
 import mage.target.TargetAmount;
 import mage.target.TargetCard;
+import mage.target.Targets;
 import mage.target.common.TargetCardInHand;
 import mage.util.CardUtil;
 import mage.util.RandomUtil;
@@ -175,6 +176,61 @@ public class ComputerPlayer6 extends ComputerPlayer {
             throw new IllegalArgumentException("evalParams must not be null");
         }
         this.evalParams = evalParams;
+    }
+
+    /**
+     * DARRELLBEST-FORK: audit the mulligan KEEP/MULLIGAN decision itself, not merely its
+     * bottoming step below.
+     * <p>
+     * {@link AuditLog}'s own javadoc lists {@code MULLIGAN} as a kind it expects, but the only
+     * place that ever emitted one was {@link #bottomWorstCards} -- which fires strictly AFTER a
+     * mulligan has already been taken, and only when a card was actually chosen for the bottom
+     * ({@code chosen > 0}). A KEEP decision never logged anything at all, under any
+     * circumstance, and a MULLIGAN that bottoms to a floor 5-card hand never reaches bottoming
+     * either, since London only asks the bottoming question once a hand is finally kept. Zero
+     * MULLIGAN records across 28 sampled live games is therefore exactly what this produced
+     * whether the decision inherited from {@code ComputerPlayer.chooseMulligan} (principles
+     * 22-24, deck- and hand-aware since that class's own rewrite) was right or wrong every single
+     * time -- the log could not tell either way, which is the actual gap this closes: a 0-land
+     * 7-card hand being kept live is unreproducible from source (the inherited rule mulligans any
+     * hand below its land window, and 0 lands is below every deck's window), but was also
+     * unfalsifiable from the log, since nothing recorded what the bot actually decided and why.
+     * <p>
+     * The decision logic itself is untouched: this wraps {@code super.chooseMulligan}, so the
+     * return value is bit-identical to the inherited rule and this method adds only visibility.
+     * <p>
+     * DARRELLBEST-FORK: also logs a {@code ramp} count -- how many nonland cards in the hand
+     * produce mana ({@link #producesMana}) -- now that {@code ComputerPlayer.chooseMulligan}'s
+     * 2-land keep rule turns on exactly that count. Read off the hand independently here rather
+     * than threaded back out of the super call, since the decision method returns only a
+     * boolean; recomputing it against the same {@code hand} field is cheap (a handful of cards)
+     * and keeps this override a pure wrapper that never influences the decision itself.
+     */
+    @Override
+    public boolean chooseMulligan(Game game) {
+        boolean mulligan = super.chooseMulligan(game);
+        if (!game.isSimulation() && playLog.isInfoEnabled()) {
+            try {
+                int handSize = hand.size();
+                int lands = hand.count(new mage.filter.common.FilterLandCard(), game);
+                int ramp = 0;
+                for (Card c : hand.getCards(game)) {
+                    if (!c.isLand(game) && producesMana(c, game)) {
+                        ramp++;
+                    }
+                }
+                String decision = mulligan ? "MULLIGAN" : "KEEP";
+                playLog.info(String.format("MULLIGAN %s | T%d.%s | hand=%d lands=%d ramp=%d | %s",
+                        getName(), game.getTurnNum(), game.getTurnStepType(), handSize, lands, ramp, decision));
+                AuditLog.event("MULLIGAN", game, getName(), decision, null,
+                        String.format("\"handSize\":%d,\"lands\":%d,\"ramp\":%d,\"decision\":\"%s\"",
+                                handSize, lands, ramp, decision));
+            } catch (Exception e) {
+                // an audit log must never be able to break a live game
+                logger.debug("mulligan audit log failed", e);
+            }
+        }
+        return mulligan;
     }
 
     /**
@@ -690,12 +746,37 @@ public class ComputerPlayer6 extends ComputerPlayer {
                     openMana++;
                 }
             }
+            // DARRELLBEST-FORK: how many of those cards the bot could plausibly have CAST.
+            //
+            // "7 cards in hand, 5 untapped mana sources" cannot distinguish the two idle passes that
+            // matter: a hand of seven 8-drops on five lands is a forced pass, and a hand with three
+            // castable spells on five lands is a decision. Principle 25 ("early: prioritise tempo,
+            // do not pass with mana unused") can only be graded against the second one, and every
+            // IDLE record looked like the first.
+            //
+            // Deliberately crude, and cheap: mana value against a COUNT of untapped sources, with no
+            // colour requirements, no cost reducers and no rituals. It over-counts (a source that
+            // makes the wrong colour still counts) and so is a strict upper bound -- castable == 0
+            // is therefore trustworthy as "nothing was playable", which is the direction the metric
+            // is read in. Getting this exact means asking the mana system to solve payment for every
+            // card in hand on every pass, which is the expensive thing this logger must not do.
+            //
+            // Lands are excluded: a land is not cast, its playability depends on the land drop
+            // rather than on mana, and counting it would put a floor under the number in exactly the
+            // hands ("all lands, nothing to do") the field exists to identify.
+            int castable = 0;
+            for (Card card : getHand().getCards(game)) {
+                if (!card.isLand(game) && card.getManaValue() <= openMana) {
+                    castable++;
+                }
+            }
             int idleScore = evaluateState(game);
-            playLog.info(String.format("IDLE %s | T%d.%s | %d card(s) in hand, %d untapped mana source(s) | score %d",
+            playLog.info(String.format("IDLE %s | T%d.%s | %d card(s) in hand, %d castable, %d untapped mana source(s) | score %d",
                     getName(), game.getTurnNum(), game.getTurnStepType(),
-                    getHand().size(), openMana, idleScore));
+                    getHand().size(), castable, openMana, idleScore));
+            // new field appended: existing readers of "hand"/"mana" are unaffected
             AuditLog.event("IDLE", game, getName(), null, idleScore,
-                    String.format("\"hand\":%d,\"mana\":%d", getHand().size(), openMana));
+                    String.format("\"hand\":%d,\"mana\":%d,\"castable\":%d", getHand().size(), openMana, castable));
         } catch (Exception e) {
             logger.debug("idle-pass log failed", e);
         }
@@ -731,18 +812,30 @@ public class ComputerPlayer6 extends ComputerPlayer {
             return;
         }
         try {
-            // once per turn, and only from one seat, so N bots in a pod do not emit N copies
+            // DARRELLBEST-FORK: exactly one bot emits per turn, and it must emit on EVERY turn.
+            //
+            // The old guard was `playerId.equals(game.getActivePlayerId())` -- emit only while this
+            // bot is the active player. That deduplicates correctly but drops every turn whose
+            // active player is not a bot, so in a pod with a human NO snapshot was taken on the
+            // human's turns at all. Those are the most valuable turns in the log: they are the only
+            // record of how a real player's board develops, and they were the ones going missing.
+            //
+            // Instead, nominate a single deterministic emitter -- the first non-human seat in player
+            // map order -- and let it snapshot on every turn regardless of whose turn it is. Same
+            // one-copy-per-turn guarantee, no blind spots.
             if (game.getTurnStepType() != PhaseStep.PRECOMBAT_MAIN
-                    || !playerId.equals(game.getActivePlayerId())
-                    || game.getTurnNum() == lastSnapshotTurn) {
+                    || game.getTurnNum() == lastSnapshotTurn
+                    || !playerId.equals(designatedSnapshotSeat(game))) {
                 return;
             }
             lastSnapshotTurn = game.getTurnNum();
-            for (java.util.UUID seat : game.getState().getPlayerList(game.getStartingPlayerId())) {
-                mage.players.Player p = game.getPlayer(seat);
+            // full player map, not getPlayerList(startingPlayerId): that filters on isInGame(), so
+            // an eliminated player silently stops producing rows partway through the match
+            for (mage.players.Player p : game.getState().getPlayers().values()) {
                 if (p == null) {
                     continue;
                 }
+                java.util.UUID seat = p.getId();
                 double[] f = mage.player.ai.commander.learn.StateFeatures.extract(seat, game);
                 if (f == null) {
                     continue;
@@ -764,6 +857,27 @@ public class ComputerPlayer6 extends ComputerPlayer {
 
     /** DARRELLBEST-FORK: last turn a feature snapshot was emitted, so it happens once per turn. */
     private int lastSnapshotTurn = -1;
+
+    /**
+     * DARRELLBEST-FORK: the one seat responsible for emitting the per-turn feature snapshot.
+     * <p>
+     * Every bot in the pod runs this same code, so without a nominated emitter a four-bot game would
+     * write four identical copies of every row. Picking the ACTIVE player was the obvious choice and
+     * the wrong one -- it silently skips any turn belonging to a human.
+     * <p>
+     * The first non-human seat in player-map order is stable for the whole game (Players is a
+     * LinkedHashMap, and eliminating a player does not reorder it), agreed on by every bot without
+     * coordination, and independent of whose turn it is. Returns null in an all-human game, where
+     * there is no bot to emit and nothing to learn from anyway.
+     */
+    private static java.util.UUID designatedSnapshotSeat(Game game) {
+        for (mage.players.Player p : game.getState().getPlayers().values()) {
+            if (p != null && !p.isHuman()) {
+                return p.getId();
+            }
+        }
+        return null;
+    }
 
     protected void act(Game game) {
         if (actions == null
@@ -1416,7 +1530,31 @@ public class ComputerPlayer6 extends ComputerPlayer {
         String targetsInfo = "";
         if (showTargets) {
             List<String> allTargetsInfo = new ArrayList<>();
-            ability.getAllSelectedTargets().forEach(target -> {
+            // DARRELLBEST-FORK: getAllSelectedTargets() alone under-reports here, which is why
+            // PLAY audit records almost never carried a target even for spells that plainly have
+            // one (removal aimed at a permanent, a bounce spell, etc).
+            //
+            // getAllSelectedTargets() (AbilityImpl.java) filters by Modes.getSelectedModes() --
+            // populated only once a mode has actually been marked SELECTED, which for the AI's
+            // path happens later, inside activateAbility()/cast() during real resolution. The PLAY
+            // line here is written at the point act() dequeues the ability the search already
+            // chose, BEFORE that activation runs -- yet the target IDs themselves are already on
+            // the ability at this point: the block immediately after this call (act(), a few lines
+            // below) iterates ability.getTargets() to fire TARGETED events for every already-chosen
+            // id, and that only works because getTargets() returns the CURRENT mode's targets
+            // (AbilityImpl.getTargets() -> getModes().getMode().getTargets()) with no dependency on
+            // "selected" bookkeeping. So the ids were there the whole time; only the display method
+            // was asking the stricter, mode-selection-gated question.
+            //
+            // Falls back to getTargets() only when getAllSelectedTargets() is empty, so a genuinely
+            // modal ability with two or more SELECTED modes (both already marked as such) still
+            // reports every selected mode's targets exactly as before -- this only changes the
+            // common, previously-blank case of a single (not-yet-formally-"selected") mode.
+            Targets targetsToShow = ability.getAllSelectedTargets();
+            if (targetsToShow.isEmpty()) {
+                targetsToShow = ability.getTargets();
+            }
+            targetsToShow.forEach(target -> {
                 target.getTargets().forEach(selectedId -> {
                     String xInfo = "";
                     if (target instanceof TargetAmount) {
@@ -1486,17 +1624,6 @@ public class ComputerPlayer6 extends ComputerPlayer {
                     }
                 }
 
-                // play
-                boolean play1 = rule1.startsWith("Play");
-                boolean play2 = rule2.startsWith("Play");
-                if (play1 != play2) {
-                    if (play1) {
-                        return -1;
-                    } else {
-                        return 1;
-                    }
-                }
-
                 // cast
                 boolean cast1 = rule1.startsWith("Cast");
                 boolean cast2 = rule2.startsWith("Cast");
@@ -1505,6 +1632,45 @@ public class ComputerPlayer6 extends ComputerPlayer {
                         return -1;
                     } else {
                         return 1;
+                    }
+                }
+
+                // play (land drops)
+                // DARRELLBEST-FORK: order the land drop AFTER the casts, not before everything.
+                //
+                // Kept for the same reason as the mana-value tiebreak below it -- try the strongest
+                // action first, because that is what makes alpha-beta prune -- and a land drop is
+                // the weakest action on any turn that has a spell in it. Upstream put "Play ..."
+                // ahead of every cast purely because the string sorts that way.
+                //
+                // BUT: read the next paragraph before citing this as the fix for principle 13
+                // ("play the land in second main unless the mana is needed pre-combat"). It was
+                // written for that and it DOES NOT ACHIEVE IT. Measured over a 4-player FFA bench
+                // after this change: 60 of 61 land drops still precombat, 98%, statistically
+                // indistinguishable from the 94-99% baseline it was meant to move.
+                //
+                // The reason is a HORIZON EFFECT, not an ordering problem, and no amount of move
+                // ordering can touch it. maxDepth is 4 plies of priority, which does not reach
+                // postcombat main from precombat main. So the search never sees the line "pass now,
+                // play the land after combat" at all: passing evaluates as forgoing the land
+                // permanently, and a land on the battlefield is worth several hundred points more
+                // than a land in hand (getFixedPermanentScore ~425 plus manaSourceValue, against
+                // handCardScore). Playing it precombat therefore wins by a wide STRICT margin at
+                // every node, and ordering only ever breaks ties. (PASSIVITY_PENALTY, 5 points, is
+                // noise at this scale and is not what is driving it either.)
+                //
+                // Fixing principle 13 for real needs one of: a deeper/selective search that reaches
+                // the second main, or an explicit "hold the land unless the mana is needed this
+                // phase" heuristic with its own justification -- which is a RULE, deliberately not
+                // attempted here, since a bot that reflexively holds lands will miss the drops where
+                // precombat mana was needed and the search could have told it so.
+                boolean play1 = rule1.startsWith("Play");
+                boolean play2 = rule2.startsWith("Play");
+                if (play1 != play2) {
+                    if (play1) {
+                        return 1;
+                    } else {
+                        return -1;
                     }
                 }
 
@@ -1699,8 +1865,31 @@ public class ComputerPlayer6 extends ComputerPlayer {
         if (!game.replaceEvent(GameEvent.getEvent(GameEvent.EventType.DECLARING_ATTACKERS, activePlayerId, activePlayerId))) {
             Player attackingPlayer = game.getPlayer(activePlayerId);
 
+            // DARRELLBEST-FORK: rank the opponents by THREAT before attacking anyone, every single
+            // declaration. Computed once here and used by both loops below.
+            //
+            // game.getOpponents returns a LinkedHashSet built from getPlayerList(), i.e. SEAT ORDER.
+            // Seat order is a property of the table, not of the game state, and it never changes --
+            // so whoever sits first got attacked first on turn 3 and was still getting attacked
+            // first on turn 40. Measured over graded logs: 82% of consecutive attack turns kept the
+            // same primary target, and one 40-turn game sent the attack at the same bot 14 times out
+            // of 14 while a human at the same table was never once the primary target.
+            //
+            // Principle 2 ("re-run threat assessment every turn; never attack out of revenge") is
+            // satisfied structurally rather than with a rule: this sort runs fresh on every
+            // declaration from the live board, and nothing anywhere remembers who was hit last turn.
+            // There is deliberately no stickiness, no aggro table and no grudge.
+            List<UUID> defenderOrder = sortOpponentsByThreat(game);
+
+            // DARRELLBEST-FORK: how hard to push THIS combat, from the board rather than the config.
+            // See effectiveAttackAggression -- returns getAttackAggression() unchanged unless the
+            // board says we have stabilized.
+            int aggression = effectiveAttackAggression(game, defenderOrder);
+
             // check alpha strike first (all in attack to kill a player)
-            for (UUID defenderId : game.getOpponents(playerId, true)) {
+            // DARRELLBEST-FORK: threat order here too. When two opponents are both killable this
+            // turn we only get to kill one of them, and it should be the dangerous one.
+            for (UUID defenderId : defenderOrder) {
                 Player defender = game.getPlayer(defenderId);
                 if (!defender.isInGame()) {
                     continue;
@@ -1725,7 +1914,8 @@ public class ComputerPlayer6 extends ComputerPlayer {
             // find safe attackers (can't be killed by blockers)
             // DARRELLBEST-FORK: iterate by index so each pass knows how many opponents are still to
             // come, which is what lets the attack be divided rather than dumped on the first one.
-            List<UUID> defenderOrder = new ArrayList<>(game.getOpponents(playerId, true));
+            // defenderOrder is now threat-sorted (see above), so the greedy split below spends its
+            // attackers on the biggest threat first and passes the remainder down the ranking.
             for (int defenderIndex = 0; defenderIndex < defenderOrder.size(); defenderIndex++) {
                 UUID defenderId = defenderOrder.get(defenderIndex);
                 Player defender = game.getPlayer(defenderId);
@@ -1804,16 +1994,25 @@ public class ComputerPlayer6 extends ComputerPlayer {
                     // Level 2 -- favourable trades: attack into a lethal blocker when the attacker
                     // is worth materially less than the blocker that must eat it. Trading a 1/1
                     // token for a 5/5 is good play that level 0 refuses on principle.
-                    if (!safeToAttack && evalParams.getAttackAggression() >= 1
+                    //
+                    // Level 3 -- reachable only by STABILIZING, never by configuration (see
+                    // effectiveAttackAggression): the same favourable-trade rule with the bar
+                    // dropped from "the blocker is worth double the attacker" to "the blocker is
+                    // worth more at all", so roughly-even trades are accepted too. Trading
+                    // one-for-one is how a stabilized board converts a material lead into a clock;
+                    // it is a losing habit only while you still need every blocker you own
+                    // (principle 19: take available even trades, do not stall symmetric combats).
+                    if (!safeToAttack && aggression >= 1
                             && attackersList.size() > possibleBlockers.size()) {
                         safeToAttack = true;
                     }
-                    if (!safeToAttack && evalParams.getAttackAggression() >= 2) {
+                    if (!safeToAttack && aggression >= 2) {
                         int best = 0;
                         for (Permanent blocker : possibleBlockers) {
                             best = Math.max(best, eval.evaluate(blocker, game));
                         }
-                        if (best > attackerValue * 2) {
+                        int requiredBlockerValue = aggression >= 3 ? attackerValue : attackerValue * 2;
+                        if (best > requiredBlockerValue) {
                             safeToAttack = true;
                         }
                     }
@@ -1923,6 +2122,189 @@ public class ComputerPlayer6 extends ComputerPlayer {
         }
     }
 
+    /**
+     * DARRELLBEST-FORK: the opponents, most threatening first, recomputed from scratch on every
+     * attack declaration.
+     * <p>
+     * <b>Why not just call the evaluator.</b> {@code GameStateEvaluator2.selectOpponent} mode 1
+     * already answers "who is the most threatening opponent", and this scoring is deliberately kept
+     * philosophically consistent with it -- same inputs, same direction, board plus hand. But it
+     * scores every permanent an opponent controls through {@code evaluatePermanent}, and doing that
+     * for all opponents inside declare-attackers puts a second full board scan on a bot that already
+     * logs "AI player thinks too long" on large boards. Everything below is a field read.
+     * <p>
+     * <b>What it weighs, and why those.</b> Principle 3 is explicit that a threat ranking tracking
+     * board size and life total is the WRONG ranking, and that hand size, open mana and unanswered
+     * engines are the right one -- Commander games end in bursts, not attrition. So:
+     * <ul>
+     *   <li>creature power and count -- the visible clock, and the only term that can kill us;</li>
+     *   <li>cards in hand -- stored threats, weighted per card, principle 3;</li>
+     *   <li>untapped mana sources -- capacity to act at instant speed, principle 3 and 20;</li>
+     *   <li>commander on the battlefield -- in most decks the commander IS the engine, and it is
+     *       the one "unanswered engine" that is cheap to detect generically.</li>
+     * </ul>
+     * <b>Life runs NEGATIVE here</b>, which is the one place this departs from
+     * {@code selectOpponent}, and the departure is deliberate. That method asks "whose board should
+     * I score myself against", where a healthy opponent is the scarier one. This method asks "who
+     * should I point damage at", and damage is worth more against a player who is closer to dying --
+     * eliminating an opponent removes their whole board from the game. Its weight is small on
+     * purpose: at 40 life the term is worth 10, less than four points of creature power, so it
+     * breaks near-ties between comparable threats and never overrides a real board difference.
+     * Principle 3 again: trajectory over life total.
+     * <p>
+     * Ties break on player id so the order is deterministic for a given board -- an arbitrary but
+     * STABLE order beats a arbitrary and unstable one, which would make bench logs unreadable.
+     */
+    private List<UUID> sortOpponentsByThreat(Game game) {
+        List<UUID> opponents = new ArrayList<>(game.getOpponents(playerId, true));
+        if (opponents.size() <= 1) {
+            // a duel: nothing to rank, and this is the path every 2-player test takes
+            return opponents;
+        }
+        final Map<UUID, Integer> threat = new HashMap<>();
+        for (UUID opponentId : opponents) {
+            threat.put(opponentId, threatOf(game, opponentId));
+        }
+        // Integer.compare, not subtraction: a subtracting comparator overflows on a wide spread and
+        // then reports b < a AND a < b, which TimSort detects and throws on ("Comparison method
+        // violates its general contract"). Crashing the attack step is not an acceptable failure
+        // mode for a tie-break, and threatOf's unreachable-player sentinel is exactly the kind of
+        // extreme value that would trigger it.
+        opponents.sort((a, b) -> {
+            int byThreat = Integer.compare(threat.get(b), threat.get(a)); // descending
+            return byThreat != 0 ? byThreat : a.compareTo(b);
+        });
+        return opponents;
+    }
+
+    /** Weight per point of power on an opponent's creature. See {@link #sortOpponentsByThreat}. */
+    private static final int THREAT_PER_CREATURE_POWER = 3;
+    /** Weight per creature body, on top of its power -- bodies block and swarm even at low power. */
+    private static final int THREAT_PER_CREATURE = 2;
+    /** Weight per card in hand: a stored threat or a stored answer, either way a resource. */
+    private static final int THREAT_PER_HAND_CARD = 2;
+    /** Weight per untapped mana source: capacity to act on our turn. */
+    private static final int THREAT_PER_OPEN_MANA = 1;
+    /** Flat bonus for having the commander on the battlefield -- usually the deck's engine. */
+    private static final int THREAT_COMMANDER_DEPLOYED = 6;
+    /** Divisor on life: at 40 life this is worth 10, deliberately small. Negative -- see javadoc. */
+    private static final int THREAT_LIFE_DIVISOR = 4;
+
+    /**
+     * DARRELLBEST-FORK: cheap public-information threat score for one opponent. Field reads only --
+     * no evaluator call, no simulation. See {@link #sortOpponentsByThreat} for the weighting
+     * rationale.
+     */
+    private int threatOf(Game game, UUID opponentId) {
+        Player opponent = game.getPlayer(opponentId);
+        if (opponent == null) {
+            // should be unreachable -- getOpponents only yields players in range -- so this just
+            // has to sort last without being an extreme value. See the comparator's note.
+            return -1_000_000;
+        }
+        int score = 0;
+        for (Permanent permanent : game.getBattlefield().getAllActivePermanents(opponentId)) {
+            if (permanent.isCreature(game)) {
+                score += permanent.getPower().getValue() * THREAT_PER_CREATURE_POWER;
+                score += THREAT_PER_CREATURE;
+            }
+            if (!permanent.isTapped() && hasManaAbility(game, permanent)) {
+                score += THREAT_PER_OPEN_MANA;
+            }
+            if (game.isCommanderObject(opponent, permanent)) {
+                score += THREAT_COMMANDER_DEPLOYED;
+            }
+        }
+        score += opponent.getHand().size() * THREAT_PER_HAND_CARD;
+        score -= opponent.getLife() / THREAT_LIFE_DIVISOR;
+        return score;
+    }
+
+    /** DARRELLBEST-FORK: does this permanent tap for mana. Local copy to keep the threat scan off
+     *  the evaluator, which has an identical private helper. */
+    private static boolean hasManaAbility(Game game, Permanent permanent) {
+        for (Ability ability : permanent.getAbilities(game)) {
+            if (ability instanceof mage.abilities.mana.ManaAbility) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * DARRELLBEST-FORK: aggression for THIS combat, escalated one step when the board says we have
+     * already stabilized. Principles 4 and 21.
+     * <p>
+     * {@code getAttackAggression()} is set once in the constructor and never moves, so the bot plays
+     * a fixed posture from turn 1 to turn 40 -- it is exactly as cautious while sitting on a
+     * dominant board as it was while scrambling to survive. Principle 21 ("once stabilized, turn the
+     * corner: switch from pure defense to building a clock") is a posture change over time, which a
+     * constant cannot express. Principle 4 says the same thing about deciding beatdown-vs-control
+     * from the CURRENT board rather than from deck identity.
+     * <p>
+     * Two thresholds, both read off the live board, no tuning soup:
+     * <ol>
+     *   <li><b>life is comfortable</b> -- we survive at least two full alpha strikes from the entire
+     *       rest of the table. Stated as a multiple of incoming power rather than an absolute life
+     *       total so it works at 20 life and at 40 without a format constant;</li>
+     *   <li><b>the board is ours</b> -- our own creature power is at least the whole table's.</li>
+     * </ol>
+     * Incoming power counts EVERY opponent creature, including summoning-sick ones that cannot
+     * actually attack yet. That over-counts the threat on purpose: this gate decides whether to take
+     * more risk, so it should err toward saying no.
+     * <p>
+     * <b>Historical mode is untouched.</b> At {@code getAttackAggression() == 0} this returns 0
+     * whatever the board looks like -- mode 0 is upstream's "attack only with creatures nothing can
+     * kill", and a bot that opted out of attacking on principle has not asked for a board-state
+     * opinion. Nothing here can ever lower aggression below the configured value either: "if in
+     * danger, stay as defensive as you were configured to be" is the whole of the else branch.
+     */
+    private int effectiveAttackAggression(Game game, List<UUID> opponents) {
+        int configured = evalParams.getAttackAggression();
+        if (configured <= 0) {
+            return configured; // historical mode: bit-identical, no board opinion
+        }
+        int incomingPower = 0;
+        for (UUID opponentId : opponents) {
+            for (Permanent permanent : game.getBattlefield().getAllActivePermanents(opponentId)) {
+                if (permanent.isCreature(game)) {
+                    incomingPower += permanent.getPower().getValue();
+                }
+            }
+        }
+        // DARRELLBEST-FORK: an EMPTY opposing board must never escalate.
+        //
+        // With incomingPower == 0, both gates below pass trivially -- life > 0 is true at any
+        // positive life total, and ownPower >= 0 is true whatever the board looks like, including
+        // ownPower == 0. So a bot with nothing on the battlefield facing an opponent with nothing
+        // on the battlefield "stabilized" by this arithmetic on turn 1, before either side had
+        // played a single creature. Confirmed as the root cause of a live suicide-attack pattern:
+        // 12 examples across the sampled logs of a small attacker (e.g. a 1/1) walking into an
+        // untapped 4/4 or bigger, all at escalated (level 3) aggression, which drops the trade bar
+        // from "the blocker is worth double" to "the blocker is worth more at all" (see the trade
+        // bar below in declareAttackers) -- exactly backwards for a board where nobody has answered
+        // anything yet.
+        //
+        // Escalation is meant to reward STABILIZING against a real threat (principle 21: "once
+        // stabilized, turn the corner"). The absence of a threat is not stabilization against one,
+        // so incoming power of zero must fall through to the unescalated, configured aggression --
+        // the same value historical mode already returns unconditionally.
+        if (incomingPower <= 0) {
+            return configured;
+        }
+        int ownPower = 0;
+        for (Permanent permanent : game.getBattlefield().getAllActivePermanents(playerId)) {
+            if (permanent.isCreature(game)) {
+                ownPower += permanent.getPower().getValue();
+            }
+        }
+        Player me = game.getPlayer(playerId);
+        int life = me == null ? 0 : me.getLife();
+        boolean lifeComfortable = life > incomingPower * 2;
+        boolean boardIsOurs = ownPower >= incomingPower;
+        return (lifeComfortable && boardIsOurs) ? configured + 1 : configured;
+    }
+
     @Override
     public void selectAttackers(Game game, UUID attackingPlayerId) {
         logger.debug("selectAttackers");
@@ -1986,10 +2368,30 @@ public class ComputerPlayer6 extends ComputerPlayer {
             int groups = 0;
             int used = 0;
             for (CombatGroup group : game.getCombat().getGroups()) {
+                // DARRELLBEST-FORK: a BLOCK record covers only the attacks aimed at THIS player.
+                //
+                // The old condition was
+                //   p != null && p.getControllerId().equals(playerId) || "BLOCK".equals(what)
+                // and && binds tighter than ||, so on any BLOCK call the whole thing collapsed to
+                // `true` and every attacker at the table was listed -- verified in the logs, a
+                // BLOCK line naming an attacker that was attacking somebody else entirely. That
+                // made "used N of M" meaningless (it compared this player's blockers against the
+                // table's attackers) and, because a group always existed once anyone anywhere
+                // attacked, the groups==0 branch below could never be reached from a block: 0
+                // NO_BLOCK records in 17k.
+                //
+                // getDefendingPlayerId, not getDefenderId: the latter is the planeswalker or battle
+                // when one is being attacked, and an attack on our planeswalker is still ours to
+                // block.
+                if (blocking && !playerId.equals(group.getDefendingPlayerId())) {
+                    continue;
+                }
                 List<String> attackers = new ArrayList<>();
                 for (UUID id : group.getAttackers()) {
                     Permanent p = game.getPermanent(id);
-                    if (p != null && p.getControllerId().equals(playerId) || "BLOCK".equals(what)) {
+                    // attacking: the attackers are ours. blocking: the group is already known to be
+                    // aimed at us, so every attacker in it is relevant.
+                    if (blocking || (p != null && p.getControllerId().equals(playerId))) {
                         attackers.add(describe(game, id));
                     }
                 }
@@ -2011,12 +2413,33 @@ public class ComputerPlayer6 extends ComputerPlayer {
                 sb.append(']');
                 groups++;
             }
-            if (groups == 0) {
+            // DARRELLBEST-FORK: what counts as "did nothing" differs by decision, and conflating
+            // the two is what kept NO_BLOCK at zero records.
+            //
+            // Attacking: we did nothing if we declared no attacks at all -- groups == 0.
+            //
+            // Blocking: groups is now the number of attacks aimed at US, so groups == 0 means we
+            // were never attacked and there was no decision to record; say nothing rather than
+            // logging a refusal that was never offered. When we WERE attacked, the decision is
+            // recorded either way, and the thing that separates "declined" from "could not" is
+            // whether any blocker was assigned -- used == 0. That is the NO_BLOCK case, and it is
+            // the one principle 16 and 19 need: a refused block with blockers available on the
+            // battlefield is the misplay worth grepping for, and it looked identical to a forced
+            // no-block before.
+            if (blocking && groups == 0) {
+                return; // not attacked -- nothing was declined
+            }
+            boolean didNothing = blocking ? (used == 0) : (groups == 0);
+            if (didNothing) {
                 int available = idle;
                 int noneScore = evaluateState(game);
-                playLog.info(String.format("NO %sS %s | T%d.%s | %d untapped creature(s) available | score %d",
-                        what, getName(), game.getTurnNum(), game.getTurnStepType(), available, noneScore));
-                AuditLog.event("NO_" + what, game, getName(), null, noneScore,
+                // the declined attacks are appended only when there are any, so the NO ATTACKS line
+                // keeps exactly the text it has always had and only NO BLOCKS gains a detail field
+                String declined = sb.length() == 0 ? "" : sb + " |";
+                playLog.info(String.format("NO %sS %s | T%d.%s |%s %d untapped creature(s) available | score %d",
+                        what, getName(), game.getTurnNum(), game.getTurnStepType(), declined, available, noneScore));
+                AuditLog.event("NO_" + what, game, getName(),
+                        sb.length() == 0 ? null : sb.toString().trim(), noneScore,
                         String.format("\"used\":0,\"available\":%d", available));
             } else {
                 int combatScore = evaluateState(game);

@@ -31,6 +31,7 @@ public class DeckArea extends javax.swing.JPanel {
     private BigCard lastBigCard = null;
     private int dividerLocationNormal = 0;
     private int dividerLocationLimited = 0;
+    private final List<SearchCardListener> searchCardListeners = new ArrayList<>();
 
     public DeckCardLayout getCardLayout() {
         return deckList.getCardLayout();
@@ -67,6 +68,11 @@ public class DeckArea extends javax.swing.JPanel {
         public String toString() {
             return maindeckSettings.toString() + '|' + sideboardSetings.toString() + '|' + dividerLocationNormal + '|' + dividerLocationLimited;
         }
+    }
+
+    // DARRELLBEST-FORK: callback for the deck editor's "Search in Card Selector" right-click action
+    public interface SearchCardListener {
+        void search(CardView card);
     }
 
     /**
@@ -122,6 +128,11 @@ public class DeckArea extends javax.swing.JPanel {
                     card.setSelected(!card.isSelected());
                 }
             }
+
+            @Override
+            public void searchCard(CardView card) {
+                fireSearchCard(card);
+            }
         });
 
         // card actions in sideboard
@@ -162,6 +173,11 @@ public class DeckArea extends javax.swing.JPanel {
                 for (CardView card : cards) {
                     card.setSelected(!card.isSelected());
                 }
+            }
+
+            @Override
+            public void searchCard(CardView card) {
+                fireSearchCard(card);
             }
 
         });
@@ -280,6 +296,16 @@ public class DeckArea extends javax.swing.JPanel {
 
     public void clearSideboardEventListeners() {
         sideboardList.clearCardEventListeners();
+    }
+
+    public void addSearchCardListener(SearchCardListener listener) {
+        searchCardListeners.add(listener);
+    }
+
+    private void fireSearchCard(CardView card) {
+        for (SearchCardListener listener : searchCardListeners) {
+            listener.search(card);
+        }
     }
 
     /**

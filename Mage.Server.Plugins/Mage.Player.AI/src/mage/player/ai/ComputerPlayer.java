@@ -4,6 +4,7 @@ import mage.*;
 import mage.abilities.*;
 import mage.abilities.costs.mana.*;
 import mage.abilities.mana.ActivatedManaAbilityImpl;
+import mage.abilities.mana.ManaAbility;
 import mage.abilities.mana.ManaOptions;
 import mage.cards.Card;
 import mage.cards.Cards;
@@ -17,6 +18,7 @@ import mage.cards.repository.CardRepository;
 import mage.choices.Choice;
 import mage.constants.*;
 import mage.filter.common.FilterLandCard;
+import mage.filter.common.FilterNonlandCard;
 import mage.game.Game;
 import mage.game.draft.Draft;
 import mage.game.match.Match;
@@ -52,6 +54,21 @@ public class ComputerPlayer extends PlayerImpl {
     private static final Logger logger = Logger.getLogger(ComputerPlayer.class);
 
     protected static final int PASSIVITY_PENALTY = 5; // Penalty value for doing nothing if some actions are available
+
+    /**
+     * DARRELLBEST-FORK: half-width (in lands) of the mulligan keep window around a hand's
+     * expected land count -- see {@link #chooseMulligan}. Pro-gameplay principle 23: calibrate
+     * mulligan aggression to the deck's own land count/draw density instead of one fixed band
+     * for every deck (docs/ai/pro-gameplay-principles.md).
+     */
+    protected static final double MULLIGAN_LAND_WINDOW_SLACK = 1.5;
+
+    /**
+     * DARRELLBEST-FORK: how many extra land drops beyond the lands already in hand still count
+     * as "early" for the mulligan castability check -- see {@link #chooseMulligan}. Pro-gameplay
+     * principle 24: a hand needs a playable curve, not just an adequate land count.
+     */
+    protected static final int MULLIGAN_CASTABILITY_LOOKAHEAD = 2;
 
     // debug only: set TRUE to debug simulation's code/games (on false sim thread will be stopped after few secs by timeout)
     public static final boolean COMPUTER_DISABLE_TIMEOUT_IN_GAME_SIMULATIONS = false; // DebugUtil.AI_ENABLE_DEBUG_MODE;
@@ -103,6 +120,46 @@ public class ComputerPlayer extends PlayerImpl {
         super(player);
     }
 
+    /**
+     * DARRELLBEST-FORK: deck- and hand-aware mulligan keep decision (pro-gameplay principles
+     * 22-24, docs/ai/pro-gameplay-principles.md). The previous rule kept iff
+     * {@code lands >= 2 && lands <= hand.size() - 2} for every deck alike -- a hand was judged
+     * only against a size-derived constant, blind to what deck it was drawn from and to whether
+     * the nonland cards in it did anything early.
+     * <p>
+     * Owner directive (verbatim): "it shouldnt keep a 1 land hand and only a 2 land hand if it
+     * has ramp of some kind including mana rocks". Two HARD floor rules now run first, ahead of
+     * (and overriding) everything below, for any hand this method doesn't already early-return
+     * on (i.e. {@code hand.size() >= 6}):
+     * <p>
+     * 0. 0 or 1 land in hand: ALWAYS mulligan. No ratio window, no ramp, no curve check can save
+     * a hand this land-light.
+     * <p>
+     * 0.5. Exactly 2 lands: keep ONLY if the hand also contains a RAMP source (see
+     * {@link #hasRampSource}); otherwise mulligan, regardless of what the ratio window below
+     * would otherwise have said about a 2-land hand from this particular deck.
+     * <p>
+     * For every hand that clears those (i.e. 3+ lands), the original two checks still run in
+     * order, unchanged:
+     * <p>
+     * 1. The land-count keep window is centered on the DECK's own land ratio (principle 23)
+     * instead of a fixed band, so a 24-land 60-card deck and a 40-land 99-card Commander deck
+     * are held to different standards by the same rule instead of the same one. This window's
+     * lower bound no longer matters for 0/1/2-land hands (rules 0 and 0.5 above intercept those
+     * first) but it still governs the UPPER bound -- a flooded hand still mulligans through this
+     * path exactly as before.
+     * <p>
+     * 2. A hand whose land count clears that window can still fail on curve (principle 24): if
+     * every nonland card costs more than this hand's lands will produce in the first few turns,
+     * the hand has enough mana but no plan, and that also leans mulligan.
+     * <p>
+     * Deliberately NOT handled here: color. A hand can pass every check above and still be
+     * uncastable because its lands are the wrong colors for its spells -- that needs mana
+     * base/fixing analysis this pass doesn't attempt (principle 24 lists Color alongside
+     * Curve/Plan/Sequencing/Interaction; only the curve half is covered here). The floor of
+     * never mulliganing below 5 cards (principle 22, the {@code hand.size() < 6} guard below) is
+     * unchanged, and so is skipping the decision entirely in tests/Momir.
+     */
     @Override
     public boolean chooseMulligan(Game game) {
         if (hand.size() < 6
@@ -111,9 +168,86 @@ public class ComputerPlayer extends PlayerImpl {
         ) {
             return false;
         }
-        Set<Card> lands = hand.getCards(new FilterLandCard(), game);
-        return lands.size() < 2
-                || lands.size() > hand.size() - 2;
+
+        int landsInHand = hand.count(new FilterLandCard(), game);
+
+        // DARRELLBEST-FORK: owner's hard floor, checked before the ratio window below (and
+        // overriding it for hands this land-light) -- see the method javadoc.
+        if (landsInHand <= 1) {
+            return true;
+        }
+        Set<Card> nonlands = hand.getCards(new FilterNonlandCard(), game);
+        if (landsInHand == 2) {
+            return !hasRampSource(nonlands, game);
+        }
+
+        // Land ratio of everything we can see of the deck: library + hand (the sideboard/command
+        // zone are different zones and were never dealt, so they're not part of what could be
+        // drawn). deckTotal >= hand.size() >= 6 always holds here since the guard above already
+        // returned for hand.size() < 6 -- Math.max(1, ...) is a belt-and-suspenders divide-by-zero
+        // guard anyway, since unit tests are free to construct decks that don't honor that.
+        int deckLands = library.count(new FilterLandCard(), game) + landsInHand;
+        int deckTotal = library.size() + hand.size();
+        double landRatio = (double) deckLands / Math.max(1, deckTotal);
+        double expectedLands = landRatio * hand.size();
+
+        // Integer keep window: the lands counts within MULLIGAN_LAND_WINDOW_SLACK of expectedLands.
+        // Clamped to [1, hand.size() - 1] so the window never recommends keeping an all-spell or
+        // all-land hand, however extreme the ratio (e.g. a hand-built test deck of pure lands).
+        // The lower bound is now moot for landsInHand <= 2 (already returned above), but stays as
+        // written since it still has to compute a valid maxLands for the upper-bound check below.
+        int minLands = Math.max(1, (int) Math.ceil(expectedLands - MULLIGAN_LAND_WINDOW_SLACK));
+        int maxLands = Math.min(hand.size() - 1, (int) Math.floor(expectedLands + MULLIGAN_LAND_WINDOW_SLACK));
+        if (landsInHand < minLands || landsInHand > maxLands) {
+            return true;
+        }
+
+        // Land count is fine -- now check the hand actually does something with it. Castable
+        // "early" = mana value <= the lands already in hand, plus a couple more turns' worth of
+        // land drops (MULLIGAN_CASTABILITY_LOOKAHEAD). Colors ignored, see method javadoc.
+        int castableBy = landsInHand + MULLIGAN_CASTABILITY_LOOKAHEAD;
+        boolean hasEarlyPlay = nonlands.stream().anyMatch(c -> c.getManaValue() <= castableBy);
+        return !hasEarlyPlay;
+    }
+
+    /**
+     * DARRELLBEST-FORK: does this hand contain a RAMP source -- something that gets the next
+     * land drop's worth of mana onto the battlefield without waiting a turn for it? Backs the
+     * owner's 2-land keep rule in {@link #chooseMulligan}.
+     * <p>
+     * Detected: any nonland card whose printed abilities include a mana-producing ability
+     * ({@code instanceof} {@link ManaAbility}) -- mana rocks (Sol Ring, signets) and mana dorks
+     * (Llanowar Elves) alike. This is read directly off the card's own ability list via
+     * {@link Card#getAbilities(Game)} rather than off a battlefield {@code Permanent}, since a
+     * hand card was never put onto the battlefield and has no {@code Permanent} to ask; this is
+     * the same idiom {@code ComputerPlayer6.producesMana} and
+     * {@code ArtificialScoringSystem}/{@code StateFeatures}'s mana-source detection already use
+     * elsewhere in this codebase (search for {@code instanceof ManaAbility} to find the others),
+     * so this isn't a new pattern, just the same check applied to hand cards instead of
+     * permanents.
+     * <p>
+     * <b>NOT detected (known limitation, documented rather than silently missing): land-tutor
+     * spells</b> that search the library for a land and put it into hand or onto the
+     * battlefield (Rampant Growth, Cultivate, Farseek, and similar). Those all resolve through
+     * generic, reusable effects ({@code SearchLibraryPutInPlayEffect},
+     * {@code SearchLibraryPutInHandEffect}, etc. under
+     * {@code mage.abilities.effects.common.search}) that are configured per-card with an
+     * arbitrary {@code FilterCard} passed to the constructor -- there is no
+     * {@code SearchLibraryForLandEffect} subclass or similar dedicated class name to test for,
+     * and reliably proving at runtime that a given effect instance's filter is land-only would
+     * mean reflecting into private effect fields, which is not the "cheap, Java 8" check this
+     * needs. Mana rocks and dorks only is the accepted scope for this rule; a hand whose only
+     * "ramp" is a land-tutor spell will still mulligan under the 2-land rule.
+     */
+    private static boolean hasRampSource(Set<Card> nonlands, Game game) {
+        for (Card card : nonlands) {
+            for (Ability ability : card.getAbilities(game)) {
+                if (ability instanceof ManaAbility) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     @Override

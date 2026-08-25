@@ -32,7 +32,7 @@ Friends pick up the update through the launcher.
 ## Infrastructure
 
 - **Server / build host**: `user@192.168.1.87` (`user-X570-AORUS-XTREME`, x86_64, 24 cores/62 GB, passwordless sudo for `systemctl … xmage-fork`). Repo clones live in `~/projects/{mage-modern,Launcher}`; pushes use the server's own GitHub ssh key.
-- **Live server install**: `~/Documents/xmage/xmage/` — `mage-server/` runs the game on `:17171`; heap is set in `mage-server/start-fork.sh` (currently `-Xmx8192m`).
+- **Live server install**: `~/Documents/xmage/xmage/` — `mage-server/` runs the game on `:17171`; heap is set in `mage-server/start-fork.sh` (currently `-Xmx20480m`).
 - **Web/config** (`:17080`): `/var/www/html/config.json`, downloads in `/var/www/html/files/` (`mage-update_fork.zip`, `XMageLauncher-*.exe/.AppImage`).
 
 ## Launcher (separate — only when launcher code changes)
@@ -80,7 +80,7 @@ time instead of every launch.
 ## Hard-won gotchas (don't relearn these)
 
 - **Always verify the restart** — confirm the running process is the new jar; don't just trust that the script restarted it. (`full-deploy.sh` stage 3 does this.)
-- **Heap**: 1 GB OOM'd (`GC overhead limit exceeded`) on AI Commander games. It's `-Xmx8192m` in `start-fork.sh`; keep it ≥ 4 GB.
+- **Heap**: 1 GB OOM'd (`GC overhead limit exceeded`) on AI Commander games. It's `-Xmx20480m` in `start-fork.sh`; keep it ≥ 4 GB.
 - **Version match**: client and server jars must be the *exact* same version (e.g. `1.4.60-V2`). The launcher's updater clears `lib/` before extracting so old + new jars don't collide → "wrong client version". (Launcher ≥ 1.1.1.)
 - **Client graphics**: do NOT force `-Dsun.java2d.opengl=true` — it native-crashes (`EXCEPTION_ACCESS_VIOLATION` in `jvm.dll`) on Java 8/Windows. Launcher ≥ 1.2.0 defaults to Auto and has a ⚙ Settings panel (Auto/D3D/OpenGL/Software, memory, Java, etc.).
 - **One client at a time** — the launcher blocks a second launch (shared H2 memory-mapped DB corrupts across instances).

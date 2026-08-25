@@ -1,0 +1,72 @@
+1 [THS:75] Abhorrent Overlord
+1 [ZNR:336] Agadeem's Awakening
+1 [MH1:218] Altar of Dementia
+1 [SNC:416] Angel of Suffering
+1 [EMA:78] Animate Dead
+1 [ELD:331] Arcane Signet
+1 [DSC:371] Archon of Cruelty
+1 [CMM:368] Ashnod's Altar
+1 [TDC:313] Blade of Selves
+1 [7ED:121] Blood Pet
+1 [WWK:132] Bojuka Bog
+1 [WAR:79] Bolas's Citadel
+1 [MH3:273] Buried Alive
+1 [DOM:238] Cabal Stronghold
+1 [SLD:1114] Carrion Feeder
+1 [GTC:61] Crypt Ghast
+1 [SOA:27] Culling the Weak
+1 [STA:26] Dark Ritual
+1 [AFR:94] Deadly Dispute
+1 [BRO:324] Diabolic Intent
+1 [GRN:69] Doom Whisperer
+1 [TSP:104] Dread Return
+1 [ONE:305] Drivnod, Carnage Dominus
+1 [DSC:370] Exhume
+1 [FDN:712] Feed the Swarm
+1 [AFR:103] Feign Death
+1 [EMN:203] Geier Reach Sanitarium
+1 [BOK:67] Goryo's Vengeance
+1 [M12:98] Grave Titan
+1 [THB:355] Gray Merchant of Asphodel
+1 [KTK:73] Grim Haruspex
+1 [2XM:321] High Market
+1 [MID:107] Infernal Grasp
+1 [FCA:36] K'rrik, Son of Yawgmoth
+1 [WAR:94] Kaya's Ghostform
+1 [DSC:373] Living Death
+1 [ZNR:111] Malakir Rebirth
+1 [FDN:714] Massacre Wurm
+1 [10E:335] Mind Stone
+1 [MID:113] Morbid Opportunist
+1 [SOM:188] Nim Deathmantle
+1 [M21:117] Peer into the Abyss
+1 [2X2:396] Phyrexian Altar
+1 [RIX:81] Pitiless Plunderer
+1 [OTP:18] Reanimate
+1 [FDN:183] Rise of the Dark Realms
+1 [MH2:276] Skirge Familiar
+1 [DDD:53] Snuff Out
+1 [SUM:274] Sol Ring
+1 [ALL:60a] Soldevi Adnate
+1 [ICE:160] Songs of the Damned
+1 [RAV:107] Stinkweed Imp
+1 [M19:121] Stitcher's Supplier
+1 [AKH:111] Supernatural Stamina
+1 [ELD:107] Syr Konrad, the Grim
+1 [SLD:2507] Tortured Existence
+1 [EOE:123] Umbral Collar Zealot
+1 [FDN:528] Undying Malice
+1 [MH2:106] Unmarked Grave
+1 [DMR:430] Vampiric Tutor
+1 [SPG:23] Victimize
+1 [FDN:616] Vile Entomber
+1 [KHM:117] Village Rites
+1 [M11:120] Viscera Seer
+1 [MH3:110] Warren Soultrader
+1 [M15:122] Waste Not
+1 [AER:74] Yahenni, Undying Partisan
+31 [NEO:297] Swamp
+1 [SLD:603] Eldrazi Monument
+SB: 1 [NEO:102] Junji, the Midnight Sky
+LAYOUT MAIN:(1,7)(CARD_TYPE,false,50)|([MH1:218],[ELD:331],[CMM:368],[TDC:313],[WAR:79],[10E:335],[SOM:188],[2X2:396],[SUM:274],[SLD:603])([THS:75],[SNC:416],[DSC:371],[7ED:121],[SLD:1114],[GTC:61],[GRN:69],[ONE:305],[M12:98],[THB:355],[KTK:73],[FCA:36],[FDN:714],[MID:113],[RIX:81],[MH2:276],[ALL:60a],[RAV:107],[M19:121],[ELD:107],[EOE:123],[FDN:616],[M11:120],[MH3:110],[AER:74])([EMA:78],[WAR:94],[SLD:2507],[M15:122])([SOA:27],[STA:26],[AFR:94],[AFR:103],[BOK:67],[MID:107],[ZNR:111],[DDD:53],[ICE:160],[AKH:111],[FDN:528],[DMR:430],[KHM:117])([NEO:297],[NEO:297],[NEO:297],[NEO:297],[NEO:297],[NEO:297],[NEO:297],[NEO:297],[NEO:297],[NEO:297],[NEO:297],[NEO:297],[NEO:297],[NEO:297],[NEO:297],[NEO:297],[NEO:297],[NEO:297],[NEO:297],[NEO:297],[NEO:297],[NEO:297],[NEO:297],[NEO:297],[NEO:297],[NEO:297],[NEO:297],[NEO:297],[NEO:297],[NEO:297],[NEO:297])([ZNR:336],[MH3:273],[BRO:324],[TSP:104],[DSC:370],[FDN:712],[DSC:373],[M21:117],[OTP:18],[FDN:183],[MH2:106],[SPG:23])([2XM:321],[EMN:203],[DOM:238],[WWK:132])
+LAYOUT SIDEBOARD:(1,1)(NONE,false,50)|([NEO:102])

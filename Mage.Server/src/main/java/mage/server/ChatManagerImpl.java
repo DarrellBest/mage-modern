@@ -276,6 +276,31 @@ public class ChatManagerImpl implements ChatManager {
             }
             return true;
         }
+        // DARRELLBEST-FORK: \kill (alias \endgame) - end a game whose game thread is dead, which
+        // \fix cannot repair (see GameController.endGameByCommand for the why and the guards).
+        // Same dispatch shape as \fix above: game context comes from the game chat session's
+        // "Game <uuid>" info, so this only resolves inside a game's own chat.
+        if (command.startsWith("KILL") || command.startsWith("ENDGAME")) {
+            message += "<br/>";
+            ChatSession session = chatSessions.get(chatId);
+            if (session != null && session.getInfo() != null) {
+                String gameId = session.getInfo();
+                if (gameId.startsWith("Game ")) {
+                    UUID id = java.util.UUID.fromString(gameId.substring(5));
+                    for (Entry<UUID, GameController> entry : managerFactory.gameManager().getGameController().entrySet()) {
+                        if (entry.getKey().equals(id)) {
+                            GameController controller = entry.getValue();
+                            if (controller != null) {
+                                message += controller.endGameByCommand(user);
+                                chatSessions.get(chatId).broadcastInfoToUser(user, message);
+                            }
+                        }
+                    }
+
+                }
+            }
+            return true;
+        }
         if (command.equals("PINGS")) {
             message += "<br/>";
             ChatSession session = chatSessions.get(chatId);

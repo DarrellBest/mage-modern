@@ -10,6 +10,9 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.mage.test.serverside.base.CardTestPlayerBaseWithAIHelps;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * DARRELLBEST-FORK: pins the commander evaluator's OUTPUT, on a fixed board, to the exact numbers the
  * pre-refactor hard-coded weights produced.
@@ -182,5 +185,71 @@ public class CommanderEvalParamsScoreTest extends CardTestPlayerBaseWithAIHelps 
                 currentGame, getPermanent("Forest", playerA), DEFAULTS));
         Assert.assertEquals("tapped anything else", -2, ArtificialScoringSystem.getTappedScore(
                 currentGame, getPermanent("Sol Ring", playerA), DEFAULTS));
+    }
+
+    /**
+     * DARRELLBEST-FORK: proves destroying your OWN creature can never score better than keeping
+     * it, even though {@code overextensionPenalty} (60 in TUNED,
+     * {@code GameStateEvaluator2.java} around the {@code overextensionScore} block) falls every
+     * time a creature leaves an overextended board -- the exact interaction flagged as a possible
+     * self-targeted-removal incentive.
+     * <p>
+     * <b>The audit.</b> {@code overextensionScore} is charged only past
+     * {@code opponentCreatureCount + OVEREXTENSION_MARGIN(3)} ({@code ArtificialScoringSystem
+     * .OVEREXTENSION_MARGIN}), and it is SUBTRACTED from the player's own score (the
+     * {@code playerPermanentsScore += ... - overextensionScore - commanderRecastScore;} fold-in
+     * near the end of {@code GameStateEvaluator2.evaluate}). Losing one surplus creature relieves
+     * exactly {@code overextensionPenalty} (60) of that subtraction -- a swing of at most +60.
+     * Against that: the creature's own {@code evaluatePermanent} score is bounded well below by
+     * {@code permanentOnBattlefieldBonus} (300) alone, since {@code getFixedPermanentScore} adds
+     * it unconditionally and {@code getDynamicPermanentScore} adds a non-negative amount for any
+     * creature with non-negative power (clamped at 0 in the same walk that feeds
+     * {@code myCreatureCount}/{@code myCreaturePower}, so a creature that COULD swing the
+     * overextension term is never scored as worth less than its fixed floor). A real creature is
+     * therefore worth at least ~300-600 by this evaluator, dwarfing the 60-point relief several
+     * times over, before even counting the mana-source loss ({@code manaSourceValue}=60 in TUNED,
+     * if the destroyed creature happened to tap for mana) or the lost
+     * {@code deployedManaValueWeight} contribution -- both of which only make self-destruction
+     * WORSE, never better. {@code mustAnswerScore} is untouched by an own-side change: every
+     * signal it counts comes from walking the OPPONENT's battlefield, never the player's own, so
+     * it cannot be the thing that flips this sign either.
+     * <p>
+     * Rather than trust that arithmetic in the abstract, this evaluates a real board (5 own
+     * creatures against 0 opposing, so the overextension term is actually ACTIVE both before and
+     * after: surplus = 5-0-3 = 2, then 4-0-3 = 1, both positive) and asserts the total score drops
+     * when one of the five is removed straight off the battlefield.
+     */
+    @Test
+    public void destroyingOwnCreatureNeverScoresBetterEvenWhenOverextended() {
+        CommanderEvalParams tuned = CommanderEvalParams.TUNED;
+        Assert.assertTrue("this test only exercises the interaction under scrutiny while TUNED "
+                        + "actually charges an overextension penalty",
+                tuned.getOverextensionPenalty() > 0);
+
+        addCard(Zone.BATTLEFIELD, playerA, "Balduvian Bears", 5);
+
+        setStopAt(1, PhaseStep.END_TURN);
+        setStrictChooseMode(true);
+        execute();
+
+        int before = GameStateEvaluator2.evaluate(playerA.getId(), currentGame, false, tuned).getTotalScore();
+
+        List<Permanent> ownCreatures = new ArrayList<>();
+        for (Permanent p : currentGame.getBattlefield().getAllActivePermanents(playerA.getId())) {
+            if (p.isCreature(currentGame)) {
+                ownCreatures.add(p);
+            }
+        }
+        Assert.assertEquals("test setup sanity: 5 Balduvian Bears on the battlefield",
+                5, ownCreatures.size());
+        currentGame.getBattlefield().removePermanent(ownCreatures.get(0).getId());
+
+        int after = GameStateEvaluator2.evaluate(playerA.getId(), currentGame, false, tuned).getTotalScore();
+
+        Assert.assertTrue("removing an own creature must never score better than keeping it, even "
+                        + "while overextensionPenalty is actively relieved by the loss (surplus "
+                        + "5-0-3=2 before, 4-0-3=1 after -- both positive, so the relief this test "
+                        + "guards against really is being applied): before=" + before + " after=" + after,
+                after < before);
     }
 }

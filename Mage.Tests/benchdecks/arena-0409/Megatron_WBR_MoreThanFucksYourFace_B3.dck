@@ -1,0 +1,91 @@
+1 [MAR:39] Alibou, Ancient Witness
+1 [MRD:278] Ancient Den
+1 [EOC:63] Angel of the Ruins
+1 [40K:28*] Anrakyr the Traveller
+1 [ELD:331] Arcane Signet
+1 [ZEN:211] Arid Mesa
+1 [SUM:282] Badlands
+1 [MSC:155] Black Market Connections
+1 [MBS:99] Blightsteel Colossus
+1 [KTK:230] Bloodstained Mire
+1 [WWK:132] Bojuka Bog
+1 [FDN:721] Boros Charm
+1 [LCI:135] Brass's Tunnel-Grinder
+1 [FIC:234] Bronze Guardian
+1 [EOE:235] Bygone Colossus
+1 [40K:151*] Canoptek Spyder
+1 [GRN:233] Chromatic Lantern
+1 [ELD:217] Crashing Drawbridge
+1 [EMN:193] Cryptolith Fragment
+1 [40K:155*] Cryptothrall
+1 [DTK:93] Damnable Pact
+1 [FDN:671] Darksteel Colossus
+1 [M14:206] Darksteel Forge
+1 [TLE:311] Deflecting Swat
+1 [DFT:83] Demonic Junker
+1 [10E:321] Doubling Cube
+1 [MH2:246] Drossforge Bridge
+1 [MH2:12] Esper Sentinel
+1 [ACR:169] Excalibur, Sword of Eden
+1 [FDN:173] Exsanguinate
+1 [BLB:252] Fabled Passage
+1 [DKA:87] Faithless Looting
+1 [MOC:277] Feldon of the Third Path
+1 [9ED:297] Fellwar Stone
+1 [KLD:215] Foundry Inspector
+1 [CLB:755] Grim Hireling
+1 [THB:19] Heliod's Intervention
+1 [MH3:189] Imskir Iron-Eater
+1 [MH3:293] Junk Diver
+1 [TMT:175] Krang, Utrom Warlord
+1 [CMM:38] Losheel, Clockwork Scholar
+1 [MPS:15] Lotus Petal
+1 [ZNR:111] Malakir Rebirth
+1 [ZEN:219] Marsh Flats
+1 [PRM:46950] Metalworker
+1 [FDN:256] Meteor Golem
+1 [BRO:217] Mishra, Tamer of Mak Fawa
+5 [HOB:197] Mountain
+1 [5DN:137] Mycosynth Golem
+1 [MRD:211] Myr Enforcer
+1 [EOC:169] Myriad Landscape
+1 [M20:233] Mystic Forge
+1 [TDM:263] Nomad Outpost
+1 [DRC:133] Ornithopter of Paradise
+1 [C21:335] Osgir, the Reconstructor
+1 [CON:15] Path to Exile
+5 [HOB:194] Plains
+1 [SUM:284] Plateau
+1 [BRO:240] Portal to Phyrexia
+1 [SPG:38] Prismatic Vista
+1 [TLA:151] Redirect Lightning
+1 [EOC:175] Rustvale Bridge
+1 [TRK:295] Sacred Foundry
+1 [SUM:286] Scrubland
+1 [BRO:165] Skitterbeam Battalion
+1 [2XM:348] Sneak Attack
+1 [MH2:235] Sojourner's Companion
+1 [MBS:136] Spine of Ish Sah
+1 [KHM:32] Starnheim Courser
+4 [HOB:196] Swamp
+1 [ICE:54] Swords to Plowshares
+1 [MSC:217] Talisman of Conviction
+1 [SOC:358] Talisman of Hierarchy
+1 [MRD:255] Talisman of Indulgence
+1 [FCA:18] Tymna the Weaver
+1 [M15:248] Urborg, Tomb of Yawgmoth
+1 [KTK:248] Windswept Heath
+1 [KTK:249] Wooded Foothills
+1 [AFC:214] Rakdos Signet
+1 [GK1:97] Boros Signet
+1 [DRC:134] Orzhov Signet
+1 [CMM:658] Thran Dynamo
+1 [WOT:67] Smothering Tithe
+1 [LTR:001] The One Ring
+1 [STA:11] Teferi's Protection
+1 [SLD:910] Sol Ring
+1 [UNF:279] Blood Crypt
+1 [UNF:282] Godless Shrine
+SB: 1 [BOT:12] Megatron, Tyrant
+LAYOUT MAIN:(1,11)(CMC,false,46)|([MRD:278],[ZEN:211],[SUM:282],[KTK:230],[WWK:132],[MH2:246],[BLB:252],[MPS:15],[ZEN:219],[HOB:197],[HOB:197],[HOB:197],[HOB:197],[HOB:197],[EOC:169],[TDM:263],[HOB:194],[HOB:194],[HOB:194],[HOB:194],[HOB:194],[SUM:284],[SPG:38],[EOC:175],[TRK:295],[SUM:286],[HOB:196],[HOB:196],[HOB:196],[HOB:196],[M15:248],[KTK:248],[KTK:249],[UNF:279],[UNF:282])([MH2:12],[DKA:87],[CON:15],[TLA:151],[ICE:54],[SLD:910],[ZNR:111])([ELD:331],[FDN:721],[ELD:217],[DTK:93],[10E:321],[FDN:173],[9ED:297],[THB:19],[DRC:133],[MSC:217],[SOC:358],[MRD:255],[AFC:214],[GK1:97],[DRC:134])([MSC:155],[LCI:135],[GRN:233],[EMN:193],[TLE:311],[MOC:277],[KLD:215],[MH3:293],[CMM:38],[PRM:46950],[KHM:32],[FCA:18],[STA:11])([40K:155*],[CLB:755],[M20:233],[C21:335],[2XM:348],[CMM:658],[WOT:67],[LTR:001])([MAR:39],[40K:28*],[FIC:234],[40K:151*],[BRO:217])([EOC:63],[DFT:83],[FDN:256],[MRD:211],[MH2:235],[MBS:136])([MH3:189])([EOE:235],[M14:206],[TMT:175],[BRO:240],[BRO:165])([FDN:671],[5DN:137])([MBS:99],[ACR:169])
+LAYOUT SIDEBOARD:(1,1)(NONE,false,46)|([BOT:12])

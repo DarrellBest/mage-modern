@@ -579,6 +579,8 @@ public class DragCardGrid extends JPanel implements DragCardSource, DragCardTarg
         void invertCardSelection(Collection<CardView> cards);
 
         void showAll();
+
+        void searchCard(CardView card);
     }
 
     // Constants
@@ -1220,6 +1222,12 @@ public class DragCardGrid extends JPanel implements DragCardSource, DragCardTarg
     private void showAll() {
         for (DragCardGridListener l : listeners) {
             l.showAll();
+        }
+    }
+
+    private void searchCardInSelector(CardView card) {
+        for (DragCardGridListener l : listeners) {
+            l.searchCard(card);
         }
     }
 
@@ -1974,7 +1982,7 @@ public class DragCardGrid extends JPanel implements DragCardSource, DragCardTarg
         }
     }
 
-    private void showCardRightClickMenu(@SuppressWarnings("unused") final CardView card, MouseEvent e) {
+    private void showCardRightClickMenu(final CardView card, MouseEvent e) {
         JPopupMenu menu = new JPopupMenu();
         JMenuItem hide = new JMenuItem("Hide (hidden in sideboard)");
         hide.addActionListener(e2 -> hideSelection());
@@ -1994,6 +2002,13 @@ public class DragCardGrid extends JPanel implements DragCardSource, DragCardTarg
             duplicateSelection.addActionListener(e2 -> duplicateSelection());
             menu.add(duplicateSelection);
         }
+
+        menu.addSeparator();
+        // DARRELLBEST-FORK: new right-click action -- jump this card into the Card Selector's search box
+        JMenuItem searchInSelector = new JMenuItem("Search in Card Selector");
+        searchInSelector.addActionListener(e2 -> searchCardInSelector(card));
+        menu.add(searchInSelector);
+
         menu.show(e.getComponent(), e.getX(), e.getY());
     }
 

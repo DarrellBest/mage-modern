@@ -1,0 +1,87 @@
+NAME:Siona-GW-EDH
+1 [EMA:158] Argothian Enchantress
+1 [MH1:158] Collector Ouphe
+1 [LCI:8] Dauntless Dismantler
+1 [THB:168] Destiny Spinner
+1 [WOC:2] Ellivere of the Wild Court
+1 [ALL:89] Elvish Spirit Guide
+1 [J21:75] Esper Sentinel
+1 [THB:20] Heliod's Pilgrim
+1 [LCI:232] Kutzil, Malamet Exemplar
+1 [AKH:175] Manglehorn
+1 [EXP:36] Ancient Tomb
+1 [NEO:266] Boseiju, Who Endures
+1 [CLB:348] Bountiful Promenade
+1 [BRO:259] Brushland
+1 [CMR:349] Command Beacon
+1 [ELD:333] Command Tower
+1 [NEO:268] Eiganjo, Seat of the Empire
+1 [KTK:233] Flooded Strand
+1 [TSP:274] Gemstone Caverns
+1 [WOC:162] Hall of Heliod's Generosity
+1 [FUT:177] Horizon Canopy
+1 [ZEN:219] Marsh Flats
+1 [ZEN:220] Misty Rainforest
+1 [SUM:285] Savannah
+1 [USG:325] Serra's Sanctum
+1 [GRN:258] Temple Garden
+1 [KTK:248] Windswept Heath
+1 [KTK:249] Wooded Foothills
+1 [DMR:412] Enlightened Tutor
+1 [OTP:73] Force of Vigor
+1 [LTC:493] Legolas's Quick Reflexes
+1 [LTR:26] Reprieve
+1 [DMR:442] Worldly Tutor
+1 [GTC:6] Blind Obedience
+1 [SLD:279] Carpet of Flowers
+1 [LEG:179] Concordant Crossroads
+1 [CMM:21] Darksteel Mutation
+1 [LRW:211] Fertile Ground
+1 [SOC:109] Flickering Ward
+1 [THS:14] Gift of Immortality
+1 [ELD:164] Kenrith's Transformation
+1 [AFR:29] Paladin Class
+1 [10E:292] Root Maze
+1 [SS2:5] Shielded by Faith
+1 [SPG:155] Sylvan Library
+1 [MH2:259] Urza's Saga
+1 [DIS:99] Utopia Sprawl
+1 [C18:165] Wild Growth
+1 [WAR:160] Finale of Devastation
+1 [SOI:32] Open the Armory
+1 [CMM:472] Sevinne's Reclamation
+1 [CMM:703] Sol Ring
+1 [PRM:62473] Blasting Station
+11 [UNF:244] Forest
+7 [UNF:240] Plains
+1 [SCG:125] One with Nature
+1 [J22:244] Sigil of the Empty Throne
+1 [MH1:218] Altar of Dementia
+1 [LTC:249] Heroic Intervention
+1 [CMM:938] Sythis, Harvest's Hand
+1 [PZ1:85] Rancor
+1 [CON:15] Path to Exile
+1 [V13:2] Swords to Plowshares
+1 [C17:181] Mirari's Wake
+1 [PL23:5] Ethereal Armor
+1 [J22:58] Sage's Reverie
+1 [SLD:282] Mesa Enchantress
+1 [WOC:125] Enchantress's Presence
+1 [MAT:166] Danitha, New Benalia's Light
+1 [SLD:1339] Commander's Plate
+1 [SLD:296] Mother of Runes
+1 [MH1:13] Giver of Runes
+1 [CMR:686] Three Visits
+1 [NCC:290] Farseek
+1 [C13:172] Spoils of Victory
+1 [CMM:616] Sword of the Animist
+1 [LCC:108] Coat of Arms
+1 [SLD:1326] Steely Resolve
+1 [TSR:262] Akroma's Memorial
+1 [40K:210] Abundance
+1 [BBD:88] Angelic Gift
+1 [ALA:4] Angelsong
+1 [SLD:1140] Elspeth, Sun's Champion
+SB: 1 [THB:226] Siona, Captain of the Pyleas
+LAYOUT MAIN:(2,8)(CMC,true,70)|()([J21:75],[MH1:13],[SLD:296])([EMA:158],[MH1:158],[LCI:8],[THB:168],[CMM:938])([ALL:89],[THB:20],[LCI:232],[AKH:175],[SLD:282],[MAT:166])([WOC:2])()()()([EXP:36],[NEO:266],[CLB:348],[BRO:259],[CMR:349],[ELD:333],[NEO:268],[KTK:233],[UNF:244],[UNF:244],[UNF:244],[UNF:244],[UNF:244],[UNF:244],[UNF:244],[UNF:244],[UNF:244],[UNF:244],[UNF:244],[TSP:274],[WOC:162],[FUT:177],[ZEN:219],[ZEN:220],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[UNF:240],[SUM:285],[USG:325],[GRN:258],[MH2:259],[KTK:248],[KTK:249])([SLD:279],[LEG:179],[DMR:412],[SOC:109],[LTC:493],[SCG:125],[AFR:29],[10E:292],[CMM:703],[DIS:99],[C18:165],[DMR:442],[PZ1:85],[CON:15],[V13:2],[PL23:5],[SLD:1339])([MH1:218],[GTC:6],[CMM:21],[LRW:211],[WAR:160],[ELD:164],[SOI:32],[LTR:26],[SPG:155],[LTC:249],[CMR:686],[NCC:290],[CMM:616],[SLD:1326],[BBD:88],[ALA:4])([PRM:62473],[THS:14],[CMM:472],[SS2:5],[WOC:125],[C13:172])([OTP:73],[J22:58],[40K:210])([J22:244],[C17:181],[LCC:108])([SLD:1140])([TSR:262])
+LAYOUT SIDEBOARD:(1,1)(NONE,false,100)|([THB:226])

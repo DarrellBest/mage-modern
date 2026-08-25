@@ -1,0 +1,60 @@
+24 [SLD:418] Mountain
+1 [ZNE:29] Valakut, the Molten Pinnacle
+1 [PPRO:2022-3] Nykthos, Shrine to Nyx
+1 [KLD:247] Inventors' Fair
+1 [THS:112] Anger of the Gods
+1 [ISD:130] Blasphemous Act
+1 [WAR:115] Bolt Bend
+1 [IKO:245] Bonders' Enclave
+1 [LCI:134] Bonehoard Dracosaur
+1 [M21:136] Chandra's Incinerator
+1 [MKC:149] Chaos Warp
+1 [CMM:214] Deflecting Swat
+1 [CMA:235] Thought Vessel
+1 [M20:135] Dragon Mage
+20 [STX:97] Dragon's Approach
+1 [LCC:226] Fiery Confluence
+1 [LTR:126] Fiery Inscription
+1 [M19:145] Guttersnipe
+1 [MKC:156] Jeska's Will
+1 [SHM:98] Knollspine Dragon
+1 [ONE:138] Koth, Fire of Resistance
+1 [CLU:140] Light Up the Stage
+1 [MKC:276] Myriad Landscape
+1 [HOU:104] Neheb, the Eternal
+1 [LCC:11] Ore-Rich Stalactite
+1 [ZEN:143] Pyromancer Ascension
+1 [VOW:174] Reckless Impulse
+1 [AFR:160] Red Dragon
+1 [GRN:113] Risk Factor
+1 [GRN:115] Runaway Steam-Kin
+1 [BNG:108] Satyr Firedancer
+1 [SOM:201] Semblance Anvil
+1 [THB:158] Tectonic Giant
+1 [THB:161] Underworld Breach
+1 [MKC:310] War Room
+1 [CMR:211] Wheel of Misfortune
+1 [MOM:173] Wrenn's Resolve
+1 [DGM:34] Possibility Storm
+1 [CMM:703] Sol Ring
+1 [LCC:317] Wayfarer's Bauble
+1 [CMM:657] Fellwar Stone
+1 [CLB:313] Fire Diamond
+1 [MH2:228] Liquimetal Torque
+1 [CMM:405] Ruby Medallion
+1 [LCC:309] Mind Stone
+1 [LCC:104] Arcane Signet
+1 [LCC:114] Lightning Greaves
+1 [DDK:66] Browbeat
+1 [CMA:86] Pyrohemia
+1 [C21:179] Seething Song
+1 [VMA:192] Wheel of Fortune
+1 [PUMA:U31] Ancient Tomb
+1 [2X2:315] Thrumming Stone
+1 [CMM:642] Faithless Looting
+1 [TSP:258] Locket of Yesterdays
+1 [SPG:24] Gamble
+1 [CMR:699] Scroll Rack
+SB: 1 [ELD:367] Torbran, Thane of Red Fell
+LAYOUT MAIN:(1,10)(CMC,false,100)|([SLD:418],[SLD:418],[SLD:418],[SLD:418],[SLD:418],[SLD:418],[SLD:418],[SLD:418],[SLD:418],[SLD:418],[SLD:418],[SLD:418],[SLD:418],[SLD:418],[SLD:418],[SLD:418],[SLD:418],[SLD:418],[SLD:418],[SLD:418],[SLD:418],[SLD:418],[SLD:418],[SLD:418],[ZNE:29],[PPRO:2022-3],[KLD:247],[IKO:245],[MKC:276],[MKC:310],[PUMA:U31])([LCC:317],[TSP:258],[CMM:703],[CMM:642],[SPG:24])([2X2:107],[LCC:11],[ZEN:143],[VOW:174],[GRN:115],[BNG:108],[THB:161],[MOM:173],[CLB:313],[MH2:228],[CMR:699],[CMM:405],[LCC:309],[LCC:104],[CMM:657],[LCC:114])([STX:97],[STX:97],[STX:97],[STX:97],[STX:97],[STX:97],[STX:97],[STX:97],[STX:97],[STX:97],[STX:97],[STX:97],[STX:97],[STX:97],[STX:97],[STX:97],[STX:97],[STX:97],[STX:97],[STX:97])([SOM:201],[LTR:126],[M19:145],[MKC:156],[CLU:140],[GRN:113],[CMR:211],[DDK:66],[MKC:149],[CMM:214],[THS:112],[C21:179],[VMA:192])([WAR:115],[LCC:226],[ONE:138],[THB:158],[CMA:86])([LCI:134],[HOU:104],[DGM:34],[2X2:315])([M21:136],[AFR:160])([M20:135],[SHM:98])([ISD:130])
+LAYOUT SIDEBOARD:(1,1)(NONE,false,100)|([ELD:367])

@@ -67,3 +67,4 @@ mage-bundle.zip
 
 # dev tools
 .devcontainer/**/*lock.json
+commander-weights.txt

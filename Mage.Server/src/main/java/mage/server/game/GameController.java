@@ -798,8 +798,19 @@ public class GameController implements GameCallback {
             Game g = game;
             if (g != null && !g.isSimulation()) {
                 StringBuilder seats = new StringBuilder();
-                for (UUID pid : g.getState().getPlayerList(g.getStartingPlayerId())) {
-                    Player p = g.getPlayer(pid);
+                // DARRELLBEST-FORK: iterate the full player map, NOT getPlayerList(startingPlayerId).
+                //
+                // getPlayerList(UUID) filters on player.isInGame(). By the time endGame runs every
+                // player has already won or lost, so nothing is "in game" and the list comes back
+                // EMPTY -- which is why every RESULT record emitted "seats":[] and the human-readable
+                // line ended in a bare "| ". The outcome was being logged for nobody.
+                //
+                // That silently cost real training data: tools/train-from-games.py keys off
+                // seats[].won/.human, so an empty array yields zero rows and every human game
+                // contributed nothing, including the human WINS that carry the heaviest weight.
+                //
+                // Players is a LinkedHashMap, so values() preserves seat order.
+                for (Player p : g.getState().getPlayers().values()) {
                     if (p == null) {
                         continue;
                     }
@@ -822,8 +833,9 @@ public class GameController implements GameCallback {
                     js.append(",\"winner\":\"").append(jsonEscape(String.valueOf(g.getWinner()))).append('"');
                     js.append(",\"seats\":[");
                     boolean first = true;
-                    for (UUID pid : g.getState().getPlayerList(g.getStartingPlayerId())) {
-                        Player p = g.getPlayer(pid);
+                    // same isInGame() trap as above -- every seat must appear, especially the
+                    // eliminated ones, because a losing trajectory is training data too
+                    for (Player p : g.getState().getPlayers().values()) {
                         if (p == null) {
                             continue;
                         }
@@ -1557,6 +1569,114 @@ public class GameController implements GameCallback {
         logger.warn("FIX command result: " + appliedFixes);
 
         return sb.toString();
+    }
+
+    /**
+     * DARRELLBEST-FORK: \kill (alias \endgame) - end a game that \fix cannot repair.
+     *
+     * \fix only nudges players that "can't respond": it concedes the active/choosing/priority
+     * player and clears the idle timeout, all of which assume the GAME thread is still alive to
+     * notice. When the game thread itself is dead there is nothing left to nudge, so \fix reports
+     * "!!!NOT GAME THREAD!!!" and applies fixes that never take effect. Real example: game
+     * 1961e058-d41c-4620-be59-fb35e8173baa died with a FATAL in GameImpl.playPriority on
+     * 2026-08-16 20:36 after its human left, and was still sitting there 19 hours later with two
+     * bots seated; \fix was called twice and changed nothing. Before this command the only
+     * remedies were an admin console / admin CLI (tools/kill-game.sh) or a server restart, which
+     * drops every other game in progress.
+     *
+     * Deliberately narrow, because a chat command is reachable by anyone in the game:
+     * - only a player SEATED in this game may call it (same context \fix already has);
+     * - it refuses while any OTHER human is connected and still in the game, so it can only
+     *   ever end a bots-only or abandoned game, never someone's live one;
+     * - it ends with no winner (a draw) through the normal GameController.endGame() path, so
+     *   session cleanup, the "GAME FINISHED" line and the RESULT audit record all fire exactly
+     *   as they do for a game that ended on its own. No parallel teardown.
+     *
+     * Every seat still in the game is quit first, on purpose. endGame() hands off to
+     * TableManagerImpl.endGame(tableId) -> TableController.endGameAndStartNextGame(), and a bare
+     * draw does not satisfy MatchImpl.checkIfMatchEnds() - the match would simply deal a NEW game
+     * on the same table, which is the opposite of what was asked for. Quitting the seats drives
+     * activePlayers below 2 so the match ends and the table closes.
+     */
+    public String endGameByCommand(User user) {
+        if (game == null) {
+            return "";
+        }
+        GameState state = game.getState();
+        if (state == null) {
+            return "";
+        }
+
+        // only someone seated in this game
+        UUID callerPlayerId = userPlayerMap.get(user.getId());
+        if (callerPlayerId == null) {
+            return "<br>" + asBad("KILL refused: only a player seated in this game can end it.");
+        }
+
+        if (game.hasEnded()) {
+            return "<br>" + asWarning("This game has already ended.");
+        }
+
+        // refuse while any other human is still connected and still playing
+        for (Map.Entry<UUID, UUID> entry : userPlayerMap.entrySet()) {
+            UUID otherUserId = entry.getKey();
+            if (otherUserId.equals(user.getId())) {
+                continue;
+            }
+            Player other = game.getPlayer(entry.getValue());
+            if (other == null || !other.isInGame()) {
+                // already conceded, lost, quit or left - not somebody we can grief
+                continue;
+            }
+            Optional<User> otherUser = managerFactory.userManager().getUser(otherUserId);
+            if (otherUser.isPresent() && otherUser.get().isConnected()) {
+                logger.warn("KILL command was refused for game " + game.getId() + " by " + user.getName()
+                        + "; " + other.getName() + " is still playing");
+                return "<br>" + asBad("Cannot kill: " + other.getName() + " is still playing.");
+            }
+        }
+
+        String playersInfo = game.getPlayerList().stream()
+                .map(game::getPlayer)
+                .filter(Objects::nonNull)
+                .map(p -> p.getName() + (p.isInGame() ? " (play)" : " (out)"))
+                .collect(Collectors.joining(", "));
+        logger.warn("KILL command was called for game " + game.getId() + " by " + user.getName()
+                + "; players: " + playersInfo + "; " + game);
+
+        // quit every remaining seat so the match ends instead of dealing another game
+        List<String> quitNames = new ArrayList<>();
+        for (Player player : state.getPlayers().values()) {
+            if (player == null || !player.isInGame()) {
+                continue;
+            }
+            try {
+                // same off-game-thread call \fix already makes via fixPlayer -> player.concede
+                player.quit(game);
+                quitNames.add(player.getName());
+            } catch (Exception ex) {
+                // the game is already broken - one uncooperative seat must not block the kill
+                logger.warn("KILL command: could not quit " + player.getName()
+                        + " in game " + game.getId(), ex);
+            }
+        }
+
+        // engine's own stop, the same call TableManagerImpl.removeTable makes from outside the
+        // game thread. winnerId stays null, so the game reports as a draw.
+        game.end();
+
+        String reason = "Game ended by \\kill command from " + user.getName();
+        try {
+            endGame(reason);
+        } catch (MageException ex) {
+            logger.error("KILL command: endGame failed for game " + game.getId(), ex);
+            return "<br>" + asBad("Kill failed: " + ex.getMessage());
+        }
+
+        logger.warn("KILL command result: game " + game.getId() + " ended with no winner; quit seats: "
+                + (quitNames.isEmpty() ? "none" : String.join(", ", quitNames)));
+
+        return "<br>" + asWarning("Game ended by " + user.getName() + " (no winner).");
     }
 
     private boolean fixPlayer(Player player, GameState state, String fixType, StringBuilder sb, List<String> fixActions, boolean fixedAlready, boolean forceToConcede) {

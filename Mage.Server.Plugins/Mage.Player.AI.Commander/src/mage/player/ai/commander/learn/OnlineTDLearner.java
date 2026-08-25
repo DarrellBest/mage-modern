@@ -26,50 +26,23 @@ package mage.player.ai.commander.learn;
  * +/-2). Offline training with regularisation copes; online SGD does not -- the large-magnitude
  * features dominate the gradient and the weight vector diverges within a few hundred steps. Dividing
  * by a per-feature scale puts every input in roughly [-1, 1] so one learning rate suits all of them.
+ * <p>
+ * <b>The scales are NOT owned here.</b> They used to be: a {@code private static final double[]
+ * SCALE} that had to stay index-aligned with {@link StateFeatures#NAMES} by convention. Three
+ * features were once appended to NAMES and not to SCALE, {@code logit()} threw
+ * ArrayIndexOutOfBoundsException on the first evaluation of every game, the callers swallowed it,
+ * and three games "completed" having learned nothing. A length assertion was added, which turned
+ * silent breakage into loud breakage but left the two arrays needing to be edited together.
+ * They are now one table in {@link StateFeatures}, read through {@link StateFeatures#scales()}, so
+ * there is nothing left to keep in sync.
+ * <p>
+ * Read once into a field at construction rather than per call: the scales cannot change during a
+ * game (they are a property of the feature definition, not the state), and {@link #predict} runs at
+ * every search leaf.
  *
  * @author Darrell Best
  */
 public final class OnlineTDLearner {
-
-    /**
-     * Rough magnitude of each feature, in {@link StateFeatures#NAMES} order, used only to normalise
-     * the online gradient. These are eyeballed ranges for Commander, not measured statistics; being
-     * within a factor of two or three is enough to keep SGD stable, which is all they are for.
-     */
-    private static final double[] SCALE = {
-            40,   // life_diff
-            7,    // hand_size_diff
-            8,    // creature_count_diff
-            20,   // creature_power_diff
-            20,   // creature_toughness_diff
-            8,    // land_count_diff
-            8,    // untapped_land_diff
-            6,    // artifact_count_diff
-            4,    // enchantment_count_diff
-            2,    // planeswalker_count_diff
-            1,    // commander_on_battlefield_diff
-            60,   // library_size_diff
-            30,   // turn_number
-            // DARRELLBEST-FORK: appended alongside the StateFeatures entries of the same names.
-            25,   // deployed_mana_value_diff -- total mana value of permanents, a developed board is ~20-30
-            4,    // unspent_mana_own_turn    -- untapped sources left on its own main phase
-            3,    // draw_engine_count_diff   -- few permanents draw cards repeatedly
-    };
-
-    static {
-        // DARRELLBEST-FORK: SCALE is a SECOND array parallel to StateFeatures.NAMES, and appending a
-        // feature to NAMES without appending here throws ArrayIndexOutOfBoundsException from logit()
-        // on the first evaluation -- which is exactly what happened: three features were added, the
-        // learner crashed 61 times in three games, wrote no weights, and the surrounding code
-        // swallowed it so the games still "completed". StateFeatures documents its own order as a
-        // wire format but says nothing about this array, so the trap is invisible from there.
-        // Fail loudly at class load instead.
-        if (SCALE.length != StateFeatures.SIZE) {
-            throw new ExceptionInInitializerError("OnlineTDLearner.SCALE has " + SCALE.length
-                    + " entries but StateFeatures has " + StateFeatures.SIZE
-                    + " features -- append a scale for every feature added to StateFeatures.NAMES");
-        }
-    }
 
     private static final double DEFAULT_LEARNING_RATE = 0.01;
     private static final double DEFAULT_LAMBDA = 0.7;
@@ -77,6 +50,7 @@ public final class OnlineTDLearner {
     private final double learningRate;
     private final double lambda;
 
+    private final double[] scale;        // per-feature normalisers, owned by StateFeatures
     private final double[] weights;      // private working copy
     private final double[] baseline;     // what we checked out, so the delta can be computed
     private final double[] trace;        // eligibility trace, one per weight
@@ -92,6 +66,15 @@ public final class OnlineTDLearner {
     }
 
     public OnlineTDLearner(double[] initialWeights, double initialBias, double learningRate, double lambda) {
+        this.scale = StateFeatures.scales();
+        if (initialWeights.length != this.scale.length) {
+            // A weight vector of the wrong length would have run off the end of the scales inside
+            // logit(), which is the crash this class used to produce whenever the two feature lists
+            // disagreed. There is no sensible partial answer, so refuse at construction where the
+            // stack trace still names the caller that supplied the bad vector.
+            throw new IllegalArgumentException("weight vector has " + initialWeights.length
+                    + " entries but StateFeatures defines " + this.scale.length + " features");
+        }
         this.weights = initialWeights.clone();
         this.baseline = initialWeights.clone();
         this.trace = new double[initialWeights.length];
@@ -163,7 +146,7 @@ public final class OnlineTDLearner {
         double prediction = sigmoid(logit(features));
         double error = target - prediction;
         for (int i = 0; i < weights.length; i++) {
-            trace[i] = lambda * trace[i] + features[i] / SCALE[i];
+            trace[i] = lambda * trace[i] + features[i] / scale[i];
             weights[i] += learningRate * error * trace[i];
         }
         biasTrace = lambda * biasTrace + 1.0;
@@ -171,10 +154,14 @@ public final class OnlineTDLearner {
         updates++;
     }
 
+    /**
+     * The model. Note the {@code / scale[i]}: it is why {@link StateFeatures#seedFromParams} has to
+     * multiply the scale back in, and why a seed that did not was silently a different model.
+     */
     private double logit(double[] features) {
         double z = bias;
         for (int i = 0; i < weights.length; i++) {
-            z += weights[i] * features[i] / SCALE[i];
+            z += weights[i] * features[i] / scale[i];
         }
         return z;
     }

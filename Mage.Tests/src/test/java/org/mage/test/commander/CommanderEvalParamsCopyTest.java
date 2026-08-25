@@ -214,10 +214,26 @@ public class CommanderEvalParamsCopyTest {
                 8000, live.getCommanderDamageWeight());
         Assert.assertEquals("TUNED evaluates modal abilities instead of taking the first legal mode",
                 1, live.getModeSelectionMode());
-        Assert.assertEquals("TUNED must differ from DEFAULT in exactly these fifteen settings",
+        // DARRELLBEST-FORK: the multiplayer targeting fix. selectOpponent's most-threatening branch
+        // existed and was reachable only through this setting, which nothing set -- so every live
+        // game scored the board against an arbitrary opponent while the code to do better sat
+        // unused. Asserted by name because "it is already implemented" is exactly what made it easy
+        // to leave switched off.
+        Assert.assertEquals("TUNED scores against the most threatening opponent, not the first one",
+                1, live.getOpponentSelectionMode());
+        // The three UNMEASURED terms. Pinned here so that a later A/B that moves one of them has to
+        // move this line too, and so nobody reads the magnitudes as tuned: they are not.
+        Assert.assertEquals("TUNED prices opponent threat quality (unmeasured, needs an A/B)",
+                200, live.getMustAnswerBonus());
+        Assert.assertEquals("TUNED discounts deployment past a winning board (unmeasured, needs an A/B)",
+                60, live.getOverextensionPenalty());
+        Assert.assertEquals("TUNED prices unpayable commander tax (unmeasured, needs an A/B)",
+                100, live.getCommanderRecastPenalty());
+        Assert.assertEquals("TUNED must differ from DEFAULT in exactly these nineteen settings",
                 CommanderEvalParams.DEFAULT.toBuilder()
                         .handCardScore(60)
                         .commanderDamageWeight(8000)
+                        .opponentSelectionMode(1)
                         .modeSelectionMode(1)
                         .attackAggression(2)
                         .multiplayerAttackSplit(1)
@@ -231,6 +247,9 @@ public class CommanderEvalParamsCopyTest {
                         .commanderPermanentBonus(900)
                         .blockTradeMode(1)
                         .commanderBlockPenalty(1200)
+                        .mustAnswerBonus(200)
+                        .overextensionPenalty(60)
+                        .commanderRecastPenalty(100)
                         .build().toString(),
                 CommanderEvalParams.TUNED.toString());
     }

@@ -1,5 +1,6 @@
 package org.mage.test.commander;
 
+import mage.player.ai.commander.score.CommanderEvalParams;
 import mage.player.ai.commander.learn.FederatedWeights;
 import mage.player.ai.commander.learn.OnlineTDLearner;
 import mage.player.ai.commander.learn.StateFeatures;
@@ -31,13 +32,28 @@ public class FederatedLearningTest {
     }
 
     @Test
-    public void missingFileYieldsUsableZeroModel() {
+    public void missingFileYieldsUsableSeededModel() {
+        // DARRELLBEST-FORK: this test used to assert a ZERO model and had been failing ever since
+        // checkout() was deliberately changed to seed from the hand-tuned evaluator instead.
+        //
+        // A zero vector predicts 0.5 for every position, so the search gets the same number for every
+        // non-terminal state and plays blind -- which is exactly the failure that motivated seeding.
+        // The assertion was therefore pinning the bug, not the behaviour, and its own sibling
+        // FederatedWeightsConcurrencyTest.freshModelSeedsFromTunedRatherThanZero asserts the opposite
+        // and passes. Two tests in the same suite demanding opposite things is worse than either.
+        //
+        // Renamed rather than deleted so the intent is visible in the history: a fresh install must
+        // start at version 0 AND already know what the tuning established.
         FederatedWeights.Snapshot snap = weightsIn("absent.txt").checkout();
         Assert.assertEquals("a fresh install must start at version 0", 0, snap.version);
         Assert.assertEquals(StateFeatures.SIZE, snap.weights.length);
+        Assert.assertArrayEquals("a fresh model IS the hand-tuned evaluator, not a blank slate",
+                StateFeatures.seedFromParams(CommanderEvalParams.TUNED), snap.weights, 1e-12);
+        boolean anyNonZero = false;
         for (double w : snap.weights) {
-            Assert.assertEquals("zero model, so it predicts 0.5 and carries no information", 0.0, w, 0.0);
+            anyNonZero |= w != 0.0;
         }
+        Assert.assertTrue("a seeded model must carry information", anyNonZero);
     }
 
     @Test

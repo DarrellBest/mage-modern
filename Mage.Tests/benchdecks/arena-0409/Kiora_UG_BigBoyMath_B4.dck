@@ -1,0 +1,91 @@
+NAME:Kiora - Big Guys
+1 [DSC:210] Aesi, Tyrant of Gyre Strait
+1 [TLA:264] Agna Qel'a
+1 [FDN:160] An Offer You Can't Refuse
+1 [ELD:331] Arcane Signet
+1 [MKM:151] Archdruid's Charm
+1 [DSC:211] Arixmethes, Slumbering Isle
+1 [KHM:251] Barkchannel Pathway
+1 [M3C:46] Benthic Anomaly
+1 [M12:165] Birds of Paradise
+1 [NEO:266] Boseiju, Who Endures
+1 [EOE:251] Breeding Pool
+1 [CMM:78] Brinelin, the Moon Kraken
+1 [SNC:248] Brokers Hideout
+1 [LCI:410a] Cavern of Souls
+1 [MH3:147] Collective Resistance
+1 [ELD:333] Command Tower
+1 [RTR:35] Cyclonic Rift
+1 [LTR:158] Delighted Halfling
+1 [SOS:254] Dreamroot Cascade
+1 [EMN:5] Elder Deep-Fiend
+1 [2XM:351] Exploration
+1 [BLB:252] Fabled Passage
+1 [MH3:152] Fanatic of Rhonas
+1 [M13:170] Farseek
+1 [WAR:160] Finale of Devastation
+1 [FDN:220] Garruk's Uprising
+1 [EOE:188] Glacier Godmaw
+1 [M19:186] Goreclaw, Terror of Qal Sisma
+1 [FDN:39] Grappling Kraken
+1 [RNA:178] Growth Spiral
+1 [MKM:262] Hedge Maze
+1 [M21:188] Heroic Intervention
+1 [DOM:240] Hinterland Harbor
+1 [VOW:359] Hullbreaker Horror
+1 [KHM:345] Icebreaker Kraken
+1 [CSP:111] Into the North
+1 [WAR:232*] Kiora, Behemoth Beckoner
+1 [BNG:149] Kiora, the Crashing Wave
+1 [CHK:225] Kodama's Reach
+1 [KHM:221] Koma, Cosmos Serpent
+1 [FDN:121] Koma, World-Eater
+1 [MRD:199] Lightning Greaves
+1 [NEO:372] March of Swirling Mist
+1 [TDM:261] Mistrise Village
+1 [ZEN:220] Misty Rainforest
+1 [THB:305] Nadir Kraken
+1 [SLD:189] Nature's Lore
+1 [GTC:181] Nimbus Swimmer
+1 [THS:223] Nykthos, Shrine to Nyx
+1 [NEO:271] Otawara, Soaring City
+1 [M11:189] Overwhelming Stampede
+1 [SOA:55] Pick Your Poison
+1 [DMU:252] Plaza of Heroes
+1 [M12:190] Rampant Growth
+1 [SHM:278*] Reflecting Pool
+1 [SNC:413] Reservoir Kraken
+1 [KHM:266] Rimewood Falls
+1 [AER:123] Rishkar's Expertise
+1 [ZNR:333] Sea Gate Restoration
+1 [THB:291] Serpent of Yawning Depths
+1 [DIS:130] Simic Sky Swallower
+1 [FIC:185] Sin, Unending Cataclysm
+1 [MH3:241] Sink into Stupor
+1 [M19:74] Sleep
+1 [DOM:66] Slinn Voda, the Rising Deep
+7 [KHM:284] Snow-Covered Forest
+7 [KHM:278] Snow-Covered Island
+1 [EOE:291] Starwinder
+1 [FIN:361] Summon: Leviathan
+1 [THS:65] Swan Song
+1 [MB2:174] Temporal Manipulation
+1 [ELD:161] The Great Henge
+1 [TLA:319] The Unagi of Kyoshi Island
+1 [BNG:55] Tromokratis
+1 [SUM:288] Tropical Island
+1 [SOC:107] Turbulent Wilderness
+1 [WOE:195] Up the Beanstalk
+1 [BNG:57] Whelming Wave
+1 [DFT:270] Willowrush Verge
+1 [DMU:261] Yavimaya Coast
+1 [M3C:409] Yavimaya, Cradle of Growth
+1 [CMM:662] Rejuvenating Springs
+1 [STA:78] Counterspell
+1 [2X2:348] Mana Drain
+1 [SLD:1494*] Sol Ring
+1 [WOT:71] Rhystic Study
+1 [CMM:694] Fierce Guardianship
+SB: 1 [MAT:85] Kiora, Sovereign of the Deep
+LAYOUT MAIN:(1,11)(CMC,false,46)|([TLA:264],[KHM:251],[NEO:266],[EOE:251],[SNC:248],[LCI:410a],[ELD:333],[SOS:254],[BLB:252],[MKM:262],[DOM:240],[TDM:261],[ZEN:220],[THS:223],[NEO:271],[DMU:252],[SHM:278*],[KHM:266],[KHM:284],[KHM:284],[KHM:284],[KHM:284],[KHM:284],[KHM:284],[KHM:284],[KHM:278],[KHM:278],[KHM:278],[KHM:278],[KHM:278],[KHM:278],[KHM:278],[SUM:288],[SOC:107],[DFT:270],[DMU:261],[M3C:409],[CMM:662])([FDN:160],[M12:165],[LTR:158],[2XM:351],[NEO:372],[SOA:55],[THS:65],[SLD:1494*])([ELD:331],[MH3:147],[RTR:35],[MH3:152],[M13:170],[WAR:160],[RNA:178],[M21:188],[CSP:111],[MRD:199],[SLD:189],[GTC:181],[M12:190],[WOE:195],[STA:78],[2X2:348])([MKM:151],[FDN:220],[WAR:232*],[CHK:225],[THB:305],[MH3:241],[WOT:71],[CMM:694])([DSC:211],[M19:186],[BNG:149],[SNC:413],[M19:74],[BNG:57])([M11:189],[MB2:174],[TLA:319])([DSC:210],[FDN:39],[AER:123],[THB:291],[FIN:361])([M3C:46],[EOE:188],[VOW:359],[KHM:221],[FDN:121],[ZNR:333],[DIS:130],[FIC:185],[EOE:291],[BNG:55])([CMM:78],[EMN:5],[DOM:66])([ELD:161])([KHM:345])
+LAYOUT SIDEBOARD:(1,1)(NONE,false,46)|([MAT:85])

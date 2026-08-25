@@ -105,6 +105,29 @@ public final class CombatUtil {
         return false;
     }
 
+    /**
+     * DARRELLBEST-FORK: <b>deliberately left ranking on raw power, NOT power+toughness.</b>
+     * Reviewed as a candidate for that change and rejected, recorded here so it is not re-litigated.
+     * <p>
+     * Both callers want power specifically, and toughness would make each of them worse:
+     * <ul>
+     *   <li>{@link #canKillOpponent} sorts the attackers descending to model which of them the
+     *       defender will choose to block, then sums the DAMAGE of the ones left over to decide
+     *       whether this attack is lethal. Its model is "the defender blocks the biggest damage
+     *       first". Ranking by power+toughness would model a defender who blocks the most durable
+     *       attacker instead, and would feed a wrong set of survivors into a lethal check -- a
+     *       lethal check that is wrong in the optimistic direction alpha-strikes into a board that
+     *       kills us.</li>
+     *   <li>{@code ComputerPlayer6.declareBlockers} sorts the incoming attackers descending so the
+     *       biggest is assigned a blocker first. The quantity being defended against there is
+     *       damage, which is power. A 1/6 is not more urgent to block than a 6/1.</li>
+     * </ul>
+     * Power+toughness WOULD be the better key for {@link #getWorstCreature}, which is choosing which
+     * of our own creatures to spend and where a 0/8 wall is plainly worth more than a 0/1 token that
+     * scores identically today. That is a real improvement and a separate change -- it moves which
+     * creature gets sacrificed rather than how many candidates are considered, so it wants its own
+     * measurement rather than riding along with the retry loop in {@link #blockWithGoodTrade2}.
+     */
     public static void sortByPower(List<Permanent> permanents, final boolean ascending) {
         permanents.sort(Comparator.comparingInt(p -> p.getPower().getValue()));
         if (!ascending) {
@@ -232,17 +255,41 @@ public final class CombatUtil {
             // TODO: add chump blocking support here?
             // TODO: there are many triggers on damage, attack, etc - it can't be processed without real game simulations
             if (blocker == null) {
-                blocker = getWorstCreature(diedBlockers);
-                if (blocker != null) {
-                    int diffBlockingScore = blockingDiffScore.getOrDefault(blocker, 0);
-                    int diffNonBlockingScore = nonBlockingDiffScore.getOrDefault(blocker, 0);
+                // DARRELLBEST-FORK: try EVERY sacrifice candidate, cheapest first, instead of
+                // giving up after the single cheapest one fails the gate.
+                //
+                // The old code called getWorstCreature(diedBlockers) exactly once. If that one
+                // creature did not pass worthIt, the attacker went through completely UNBLOCKED --
+                // even when the next candidate up would have passed easily. The two gates the
+                // candidate has to clear are both per-creature, so failing on one says nothing
+                // about the rest of the list:
+                //   - the commander penalty is charged only to the commander, so the very creature
+                //     the old code tried first (worst by power -- and a commander is often a small
+                //     body) was the single most likely one to be rejected, after which a plain
+                //     token that would have chumped happily was never considered;
+                //   - worthIt compares blocking against not blocking, and that difference varies
+                //     per blocker.
+                // Measured over graded logs: 22.7% of BLOCK decisions used 0 of the blockers
+                // available to them. Principles 16 and 19 -- chump to stop a real clock, and take
+                // the trades that are actually on offer.
+                //
+                // The gate itself is untouched, including blockTradeMode's exact semantics. This
+                // changes only HOW MANY candidates get to face it. Ascending power preserves the
+                // old preference for spending the cheapest creature that works, and the first
+                // candidate examined is byte-identical to the one the old code examined, so a board
+                // where the cheapest candidate already passed behaves exactly as before.
+                List<Permanent> sacrificeCandidates = new ArrayList<>(diedBlockers);
+                sacrificeCandidates.sort(Comparator.comparingInt(p -> p.getPower().getValue()));
+                for (Permanent candidate : sacrificeCandidates) {
+                    int diffBlockingScore = blockingDiffScore.getOrDefault(candidate, 0);
+                    int diffNonBlockingScore = nonBlockingDiffScore.getOrDefault(candidate, 0);
                     // DARRELLBEST-FORK: losing your own commander is not losing a creature -- it
                     // returns to the command zone and costs 2 more mana on every recast, and in most
                     // decks it IS the engine. The permanent score sees only a 3/3.
-                    mage.players.Player blockerOwner = game.getPlayer(blocker.getControllerId());
+                    mage.players.Player blockerOwner = game.getPlayer(candidate.getControllerId());
                     if (params.getCommanderBlockPenalty() != 0
                             && blockerOwner != null
-                            && game.isCommanderObject(blockerOwner, blocker)) {
+                            && game.isCommanderObject(blockerOwner, candidate)) {
                         diffBlockingScore -= params.getCommanderBlockPenalty();
                     }
                     // DARRELLBEST-FORK: a block that merely scores >= 0 is not good enough; it has
@@ -254,9 +301,11 @@ public final class CombatUtil {
                             : (diffBlockingScore >= 0 || diffBlockingScore > diffNonBlockingScore);
                     if (worthIt) {
                         // it's good - can sacrifice and get better game state, also protect from game loose
+                        blocker = candidate;
                         combatInfo.addPair(attacker, blocker);
                         removeWorstCreature(blocker, blockers, diedBlockers);
                         blockedCount++;
+                        break;
                     }
                 }
             }

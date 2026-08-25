@@ -451,6 +451,25 @@ public class CardSelector extends javax.swing.JPanel implements ComponentListene
         filterCards();
     }
 
+    /**
+     * DARRELLBEST-FORK: jumps this selector to an exact-match search for the given card name (quoting it
+     * so {@link mage.filter.predicate.card.CardTextPredicate} treats it as one token instead of doing a
+     * per-word substring search), then refocuses the search field.
+     *
+     * @param name card name to search for
+     */
+    public void searchCardByName(String name) {
+        if (name == null || name.trim().isEmpty()) {
+            return;
+        }
+        if (!chkNames.isSelected()) {
+            chkNames.setSelected(true);
+        }
+        jTextFieldSearch.setText('"' + name.trim() + '"');
+        filterCards();
+        jTextFieldSearch.requestFocusInWindow();
+    }
+
     private void filterCards() {
         FilterCard filter = buildFilter();
         MageFrame.getDesktop().setCursor(new Cursor(Cursor.WAIT_CURSOR));

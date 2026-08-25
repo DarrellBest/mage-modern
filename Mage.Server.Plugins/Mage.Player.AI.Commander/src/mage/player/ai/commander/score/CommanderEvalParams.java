@@ -96,6 +96,28 @@ public final class CommanderEvalParams {
     public static final CommanderEvalParams TUNED = DEFAULT.toBuilder()
             .handCardScore(60)
             .commanderDamageWeight(8000)
+            // DARRELLBEST-FORK: mode 1 was BUILT and never switched on.
+            //
+            // {@code GameStateEvaluator2.selectOpponent} has carried the most-threatening-opponent
+            // branch since the multiplayer work, and no params set ever called this builder method,
+            // so every live game ran mode 0 -- score the board against whichever opponent
+            // {@code game.getOpponents()} happens to return FIRST. In a Free For All, which is what
+            // the live server runs, two of three opponents are then invisible to the evaluator: it
+            // cannot see a lethal board across the table, and which seat it reacts to is decided by
+            // set iteration order rather than by threat.
+            //
+            // The audit grading pass against docs/ai/pro-gameplay-principles.md measured the symptom
+            // at 82% target fixation -- principles 1 and 2, "track who is closest to winning and
+            // re-run that ranking every turn". Turning on a branch that already exists and is
+            // already tested is the smallest change that can move that number.
+            //
+            // Cost is real and bench-invisible. selectOpponent scores EVERY opponent's board to find
+            // the maximum, so it is roughly Nx the permanent scoring in an N-opponent game, on a bot
+            // that already logs "AI player thinks too long" on large boards. In a duel the method
+            // short-circuits on {@code opponentIds.size() <= 1} and nothing changes at all -- which
+            // is also why Mage.Bench, two-player only, can measure neither the benefit nor the cost.
+            // Both have to be watched on the live server.
+            .opponentSelectionMode(1)
             .modeSelectionMode(1)
             .attackAggression(2)
             .multiplayerAttackSplit(1)
@@ -109,6 +131,17 @@ public final class CommanderEvalParams {
             .commanderPermanentBonus(900)
             .blockTradeMode(1)
             .commanderBlockPenalty(1200)
+            // DARRELLBEST-FORK: the three terms below are UNMEASURED. Each one is a missing concept
+            // rather than a mis-set number -- see the getters for what the evaluator could not say
+            // without them -- but every magnitude here is a judgement call, and this codebase has
+            // already been burned once by tuned-looking constants that had never actually executed
+            // (stackObjectWeight/manaSourceValue/deployedManaValueWeight were tuned while being
+            // thrown away at the end of evaluate()). All three are deliberately small enough that
+            // being wrong about them re-orders close decisions instead of overturning board maths.
+            // They need an A/B before anyone quotes these numbers as tuned.
+            .mustAnswerBonus(200)
+            .overextensionPenalty(60)
+            .commanderRecastPenalty(100)
             .build();
 
     // --- life ---
@@ -132,6 +165,9 @@ public final class CommanderEvalParams {
     private final int unspentManaPenalty;
     private final int deployedManaValueWeight;
     private final int drawEngineBonus;
+    private final int mustAnswerBonus;
+    private final int overextensionPenalty;
+    private final int commanderRecastPenalty;
 
     // --- card definition ---
     private final int baseCardValue;
@@ -184,6 +220,9 @@ public final class CommanderEvalParams {
         this.unspentManaPenalty = b.unspentManaPenalty;
         this.deployedManaValueWeight = b.deployedManaValueWeight;
         this.drawEngineBonus = b.drawEngineBonus;
+        this.mustAnswerBonus = b.mustAnswerBonus;
+        this.overextensionPenalty = b.overextensionPenalty;
+        this.commanderRecastPenalty = b.commanderRecastPenalty;
         this.baseCardValue = b.baseCardValue;
         this.landBaseMultiplier = b.landBaseMultiplier;
         this.landPerManaSymbol = b.landPerManaSymbol;
@@ -238,6 +277,9 @@ public final class CommanderEvalParams {
         b.unspentManaPenalty = this.unspentManaPenalty;
         b.deployedManaValueWeight = this.deployedManaValueWeight;
         b.drawEngineBonus = this.drawEngineBonus;
+        b.mustAnswerBonus = this.mustAnswerBonus;
+        b.overextensionPenalty = this.overextensionPenalty;
+        b.commanderRecastPenalty = this.commanderRecastPenalty;
         b.baseCardValue = this.baseCardValue;
         b.landBaseMultiplier = this.landBaseMultiplier;
         b.landPerManaSymbol = this.landPerManaSymbol;
@@ -565,6 +607,103 @@ public final class CommanderEvalParams {
         return drawEngineBonus;
     }
 
+    /**
+     * DARRELLBEST-FORK: extra score charged for each MUST-ANSWER signal on an OPPONENT's permanent,
+     * so removal has somewhere to point other than "the biggest creature".
+     * <p>
+     * The evaluator's model of a threat is power, toughness and a keyword table, and every card in
+     * hand is a flat {@link #getHandCardScore()} whatever it is. A Doom Blade and a vanilla bear are
+     * the same object to it, and so are Rhystic Study and a 2/2 -- so the search had no way to
+     * prefer killing the card-advantage machine over killing the bear of equal stats. That is
+     * principles 6, 7 and 10 (hold answers for genuine must-answer permanents; do not burn removal
+     * on dorks and depreciated targets) and none of them is expressible by re-tuning a stat weight.
+     * <p>
+     * The signals are judged from RULES OBJECTS, never from card names or rule text -- the same
+     * philosophy as {@code isDrawEngine}, and for the same reason: a curated card list is wrong the
+     * day it is written and needs maintaining forever. See
+     * {@code ArtificialScoringSystem.getMustAnswerSignals} for the four per-permanent signals and
+     * {@code GameStateEvaluator2} for the fifth, which is board-level.
+     * <p>
+     * <b>Deliberately one-sided.</b> "Must answer" is a statement about what THIS player has to deal
+     * with; my own Rhystic Study is excellent but does not need answering. The own-side counterpart
+     * is already partly priced, symmetrically, by {@link #getDrawEngineBonus()} and
+     * {@link #getCommanderPermanentBonus()}. Because the evaluator is differential, charging it on
+     * the opponent's side is exactly what makes removing one of those permanents gain score.
+     * <p>
+     * 0 (the default) keeps the evaluator blind to threat quality, as upstream.
+     */
+    public int getMustAnswerBonus() {
+        return mustAnswerBonus;
+    }
+
+    /**
+     * DARRELLBEST-FORK: score clawed back per own creature deployed PAST the point where more board
+     * stops buying anything -- a diminishing return on deployment.
+     * <p>
+     * {@link #getDeployedManaValueWeight()} pays for every point of mana value put onto the
+     * battlefield, with no ceiling, so emptying the hand always scores better than holding anything
+     * back. Against principles 27, 28 and 38 that is exactly backwards: in a pod you own about a
+     * quarter of the permanents, symmetrical effects are worth far more than in a duel, and the
+     * classic amateur mistake is dumping the hand into an already-winning board and losing
+     * everything to one sweeper.
+     * <p>
+     * <b>What this deliberately does NOT model: whether an opponent is holding a wipe.</b> Untapped
+     * mana plus a color identity is not evidence of a sweeper -- it is evidence of untapped mana --
+     * and a term that guessed would fire constantly against every control deck and never against the
+     * one that actually has the card. The diminishing return alone captures the actionable half of
+     * principle 38 ("hold some threats back") without pretending to know a hidden card.
+     * <p>
+     * Applied only to the bot's OWN board, like {@link #getUnspentManaPenalty()}: "the opponent has
+     * overextended" is not something the bot should pay for, it is something it should exploit.
+     * <p>
+     * On magnitude: this must stay far below what a creature is worth, or the search starts liking
+     * states in which its own creatures are DEAD. A creature scores several hundred at minimum
+     * ({@code permanentOnBattlefieldBonus} 300 plus power and toughness), and TUNED sets this to 60,
+     * about a seventh of the smallest real creature -- enough to break a tie between deploying and
+     * holding, nowhere near enough to make sacrificing a creature attractive.
+     * <p>
+     * 0 (the default) leaves deployment unbounded, as upstream.
+     */
+    public int getOverextensionPenalty() {
+        return overextensionPenalty;
+    }
+
+    /**
+     * DARRELLBEST-FORK: penalty per point of commander tax the bot cannot currently pay, while its
+     * commander is NOT on the battlefield.
+     * <p>
+     * Commander tax is +2 generic per previous cast from the command zone (rule 903.8), and the
+     * evaluator did not model it at all: a commander in the command zone was simply an absent
+     * permanent, priced the same whether rebuying it costs its face value or its face value plus six.
+     * Principle 34 is precisely this economics -- recasting is close to free at low cost and low tax,
+     * and prohibitive once the tax stacks up -- and principle 35 says protection investment scales
+     * INVERSELY with recastability, which the bot cannot reason about without knowing the tax.
+     * <p>
+     * Priced as the UNPAYABLE part of the tax, {@code max(0, 2 * castCount - untapped mana sources)},
+     * rather than as the tax itself. A commander that died with the mana still up to recast it is a
+     * tempo loss the rest of the evaluator already sees; a commander that died at a tax the bot
+     * cannot cover is stranded, which is the loss principle 34 is about. It also gives the term the
+     * right shape over a game: it grows with every recast and shrinks as the mana base grows.
+     * <p>
+     * <b>Interaction with {@link #getCommanderPermanentBonus()}.</b> That bonus (900 in TUNED) is a
+     * flat reward for having the commander out, and it already makes losing one cost something --
+     * but it costs the SAME every time, so the tenth recast looks as cheap as the first. This term is
+     * the part that scales: it is 0 on the first cast with mana up and grows to several hundred once
+     * the tax outruns the board. The two stack in the same direction, which is why this weight is
+     * kept small; the swing for losing the commander is their SUM, and double-counting the same fact
+     * would make the bot refuse every reasonable trade involving its commander -- the exact overshoot
+     * {@code blockTradeMode} was added to fix in the other direction.
+     * <p>
+     * The cast count comes from {@code CommanderPlaysCountWatcher}, the same source
+     * {@code StateFeatures}' {@code commander_cast_count} feature reads, so the evaluator and the
+     * learner cannot disagree about how many times the commander has been cast.
+     * <p>
+     * 0 (the default) keeps commander tax invisible, as upstream.
+     */
+    public int getCommanderRecastPenalty() {
+        return commanderRecastPenalty;
+    }
+
     // --- card definition ---
 
     public int getBaseCardValue() {
@@ -702,6 +841,9 @@ public final class CommanderEvalParams {
                 + ", unspentManaPenalty=" + unspentManaPenalty
                 + ", deployedManaValueWeight=" + deployedManaValueWeight
                 + ", drawEngineBonus=" + drawEngineBonus
+                + ", mustAnswerBonus=" + mustAnswerBonus
+                + ", overextensionPenalty=" + overextensionPenalty
+                + ", commanderRecastPenalty=" + commanderRecastPenalty
                 + ", baseCardValue=" + baseCardValue
                 + ", landBaseMultiplier=" + landBaseMultiplier
                 + ", landPerManaSymbol=" + landPerManaSymbol
@@ -755,6 +897,9 @@ public final class CommanderEvalParams {
         private int unspentManaPenalty = 0;
         private int deployedManaValueWeight = 0;
         private int drawEngineBonus = 0;
+        private int mustAnswerBonus = 0;
+        private int overextensionPenalty = 0;
+        private int commanderRecastPenalty = 0;
         private int baseCardValue = 3;
         private int landBaseMultiplier = 50;
         private int landPerManaSymbol = 50;
@@ -833,6 +978,21 @@ public final class CommanderEvalParams {
 
         public Builder drawEngineBonus(int v) {
             this.drawEngineBonus = v;
+            return this;
+        }
+
+        public Builder mustAnswerBonus(int v) {
+            this.mustAnswerBonus = v;
+            return this;
+        }
+
+        public Builder overextensionPenalty(int v) {
+            this.overextensionPenalty = v;
+            return this;
+        }
+
+        public Builder commanderRecastPenalty(int v) {
+            this.commanderRecastPenalty = v;
             return this;
         }
 

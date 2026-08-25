@@ -58,11 +58,51 @@ public final class LearningSession {
      * benchmark question.
      */
     public double learnedWeight() {
+        if (TRUST_OVERRIDE >= 0) {
+            return TRUST_OVERRIDE;
+        }
         return Math.min(1.0, checkout.version / (double) FULL_TRUST_VERSION);
     }
 
     /** Federated merges after which the learned evaluation is trusted completely. */
     private static final int FULL_TRUST_VERSION = 500;
+
+    /**
+     * DARRELLBEST-FORK: {@code -Dxmage.learner.trust=<0..1>} pins the blend and disables the ramp.
+     * Negative (the default) keeps the ramp.
+     * <p>
+     * This exists for the control experiment that was previously impossible to run. At trust 0 the
+     * learner extracts its features and then multiplies the learned score by zero, so it makes
+     * byte-identical decisions to the hand-tuned bot while paying the full extraction cost. That
+     * separates OVERHEAD from MODEL QUALITY. Every A/B before this conflated the two, which is why
+     * "the learner is a couple of points down" was never actionable -- a slower search and a worse
+     * evaluator are indistinguishable in a win rate.
+     * <p>
+     * It also lets a measurement pin trust at exactly 1.0 instead of playing 500 games to get there.
+     */
+    private static final double TRUST_OVERRIDE = parseTrust();
+
+    private static double parseTrust() {
+        String raw = System.getProperty("xmage.learner.trust");
+        if (raw == null || raw.trim().isEmpty()) {
+            return -1;
+        }
+        try {
+            double v = Double.parseDouble(raw.trim());
+            if (v < 0 || v > 1) {
+                org.apache.log4j.Logger.getLogger(LearningSession.class)
+                        .warn("xmage.learner.trust=" + raw + " outside [0,1] -- ignoring, using the ramp");
+                return -1;
+            }
+            org.apache.log4j.Logger.getLogger(LearningSession.class)
+                    .info("Commander learner trust PINNED at " + v + " (version ramp disabled)");
+            return v;
+        } catch (NumberFormatException e) {
+            org.apache.log4j.Logger.getLogger(LearningSession.class)
+                    .warn("xmage.learner.trust=" + raw + " unparseable -- ignoring, using the ramp");
+            return -1;
+        }
+    }
 
     /**
      * Back up the result and federate. Safe to call more than once and from more than one copy:

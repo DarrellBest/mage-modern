@@ -84,6 +84,21 @@ public final class GameStateEvaluator2 {
 
         int playerPermanentsScore = 0;
         int opponentPermanentsScore = 0;
+
+        // DARRELLBEST-FORK: board SHAPE, accumulated inside the two permanent walks that already run
+        // rather than in walks of their own. Three terms below need it -- must-answer, overextension
+        // and commander recast -- and none of them is worth a third and fourth pass over the
+        // battlefield at every search leaf. Declared out here because the folding happens after the
+        // try; a partial count from an aborted walk is the same failure mode the permanent scores
+        // themselves already have.
+        boolean needBoardShape = params.getMustAnswerBonus() != 0
+                || params.getOverextensionPenalty() != 0;
+        int myCreatureCount = 0;
+        int myCreaturePower = 0;
+        int opponentCreatureCount = 0;
+        int opponentCreaturePower = 0;
+        int mustAnswerSignals = 0;
+        boolean ownCommanderOnBattlefield = false;
         try {
             StringBuilder sbPlayer = new StringBuilder();
             StringBuilder sbOpponent = new StringBuilder();
@@ -92,8 +107,19 @@ public final class GameStateEvaluator2 {
             for (Permanent permanent : game.getBattlefield().getAllActivePermanents(playerId)) {
                 int onePermScore = evaluatePermanent(permanent, game, useCombatPermanentScore, params);
                 playerPermanentsScore += onePermScore;
-                if (logger.isDebugEnabled()) {
-                    sbPlayer.append(permanent.getName()).append('[').append(onePermScore).append("] ");
+                if (needBoardShape && permanent.isCreature(game)) {
+                    myCreatureCount++;
+                    // Negative power exists (Giant Growth's evil twin, -X/-X effects) and would drag
+                    // the average below what any real creature has; clamped for the same reason
+                    // getDynamicPermanentScore clamps toughness.
+                    myCreaturePower += Math.max(permanent.getPower().getValue(), 0);
+                }
+                if (params.getCommanderRecastPenalty() != 0
+                        && !ownCommanderOnBattlefield
+                        && game.isCommanderObject(player, permanent)) {
+                    // Ours, not merely a commander: isCommanderObject is asked about THIS player, so
+                    // an opponent's commander we have stolen does not count as ours being safe.
+                    ownCommanderOnBattlefield = true;
                 }
             }
             if (logger.isDebugEnabled()) {
@@ -102,10 +128,26 @@ public final class GameStateEvaluator2 {
                 logger.debug(sbPlayer);
             }
 
+            // The threshold an opponent's creature has to clear to count as outclassing OUR board.
+            // It can only be computed once the player's own walk above has finished, which is why
+            // the must-answer signals are counted in the opponent walk below and not inside
+            // evaluatePermanent -- evaluatePermanent is handed one permanent and knows nothing about
+            // the board it sits opposite.
+            int outclassThreshold = ArtificialScoringSystem.getOutclassThreshold(
+                    myCreatureCount, myCreaturePower);
+
             // add values of opponent
             for (Permanent permanent : game.getBattlefield().getAllActivePermanents(opponent.getId())) {
                 int onePermScore = evaluatePermanent(permanent, game, useCombatPermanentScore, params);
                 opponentPermanentsScore += onePermScore;
+                if (needBoardShape && permanent.isCreature(game)) {
+                    opponentCreatureCount++;
+                    opponentCreaturePower += Math.max(permanent.getPower().getValue(), 0);
+                }
+                if (params.getMustAnswerBonus() != 0) {
+                    mustAnswerSignals += ArtificialScoringSystem.getMustAnswerSignals(
+                            game, permanent, outclassThreshold);
+                }
                 if (logger.isDebugEnabled()) {
                     sbOpponent.append(permanent.getName()).append('[').append(onePermScore).append("] ");
                 }
@@ -164,10 +206,18 @@ public final class GameStateEvaluator2 {
 
         // DARRELLBEST-FORK: board development and wasted tempo -- neither expressible by any
         // existing weight. See CommanderEvalParams for the logged behaviour behind each.
+        // Own side and opponent side are both needed. Until now only the own side was computed, and
+        // a one-sided development term in an otherwise differential evaluator makes the bot value
+        // its own board twice and the opponent's not at all -- it would happily fall behind on board
+        // as long as it kept deploying.
         int developmentScore = 0;
+        int opponentDevelopmentScore = 0;
         if (params.getDeployedManaValueWeight() != 0) {
             for (Permanent p : game.getBattlefield().getAllActivePermanents(playerId)) {
                 developmentScore += p.getManaValue() * params.getDeployedManaValueWeight();
+            }
+            for (Permanent p : game.getBattlefield().getAllActivePermanents(opponent.getId())) {
+                opponentDevelopmentScore += p.getManaValue() * params.getDeployedManaValueWeight();
             }
         }
         // DARRELLBEST-FORK: untapped mana is a RESOURCE, so spending it costs its value. Without
@@ -177,44 +227,155 @@ public final class GameStateEvaluator2 {
         // Counted in every phase and on every turn, unlike the penalty below: mana you still have
         // is worth something whoever's turn it is, which is also what makes holding up an instant
         // score sensibly instead of looking like waste.
-        int manaValueScore = 0;
-        if (params.getManaSourceValue() != 0) {
-            int sources = 0;
-            for (Permanent p : game.getBattlefield().getAllActivePermanents(playerId)) {
-                if (!p.isTapped() && p.getAbilities(game).stream()
-                        .anyMatch(a -> a instanceof mage.abilities.mana.ManaAbility)) {
-                    sources++;
-                }
-            }
-            manaValueScore = sources * params.getManaSourceValue();
-        }
-
-        int unspentScore = 0;
-        if (params.getUnspentManaPenalty() != 0
-                && playerId.equals(game.getActivePlayerId())
+        // One pass counts untapped mana sources for both terms below. It used to be two separate
+        // walks of the same battlefield running the same predicate, at every search leaf.
+        boolean ownMainPhase = playerId.equals(game.getActivePlayerId())
                 && (game.getTurnStepType() == PhaseStep.PRECOMBAT_MAIN
-                    || game.getTurnStepType() == PhaseStep.POSTCOMBAT_MAIN)) {
-            int openSources = 0;
+                    || game.getTurnStepType() == PhaseStep.POSTCOMBAT_MAIN);
+        boolean needSources = params.getManaSourceValue() != 0
+                || params.getCommanderRecastPenalty() != 0
+                || (params.getUnspentManaPenalty() != 0 && ownMainPhase);
+
+        int openSources = 0;
+        int opponentOpenSources = 0;
+        if (needSources) {
             for (Permanent p : game.getBattlefield().getAllActivePermanents(playerId)) {
-                if (!p.isTapped() && p.getAbilities(game).stream()
-                        .anyMatch(a -> a instanceof mage.abilities.mana.ManaAbility)) {
+                if (!p.isTapped() && hasManaAbility(p, game)) {
                     openSources++;
                 }
             }
+            if (params.getManaSourceValue() != 0) {
+                for (Permanent p : game.getBattlefield().getAllActivePermanents(opponent.getId())) {
+                    if (!p.isTapped() && hasManaAbility(p, game)) {
+                        opponentOpenSources++;
+                    }
+                }
+            }
+        }
+
+        int manaValueScore = openSources * params.getManaSourceValue();
+        int opponentManaValueScore = opponentOpenSources * params.getManaSourceValue();
+
+        // Deliberately one-sided, unlike the two terms above: this is the penalty for ending YOUR
+        // OWN main phase with mana still open. "The opponent has untapped lands on my turn" is not
+        // waste, it is held-up interaction, and is already priced by manaValueScore.
+        int unspentScore = 0;
+        if (params.getUnspentManaPenalty() != 0 && ownMainPhase) {
             unspentScore = -openSources * params.getUnspentManaPenalty();
         }
 
-        int score = developmentScore
-                + manaValueScore
-                + unspentScore
-                + stackScore
-                + (playerLifeScore - opponentLifeScore)
-                + (playerPermanentsScore - opponentPermanentsScore)
-                + (playerHandScore - opponentHandScore);
-        logger.debug(score
-                + " total Score (life:" + (playerLifeScore - opponentLifeScore)
-                + " permanents:" + (playerPermanentsScore - opponentPermanentsScore)
-                + " hand:" + (playerHandScore - opponentHandScore) + ')');
+        // DARRELLBEST-FORK: THREAT QUALITY. See CommanderEvalParams.getMustAnswerBonus for why raw
+        // P/T plus a keyword table cannot express "this is the permanent that wins the game".
+        //
+        // Charged on the OPPONENT's side, which is what makes removal want it gone: getTotalScore is
+        // player minus opponent, so anything added here is score the bot recovers by killing the
+        // permanent that carries it. Nothing is added on our own side -- see the getter.
+        int mustAnswerScore = 0;
+        if (params.getMustAnswerBonus() != 0) {
+            int signals = mustAnswerSignals;
+            // The fifth signal, and the only one that cannot be judged from a single permanent: a
+            // board whose total power already matches our remaining life is a board where every
+            // creature is part of a lethal attack, whatever each one looks like on its own. This is
+            // the "contributes to lethality" half of principle 6, and it is free here -- both
+            // quantities were accumulated in the walk above.
+            if (opponentCreaturePower > 0 && opponentCreaturePower >= player.getLife()) {
+                signals += opponentCreatureCount;
+            }
+            mustAnswerScore = signals * params.getMustAnswerBonus();
+        }
+
+        // DARRELLBEST-FORK: OVEREXTENSION. deployedManaValueWeight pays for every permanent put onto
+        // the battlefield with no ceiling, so emptying the hand always scored better than keeping
+        // anything in it. Principles 27, 28 and 38: in a pod the marginal creature past a winning
+        // board buys almost nothing and is mostly sweeper fuel.
+        //
+        // Charged per creature past (their creatures + margin), which is a DIMINISHING RETURN on
+        // deployment rather than a cap: the surplus creature still scores its full permanent value,
+        // it just scores less of the development bonus. It is deliberately not a wipe-risk model --
+        // see the getter for why "the opponent is holding a sweeper" is not knowable from the public
+        // board and pretending otherwise fires against every control deck and never against the one
+        // holding the card.
+        //
+        // Own side only, and measured against THIS opponent's creature count: with
+        // opponentSelectionMode 1 that is the most threatening opponent, which is the board the bot
+        // actually has to get through, and it keeps the term on the same one-opponent footing as
+        // every other differential here.
+        int overextensionScore = 0;
+        if (params.getOverextensionPenalty() != 0) {
+            int surplus = myCreatureCount - opponentCreatureCount
+                    - ArtificialScoringSystem.OVEREXTENSION_MARGIN;
+            if (surplus > 0) {
+                overextensionScore = surplus * params.getOverextensionPenalty();
+            }
+        }
+
+        // DARRELLBEST-FORK: COMMANDER RECAST ECONOMICS (principles 34 and 35).
+        //
+        // Commander tax is +2 generic per previous cast from the command zone (rule 903.8) and the
+        // evaluator had no concept of it: a commander in the command zone was just an absent
+        // permanent, priced identically whether rebuying it costs four mana or ten. So the bot could
+        // not tell a cheap commander it can redeploy at will from an expensive one it will never see
+        // again, and had no reason to protect the second any harder than the first.
+        //
+        // Priced as the tax it CANNOT currently pay, not as the tax: a commander that died with the
+        // mana still up is a tempo loss the rest of the evaluator already sees, while one that died
+        // at a tax beyond its controller's mana is stranded. openSources is the same untapped-source
+        // proxy manaSourceValue uses -- a count of sources, not of mana, so a Sol Ring counts once;
+        // it is an approximation in the safe direction, since it under-states available mana and so
+        // under-states nothing but the penalty's own relief.
+        //
+        // Stacks with commanderPermanentBonus rather than replacing it: that term is the flat value
+        // of having the commander out, this one is the part that GROWS with each recast. Both are
+        // kept modest because the total cost of losing the commander is their sum.
+        int commanderRecastScore = 0;
+        if (params.getCommanderRecastPenalty() != 0 && !ownCommanderOnBattlefield) {
+            mage.watchers.common.CommanderPlaysCountWatcher plays = game.getState()
+                    .getWatcher(mage.watchers.common.CommanderPlaysCountWatcher.class);
+            // Absent in a non-commander game, which is a legitimate state for this evaluator to be
+            // asked about -- ComputerPlayerCommander is selectable for any format.
+            int castCount = plays == null ? 0 : plays.getPlayerCount(playerId);
+            if (castCount > 0) {
+                int unpayableTax = ArtificialScoringSystem.COMMANDER_TAX_PER_CAST * castCount
+                        - openSources;
+                if (unpayableTax > 0) {
+                    commanderRecastScore = unpayableTax * params.getCommanderRecastPenalty();
+                }
+            }
+        }
+
+        // DARRELLBEST-FORK: fold the four terms above into the buckets that are actually RETURNED.
+        //
+        // They were previously summed into a local `int score` that only ever reached logger.debug,
+        // while the returned PlayerEvaluateScore was built from the six life/hand/permanent fields
+        // alone. getTotalScore() is playerScore - opponentScore over exactly those six, so
+        // stackObjectWeight, manaSourceValue and deployedManaValueWeight -- all three tuned, and one
+        // of them tuned against a measured behaviour change -- have never influenced a single
+        // decision. The evaluator computed them at every leaf and threw them away.
+        //
+        // Whatever tuning produced 150/60/40 was therefore measuring a no-op, and those magnitudes
+        // have no empirical support. They need re-A/B-ing now that they execute.
+        //
+        // Folding into the existing buckets rather than widening the constructor keeps getTotalScore
+        // correct by construction: it subtracts opponent from player, so an own-side quantity added
+        // to the player side and an opponent-side quantity added to the opponent side both land with
+        // the right sign, and an already-differential quantity (stackScore) goes on the player side.
+        //
+        // The three terms added later follow the same rule. Overextension and the commander recast
+        // tax are costs WE pay, so they are subtracted from the player side; must-answer is value
+        // sitting on the OPPONENT's board, so it is added to the opponent side and the bot recovers
+        // it by removing the permanent that carries it.
+        playerPermanentsScore += developmentScore + manaValueScore + unspentScore + stackScore
+                - overextensionScore - commanderRecastScore;
+        opponentPermanentsScore += opponentDevelopmentScore + opponentManaValueScore + mustAnswerScore;
+
+        if (logger.isDebugEnabled()) {
+            logger.debug((playerLifeScore - opponentLifeScore)
+                    + (playerPermanentsScore - opponentPermanentsScore)
+                    + (playerHandScore - opponentHandScore)
+                    + " total Score (life:" + (playerLifeScore - opponentLifeScore)
+                    + " permanents:" + (playerPermanentsScore - opponentPermanentsScore)
+                    + " hand:" + (playerHandScore - opponentHandScore) + ')');
+        }
         return new PlayerEvaluateScore(
                 playerId,
                 playerLifeScore, playerHandScore, playerPermanentsScore,
@@ -234,6 +395,22 @@ public final class GameStateEvaluator2 {
      * scale, so this is a targeting fix rather than a rescaling of the whole evaluator. Summing
      * would change what every other weight means and invalidate the tuning done against them.
      */
+    /**
+     * DARRELLBEST-FORK: does this permanent tap for mana?
+     * <p>
+     * Extracted so the mana-source count is written once rather than duplicated in two adjacent
+     * loops, and hot enough to justify a plain loop over the stream it replaces: this runs per
+     * permanent, per side, at every search leaf.
+     */
+    private static boolean hasManaAbility(Permanent permanent, Game game) {
+        for (mage.abilities.Ability ability : permanent.getAbilities(game)) {
+            if (ability instanceof mage.abilities.mana.ManaAbility) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private static Player selectOpponent(UUID playerId, Game game, boolean useCombatPermanentScore,
             CommanderEvalParams params) {
         java.util.Set<UUID> opponentIds = game.getOpponents(playerId, false);
@@ -272,6 +449,42 @@ public final class GameStateEvaluator2 {
      * lethal, matching how the life curve is steep near death. At the full 21 the penalty equals
      * the weight, which makes the weight directly interpretable: "what is dying to commander
      * damage worth, on the same scale as the life score".
+     * <p>
+     * DARRELLBEST-FORK: the watcher is looked up by the commander's <b>main card</b> id, never by
+     * the id of the object this loop happened to find.
+     * <p>
+     * {@code CommanderInfoWatcher} is registered exactly ONCE per commander, keyed on the MAIN card
+     * id: {@code GameCommanderImpl.initCommander} iterates {@code getCommandersIds(..., false)} and
+     * passes {@code commander.getId()} (GameCommanderImpl.java:125-154), and the key format is
+     * {@code sourceId.toString() + "CommanderInfoWatcher"} (Watcher.getKey). But the object this
+     * loop finds is NOT always that card. For a double-faced commander on the BATTLEFIELD,
+     * {@code getCommanderCardsFromAnyZones} resolves the battlefield through
+     * {@code getPermanent(id)} over <i>all card parts</i> ({@code getCommandersIds(..., true)} ->
+     * CardUtil.getObjectParts, Game.java:729-795), and the only hit is the permanent for the face
+     * that is UP -- carrying the HALF's id. The main card is not in the returned set at all: it is
+     * not in the command zone or the graveyard, so no other branch adds it.
+     * <p>
+     * So the old {@code commander.getId()} lookup could only miss: {@code Watchers.get} logged
+     * "not found in watchers" (Watchers.java:51) and returned null, and the null guard below turned
+     * that into a silent 0. <b>A double-faced commander's damage was invisible to this penalty for
+     * exactly as long as that commander was on the battlefield</b> -- which is when it is dealing
+     * the damage, and the only time the penalty matters.
+     * <p>
+     * Measured, bench, reproducing matchup (Saryth vs PeterParker, seed 606): 6,054 watcher misses
+     * in one game, and the only two keys that ever missed were the two halves of the one MDFC
+     * commander, Peter Parker // Amazing Spider-Man. Instrumented at this call site, 12 of 12
+     * sampled invocations had the returned set equal to exactly
+     * {@code [PermanentCard/Amazing Spider-Man]} with the main card absent, hiding a real 4
+     * commander damage (penalty 0 instead of 8000*4*4/441 = 290). Single-faced commanders (Torbran,
+     * Krenko) have one part whose id IS the main card id, which is why the bug looked
+     * deck-dependent rather than universal.
+     * <p>
+     * {@code getMainCard()} is the engine's own idiom here and is what the watcher itself matches
+     * damage on ({@code sourceId.equals(commander.getMainCard().getId())},
+     * CommanderInfoWatcher.watch) -- this makes the reader agree with the writer. Read-side fix
+     * only: registration is untouched, so nothing on the live-server path can double-register. On a
+     * single-faced commander {@code getMainCard()} returns {@code this} (CardImpl) and the lookup is
+     * identical to before.
      */
     private static int commanderDamagePenalty(UUID playerId, Game game, CommanderEvalParams params) {
         int worst = 0;
@@ -283,8 +496,10 @@ public final class GameStateEvaluator2 {
             for (mage.cards.Card commander : game.getCommanderCardsFromAnyZones(
                     other, mage.constants.CommanderCardType.ANY, mage.constants.Zone.BATTLEFIELD,
                     mage.constants.Zone.COMMAND, mage.constants.Zone.GRAVEYARD)) {
+                mage.cards.Card mainCard = commander.getMainCard();
                 mage.watchers.common.CommanderInfoWatcher watcher = game.getState()
-                        .getWatcher(mage.watchers.common.CommanderInfoWatcher.class, commander.getId());
+                        .getWatcher(mage.watchers.common.CommanderInfoWatcher.class,
+                                mainCard == null ? commander.getId() : mainCard.getId());
                 if (watcher != null) {
                     worst = Math.max(worst, watcher.getDamageToPlayer().getOrDefault(playerId, 0));
                 }
