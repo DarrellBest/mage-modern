@@ -150,11 +150,12 @@ public class ComputerPlayerLearner extends ComputerPlayer7 {
     }
 
     @Override
-    public void lost(Game game) {
-        super.lost(game);
+    public boolean lost(Game game) {
+        boolean result = super.lost(game);
         if (session != null && !game.isSimulation()) {
             session.finishOnce(false);
         }
+        return result;
     }
 
     @Override
