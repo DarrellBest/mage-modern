@@ -278,6 +278,7 @@ public final class MarvelSuperHeroes extends ExpansionSet {
         cards.add(new SetCardInfo("Mountain", 283, Rarity.LAND, mage.cards.basiclands.Mountain.class, FULL_ART_BFZ_VARIOUS));
         cards.add(new SetCardInfo("Mountain", 293, Rarity.LAND, mage.cards.basiclands.Mountain.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Mountain", 294, Rarity.LAND, mage.cards.basiclands.Mountain.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Mister Hyde, Monster Within", 176, Rarity.UNCOMMON, mage.cards.m.MisterHydeMonsterWithin.class));
         cards.add(new SetCardInfo("Ms. Marvel, Kamala Khan", 67, Rarity.RARE, mage.cards.m.MsMarvelKamalaKhan.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Ms. Marvel, Kamala Khan", 361, Rarity.RARE, mage.cards.m.MsMarvelKamalaKhan.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Multiversal Incursion", 68, Rarity.MYTHIC, mage.cards.m.MultiversalIncursion.class, NON_FULL_USE_VARIOUS));
@@ -381,7 +382,8 @@ public final class MarvelSuperHeroes extends ExpansionSet {
         cards.add(new SetCardInfo("Thanos, the Mad Titan", 233, Rarity.MYTHIC, mage.cards.t.ThanosTheMadTitan.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Thanos, the Mad Titan", 376, Rarity.MYTHIC, mage.cards.t.ThanosTheMadTitan.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Thanos, the Mad Titan", 400, Rarity.MYTHIC, mage.cards.t.ThanosTheMadTitan.class, NON_FULL_USE_VARIOUS));
-        cards.add(new SetCardInfo("The Astonishing Ant-Man", 204, Rarity.RARE, mage.cards.t.TheAstonishingAntMan.class));
+        cards.add(new SetCardInfo("The Astonishing Ant-Man", 204, Rarity.RARE, mage.cards.t.TheAstonishingAntMan.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("The Astonishing Ant-Man", 397, Rarity.RARE, mage.cards.t.TheAstonishingAntMan.class, FULL_ART_USE_VARIOUS));
         cards.add(new SetCardInfo("The Coming of Galactus", 212, Rarity.MYTHIC, mage.cards.t.TheComingOfGalactus.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("The Coming of Galactus", 307, Rarity.MYTHIC, mage.cards.t.TheComingOfGalactus.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("The Kingpin of Crime", 220, Rarity.RARE, mage.cards.t.TheKingpinOfCrime.class, NON_FULL_USE_VARIOUS));
