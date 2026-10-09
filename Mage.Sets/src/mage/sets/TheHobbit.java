@@ -58,6 +58,7 @@ public final class TheHobbit extends ExpansionSet {
         cards.add(new SetCardInfo("Bofur, Reliable Guardian", 215, Rarity.UNCOMMON, mage.cards.b.BofurReliableGuardian.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Bofur, Reliable Guardian", 251, Rarity.UNCOMMON, mage.cards.b.BofurReliableGuardian.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Bofur, Reliable Guardian", 6, Rarity.UNCOMMON, mage.cards.b.BofurReliableGuardian.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Bolg of the North", 148, Rarity.UNCOMMON, mage.cards.b.BolgOfTheNorth.class));
         cards.add(new SetCardInfo("Bolg's Company", 149, Rarity.RARE, mage.cards.b.BolgsCompany.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Bolg's Company", 211, Rarity.RARE, mage.cards.b.BolgsCompany.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Bombur, Gentle Dreamer", 88, Rarity.UNCOMMON, mage.cards.b.BomburGentleDreamer.class));
@@ -317,6 +318,8 @@ public final class TheHobbit extends ExpansionSet {
         cards.add(new SetCardInfo("Wargling", 140, Rarity.COMMON, mage.cards.w.Wargling.class));
         cards.add(new SetCardInfo("Well-Worn Spatula", 180, Rarity.COMMON, mage.cards.w.WellWornSpatula.class));
         cards.add(new SetCardInfo("Wilderland Scrounger", 141, Rarity.UNCOMMON, mage.cards.w.WilderlandScrounger.class));
+        cards.add(new SetCardInfo("Wizard's Staff", 59, Rarity.RARE, mage.cards.w.WizardsStaff.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Wizard's Staff", 294, Rarity.RARE, mage.cards.w.WizardsStaff.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Wood Elves", 142, Rarity.COMMON, mage.cards.w.WoodElves.class));
     }
 }
