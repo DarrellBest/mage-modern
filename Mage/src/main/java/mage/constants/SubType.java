@@ -16,6 +16,7 @@ public enum SubType {
     LESSON("Lesson", SubTypeSet.SpellType),
     OMEN("Omen", SubTypeSet.SpellType),
     TRAP("Trap", SubTypeSet.SpellType),
+    VENGEANCE("Vengeance", SubTypeSet.SpellType),
 
     // 205.3q Battles have a unique subtype, called a battle type. That battle type is Siege.
     SIEGE("Siege", SubTypeSet.BattleType),
@@ -304,6 +305,7 @@ public enum SubType {
     MERFOLK("Merfolk", SubTypeSet.CreatureType),
     METATHRAN("Metathran", SubTypeSet.CreatureType),
     MINION("Minion", SubTypeSet.CreatureType),
+    MINDLESS_ONE("Mindless-One", SubTypeSet.CreatureType),
     MINOTAUR("Minotaur", SubTypeSet.CreatureType),
     MIRIALAN("Mirialan", SubTypeSet.CreatureType, true), // Star Wars
     MITE("Mite", SubTypeSet.CreatureType),
