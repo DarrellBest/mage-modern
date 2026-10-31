@@ -62,11 +62,25 @@ POMV=$(grep -m1 '<version>' pom.xml | sed -E 's/.*<version>(.*)<\/version>.*/\1/
 
 # Fork-only modules aren't touched by upstream's version-bump script — realign their
 # parent ref after a bump, or a fresh ~/.m2 can't resolve it (non-resolvable parent POM).
-if [ -f Mage.Bridge/pom.xml ] && ! grep -q "<version>${POMV}</version>" Mage.Bridge/pom.xml; then
-  sed -i "0,/<version>[0-9.]*<\/version>/s//<version>${POMV}<\/version>/" Mage.Bridge/pom.xml
-  git commit -q -m "bridge: align parent pom to ${POMV} (upstream version bump)" Mage.Bridge/pom.xml
-  echo "    realigned Mage.Bridge parent to ${POMV}"
-fi
+# The first <version> in each of these poms is its parent ref.
+FORK_ONLY_POMS="Mage.Bridge/pom.xml Mage.Bench/pom.xml Mage.Server.Plugins/Mage.Player.AI.Commander/pom.xml"
+realigned=""
+for p in $FORK_ONLY_POMS; do
+  [ -f "$p" ] || continue
+  parentv=$(grep -m1 '<version>' "$p" | sed -E 's/.*<version>(.*)<\/version>.*/\1/')
+  if [ "$parentv" != "$POMV" ]; then
+    sed -i "0,/<version>[0-9.]*<\/version>/s//<version>${POMV}<\/version>/" "$p"
+    realigned="$realigned $p"
+    echo "    realigned $p parent ${parentv} -> ${POMV}"
+  fi
+done
+[ -z "$realigned" ] || git commit -q -m "fork modules: align parent poms to ${POMV} (upstream version bump)" $realigned
+# Guard: any other module still on the previous version means a new fork-only module
+# was added without being listed above — fail here instead of mid-build.
+stale=$(git grep -l -E "<version>[0-9]+\.[0-9]+\.[0-9]+</version>" -- '*pom.xml' | while read -r p; do
+  v=$(grep -m1 -A0 '<version>' "$p" | sed -E 's/.*<version>(.*)<\/version>.*/\1/')
+  grep -q '<artifactId>mage-root</artifactId>\|<artifactId>mage-server-plugins</artifactId>\|<artifactId>mage-plugins</artifactId>' "$p" && [ "$v" != "$POMV" ] && echo "$p ($v)"; done || true)
+[ -z "$stale" ] || die "module parent poms not on ${POMV} (add them to FORK_ONLY_POMS): $stale"
 git push origin "$WORK_BRANCH"
 
 echo "    deploying version: $POMV  (commit $(git rev-parse --short HEAD))"
