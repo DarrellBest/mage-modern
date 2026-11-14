@@ -883,8 +883,7 @@ public class ComputerPlayer6 extends ComputerPlayer {
     protected boolean allPassed(Game game) {
         for (Player player : game.getPlayers().values()) {
             if (!player.isPassed()
-                    && !player.hasLost()
-                    && !player.hasLeft()) {
+                    && player.isInGame()) {
                 return false;
             }
         }

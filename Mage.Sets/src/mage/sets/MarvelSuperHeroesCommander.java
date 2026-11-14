@@ -268,6 +268,8 @@ public final class MarvelSuperHeroesCommander extends ExpansionSet {
         cards.add(new SetCardInfo("Furious Strength", 544, Rarity.COMMON, mage.cards.f.FuriousStrength.class));
         cards.add(new SetCardInfo("Furycalm Snarl", 247, Rarity.RARE, mage.cards.f.FurycalmSnarl.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Furycalm Snarl", 476, Rarity.RARE, mage.cards.f.FurycalmSnarl.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Galactus, Devourer of Worlds", 291, Rarity.RARE, mage.cards.g.GalactusDevourerOfWorlds.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Galactus, Devourer of Worlds", 8, Rarity.RARE, mage.cards.g.GalactusDevourerOfWorlds.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Gallant Citizen", 820, Rarity.COMMON, mage.cards.g.GallantCitizen.class));
         cards.add(new SetCardInfo("Galvanic Iteration", 184, Rarity.RARE, mage.cards.g.GalvanicIteration.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Galvanic Iteration", 404, Rarity.RARE, mage.cards.g.GalvanicIteration.class, NON_FULL_USE_VARIOUS));
@@ -294,6 +296,8 @@ public final class MarvelSuperHeroesCommander extends ExpansionSet {
         cards.add(new SetCardInfo("Greater Good", 380, Rarity.RARE, mage.cards.g.GreaterGood.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Green Goblin, Back for More", 657, Rarity.RARE, mage.cards.g.GreenGoblinBackForMore.class));
         cards.add(new SetCardInfo("Grim Reaper's Scythe", 658, Rarity.RARE, mage.cards.g.GrimReapersScythe.class));
+        cards.add(new SetCardInfo("H.E.R.B.I.E., Lovable Robot", 106, Rarity.RARE, mage.cards.h.HERBIELovableRobot.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("H.E.R.B.I.E., Lovable Robot", 436, Rarity.RARE, mage.cards.h.HERBIELovableRobot.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("HYDRA Disintegrator", 660, Rarity.UNCOMMON, mage.cards.h.HYDRADisintegrator.class));
         cards.add(new SetCardInfo("Hammer of Nazahn", 286, Rarity.RARE, mage.cards.h.HammerOfNazahn.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Hammer of Nazahn", 427, Rarity.RARE, mage.cards.h.HammerOfNazahn.class, NON_FULL_USE_VARIOUS));
@@ -569,6 +573,7 @@ public final class MarvelSuperHeroesCommander extends ExpansionSet {
         cards.add(new SetCardInfo("Royal Talon Fighter Jet", 321, Rarity.RARE, mage.cards.r.RoyalTalonFighterJet.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Sadistic Slash", 666, Rarity.UNCOMMON, mage.cards.s.SadisticSlash.class));
         cards.add(new SetCardInfo("Savage Lands", 827, Rarity.UNCOMMON, mage.cards.s.SavageLands.class));
+        cards.add(new SetCardInfo("Sauron, Dino Devotee", 731, Rarity.MYTHIC, mage.cards.s.SauronDinoDevotee.class));
         cards.add(new SetCardInfo("Scarlet Witch, Chaotic Avenger", 414, Rarity.RARE, mage.cards.s.ScarletWitchChaoticAvenger.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Scarlet Witch, Chaotic Avenger", 93, Rarity.RARE, mage.cards.s.ScarletWitchChaoticAvenger.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Scarlet Witch, Wanda Maximoff", 855, Rarity.UNCOMMON, mage.cards.s.ScarletWitchWandaMaximoff.class));
