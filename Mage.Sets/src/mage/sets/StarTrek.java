@@ -94,6 +94,7 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("Collation Trimatrix", 98, Rarity.RARE, mage.cards.c.CollationTrimatrix.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Collation Trimatrix", 455, Rarity.RARE, mage.cards.c.CollationTrimatrix.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Collective Drone", 99, Rarity.UNCOMMON, mage.cards.c.CollectiveDrone.class));
+        cards.add(new SetCardInfo("Combadge", 260, Rarity.UNCOMMON, mage.cards.c.Combadge.class));
         cards.add(new SetCardInfo("Command Decision", 8, Rarity.COMMON, mage.cards.c.CommandDecision.class));
         cards.add(new SetCardInfo("Command Subadjunct", 341, Rarity.UNCOMMON, mage.cards.c.CommandSubadjunct.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Command Subadjunct", 364, Rarity.UNCOMMON, mage.cards.c.CommandSubadjunct.class, NON_FULL_USE_VARIOUS));
@@ -156,6 +157,10 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("Dr. Beverly Crusher", 500, Rarity.MYTHIC, mage.cards.d.DrBeverlyCrusher.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Dr. Joseph M'Benga", 196, Rarity.MYTHIC, mage.cards.d.DrJosephMBenga.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Dr. Joseph M'Benga", 469, Rarity.MYTHIC, mage.cards.d.DrJosephMBenga.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Dr. Leonard \"Bones\" McCoy", 197, Rarity.RARE, mage.cards.d.DrLeonardBonesMcCoy.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Dr. Leonard \"Bones\" McCoy", 421, Rarity.RARE, mage.cards.d.DrLeonardBonesMcCoy.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Dr. Leonard \"Bones\" McCoy", 545, Rarity.RARE, mage.cards.d.DrLeonardBonesMcCoy.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Dr. Leonard \"Bones\" McCoy", 558, Rarity.RARE, mage.cards.d.DrLeonardBonesMcCoy.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Dr. McCoy, Surly Surgeon", 14, Rarity.UNCOMMON, mage.cards.d.DrMcCoySurlySurgeon.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Dr. McCoy, Surly Surgeon", 402, Rarity.UNCOMMON, mage.cards.d.DrMcCoySurlySurgeon.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Dr. McCoy, Surly Surgeon", 526, Rarity.UNCOMMON, mage.cards.d.DrMcCoySurlySurgeon.class, NON_FULL_USE_VARIOUS));
@@ -333,6 +338,8 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("Neelix, Moral Support", 209, Rarity.UNCOMMON, mage.cards.n.NeelixMoralSupport.class));
         cards.add(new SetCardInfo("Ni'Var Science Academy", 287, Rarity.RARE, mage.cards.n.NiVarScienceAcademy.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Ni'Var Science Academy", 333, Rarity.RARE, mage.cards.n.NiVarScienceAcademy.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Nog, Ambitious Cadet", 249, Rarity.RARE, mage.cards.n.NogAmbitiousCadet.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Nog, Ambitious Cadet", 351, Rarity.RARE, mage.cards.n.NogAmbitiousCadet.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Nyota Uhura, Communications", 75, Rarity.RARE, mage.cards.n.NyotaUhuraCommunications.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Nyota Uhura, Communications", 358, Rarity.RARE, mage.cards.n.NyotaUhuraCommunications.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Nyota Uhura, Communications", 412, Rarity.RARE, mage.cards.n.NyotaUhuraCommunications.class, NON_FULL_USE_VARIOUS));
