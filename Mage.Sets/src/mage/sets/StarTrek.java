@@ -301,6 +301,8 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("Quark's Bar", 292, Rarity.RARE, mage.cards.q.QuarksBar.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Quark's Bar", 335, Rarity.RARE, mage.cards.q.QuarksBar.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Quark's Bar", 350, Rarity.RARE, mage.cards.q.QuarksBar.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Quark, Humble Proprietor", 166, Rarity.MYTHIC, mage.cards.q.QuarkHumbleProprietor.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Quark, Humble Proprietor", 347, Rarity.MYTHIC, mage.cards.q.QuarkHumbleProprietor.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Ravenous Cosmozoan", 167, Rarity.UNCOMMON, mage.cards.r.RavenousCosmozoan.class));
         cards.add(new SetCardInfo("Reckless Impulse", 168, Rarity.COMMON, mage.cards.r.RecklessImpulse.class));
         cards.add(new SetCardInfo("Red Alert!", 169, Rarity.UNCOMMON, mage.cards.r.RedAlert.class));
