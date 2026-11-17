@@ -185,6 +185,8 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("Grand Nagus Zek", 112, Rarity.RARE, mage.cards.g.GrandNagusZek.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Grand Nagus Zek", 458, Rarity.RARE, mage.cards.g.GrandNagusZek.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Guidance Failure", 60, Rarity.COMMON, mage.cards.g.GuidanceFailure.class));
+        cards.add(new SetCardInfo("Gul Dukat, Colonial Prefect", 113, Rarity.MYTHIC, mage.cards.g.GulDukatColonialPrefect.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Gul Dukat, Colonial Prefect", 459, Rarity.MYTHIC, mage.cards.g.GulDukatColonialPrefect.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Hallowed Fountain", 286, Rarity.RARE, mage.cards.h.HallowedFountain.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Hallowed Fountain", 392, Rarity.RARE, mage.cards.h.HallowedFountain.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Hallowed Fountain", 487, Rarity.RARE, mage.cards.h.HallowedFountain.class, NON_FULL_USE_VARIOUS));
@@ -386,6 +388,7 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("Tactical Officer", 38, Rarity.COMMON, mage.cards.t.TacticalOfficer.class));
         cards.add(new SetCardInfo("Tal Shiar Analyst", 174, Rarity.COMMON, mage.cards.t.TalShiarAnalyst.class));
         cards.add(new SetCardInfo("Tal Shiar Operative", 131, Rarity.COMMON, mage.cards.t.TalShiarOperative.class));
+        cards.add(new SetCardInfo("Targ Wrangler", 175, Rarity.UNCOMMON, mage.cards.t.TargWrangler.class));
         cards.add(new SetCardInfo("Tea, Earl Grey, Hot", 269, Rarity.COMMON, mage.cards.t.TeaEarlGreyHot.class));
         cards.add(new SetCardInfo("Temple Garden", 301, Rarity.RARE, mage.cards.t.TempleGarden.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Temple Garden", 396, Rarity.RARE, mage.cards.t.TempleGarden.class, NON_FULL_USE_VARIOUS));
