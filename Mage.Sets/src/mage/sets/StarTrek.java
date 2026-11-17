@@ -112,6 +112,10 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("D-7 Battle Cruiser", 553, Rarity.RARE, mage.cards.d.D7BattleCruiser.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("D'Ghor Bloodletter", 101, Rarity.UNCOMMON, mage.cards.d.DGhorBloodletter.class));
         cards.add(new SetCardInfo("D'Vana Tendi, Optimistic Ensign", 236, Rarity.UNCOMMON, mage.cards.d.DVanaTendiOptimisticEnsign.class));
+        cards.add(new SetCardInfo("Death Is Irrelevant", 102, Rarity.MYTHIC, mage.cards.d.DeathIsIrrelevant.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Death Is Irrelevant", 362, Rarity.MYTHIC, mage.cards.d.DeathIsIrrelevant.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Death Is Irrelevant", 375, Rarity.MYTHIC, mage.cards.d.DeathIsIrrelevant.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Death Is Irrelevant", 509, Rarity.MYTHIC, mage.cards.d.DeathIsIrrelevant.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("DOT-7 Repair Squad", 12, Rarity.COMMON, mage.cards.d.DOT7RepairSquad.class));
         cards.add(new SetCardInfo("Dahar Master", 146, Rarity.COMMON, mage.cards.d.DaharMaster.class));
         cards.add(new SetCardInfo("Dal R'El, Augment Orphan", 231, Rarity.UNCOMMON, mage.cards.d.DalRElAugmentOrphan.class));
