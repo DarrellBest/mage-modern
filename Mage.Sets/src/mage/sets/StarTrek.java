@@ -199,6 +199,9 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("Guidance Failure", 60, Rarity.COMMON, mage.cards.g.GuidanceFailure.class));
         cards.add(new SetCardInfo("Gul Dukat, Colonial Prefect", 113, Rarity.MYTHIC, mage.cards.g.GulDukatColonialPrefect.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Gul Dukat, Colonial Prefect", 459, Rarity.MYTHIC, mage.cards.g.GulDukatColonialPrefect.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("H.M.S. Bounty, Unlikely Timeship", 63, Rarity.RARE, mage.cards.h.HMSBountyUnlikelyTimeship.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("H.M.S. Bounty, Unlikely Timeship", 451, Rarity.RARE, mage.cards.h.HMSBountyUnlikelyTimeship.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("H.M.S. Bounty, Unlikely Timeship", 551, Rarity.RARE, mage.cards.h.HMSBountyUnlikelyTimeship.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Hallowed Fountain", 286, Rarity.RARE, mage.cards.h.HallowedFountain.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Hallowed Fountain", 392, Rarity.RARE, mage.cards.h.HallowedFountain.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Hallowed Fountain", 487, Rarity.RARE, mage.cards.h.HallowedFountain.class, NON_FULL_USE_VARIOUS));

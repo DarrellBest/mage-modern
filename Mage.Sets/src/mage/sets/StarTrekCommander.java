@@ -322,6 +322,8 @@ public final class StarTrekCommander extends ExpansionSet {
         cards.add(new SetCardInfo("Promise of Loyalty", 426, Rarity.RARE, mage.cards.p.PromiseOfLoyalty.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Qo'noS Quartermaster", 74, Rarity.RARE, mage.cards.q.QonoSQuartermaster.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Qo'noS Quartermaster", 292, Rarity.RARE, mage.cards.q.QonoSQuartermaster.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Queen's Diamond", 118, Rarity.RARE, mage.cards.q.QueensDiamond.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Queen's Diamond", 352, Rarity.RARE, mage.cards.q.QueensDiamond.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Radiant Summit", 395, Rarity.RARE, mage.cards.r.RadiantSummit.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Radiant Summit", 549, Rarity.RARE, mage.cards.r.RadiantSummit.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Rain-Slicked Copse", 396, Rarity.RARE, mage.cards.r.RainSlickedCopse.class, NON_FULL_USE_VARIOUS));
@@ -348,6 +350,8 @@ public final class StarTrekCommander extends ExpansionSet {
         cards.add(new SetCardInfo("Ruinous Ultimatum", 329, Rarity.RARE, mage.cards.r.RuinousUltimatum.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Ruinous Ultimatum", 479, Rarity.RARE, mage.cards.r.RuinousUltimatum.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Run Amok", 582, Rarity.COMMON, mage.cards.r.RunAmok.class));
+        cards.add(new SetCardInfo("S.S. Botany Bay", 120, Rarity.RARE, mage.cards.s.SSBotanyBay.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("S.S. Botany Bay", 355, Rarity.RARE, mage.cards.s.SSBotanyBay.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Sam Kirk, Xenoanthropologist", 263, Rarity.RARE, mage.cards.s.SamKirkXenoanthropologist.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Sam Kirk, Xenoanthropologist", 49, Rarity.RARE, mage.cards.s.SamKirkXenoanthropologist.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Satyr Wayfinder", 469, Rarity.COMMON, mage.cards.s.SatyrWayfinder.class));
@@ -457,6 +461,8 @@ public final class StarTrekCommander extends ExpansionSet {
         cards.add(new SetCardInfo("Training Center", 413, Rarity.RARE, mage.cards.t.TrainingCenter.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Training Center", 572, Rarity.RARE, mage.cards.t.TrainingCenter.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Tranquil Landscape", 573, Rarity.COMMON, mage.cards.t.TranquilLandscape.class));
+        cards.add(new SetCardInfo("Transwarp Hub", 52, Rarity.RARE, mage.cards.t.TranswarpHub.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Transwarp Hub", 266, Rarity.RARE, mage.cards.t.TranswarpHub.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Trelane, Squire of Gothos", 195, Rarity.RARE, mage.cards.t.TrelaneSquireOfGothos.class));
         cards.add(new SetCardInfo("Tribble Cluster", 242, Rarity.RARE, mage.cards.t.TribbleCluster.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Tribble Cluster", 32, Rarity.RARE, mage.cards.t.TribbleCluster.class, NON_FULL_USE_VARIOUS));
@@ -467,10 +473,16 @@ public final class StarTrekCommander extends ExpansionSet {
         cards.add(new SetCardInfo("U.S.S. Defiant, Mirror Migrant", 360, Rarity.RARE, mage.cards.u.USSDefiantMirrorMigrant.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("U.S.S. Defiant, Tough Little Ship", 125, Rarity.RARE, mage.cards.u.USSDefiantToughLittleShip.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("U.S.S. Defiant, Tough Little Ship", 361, Rarity.RARE, mage.cards.u.USSDefiantToughLittleShip.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("U.S.S. Enterprise-C, Time-Tossed", 126, Rarity.RARE, mage.cards.u.USSEnterpriseCTimeTossed.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("U.S.S. Enterprise-C, Time-Tossed", 362, Rarity.RARE, mage.cards.u.USSEnterpriseCTimeTossed.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("U.S.S. Enterprise-E, Sovereign", 244, Rarity.RARE, mage.cards.u.USSEnterpriseESovereign.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("U.S.S. Enterprise-E, Sovereign", 34, Rarity.RARE, mage.cards.u.USSEnterpriseESovereign.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("U.S.S. Farragut, Bold Explorer", 127, Rarity.RARE, mage.cards.u.USSFarragutBoldExplorer.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("U.S.S. Farragut, Bold Explorer", 363, Rarity.RARE, mage.cards.u.USSFarragutBoldExplorer.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("U.S.S. Prometheus, Prototype", 128, Rarity.RARE, mage.cards.u.USSPrometheusPrototype.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("U.S.S. Prometheus, Prototype", 364, Rarity.RARE, mage.cards.u.USSPrometheusPrototype.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("U.S.S. Stargazer, Here and There", 129, Rarity.RARE, mage.cards.u.USSStargazerHereAndThere.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("U.S.S. Stargazer, Here and There", 365, Rarity.RARE, mage.cards.u.USSStargazerHereAndThere.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Uhura, Xenolinguist", 182, Rarity.RARE, mage.cards.u.UhuraXenolinguist.class));
         cards.add(new SetCardInfo("Umbral Expanse", 414, Rarity.RARE, mage.cards.u.UmbralExpanse.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Umbral Expanse", 574, Rarity.RARE, mage.cards.u.UmbralExpanse.class, NON_FULL_USE_VARIOUS));

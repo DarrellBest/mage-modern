@@ -3182,8 +3182,8 @@
 |TOK:TRC|Insect|2|InsectToken|
 |TOK:TRC|Citizen|1|CitizenGreenWhiteToken|
 |TOK:TRC|Citizen|2|CitizenGreenWhiteToken|
-#|TOK:TRC|Spacecraft Illusion|1|SpacecraftIllusionToken|
-#|TOK:TRC|Spacecraft Illusion|2|SpacecraftIllusionToken|
+|TOK:TRC|Spacecraft Illusion|1|SpacecraftIllusionToken|
+|TOK:TRC|Spacecraft Illusion|2|SpacecraftIllusionToken|
 
 # JVC
 |TOK:JVC|Elemental Shaman||ElementalShamanToken|
