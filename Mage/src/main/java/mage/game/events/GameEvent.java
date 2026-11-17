@@ -634,6 +634,15 @@ public class GameEvent implements Serializable {
          flag        not used for this event
          */
         VOTE, VOTED,
+        /* FACED_DILEMMA (700.17, Star Trek): a player chose one or more modes for a modal spell or ability.
+         Fired once per spell/ability, after it was successfully cast/activated/put on the stack (choosing several
+         modes is still one dilemma; what happens to the spell or ability afterwards doesn't matter).
+         DARRELLBEST-FORK: added by the fork; upstream may implement this differently, prefer theirs when it lands.
+         targetId    id of the spell or ability
+         sourceId    sourceId of the spell or ability
+         playerId    player who faced the dilemma (chose the modes)
+         */
+        FACED_DILEMMA,
         /* dungeons
          targetId    id of the room
          sourceId    sourceId of the ability causing player to venture

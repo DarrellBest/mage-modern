@@ -480,6 +480,11 @@ public abstract class AbilityImpl implements Ability {
             game.informPlayers(controller.getLogName() + " announces a value of " + xValue + " for " + variableManaCost.getText()
                     + CardUtil.getSourceLogName(game, this));
         }
+        // 700.17 (Star Trek): choosing one or more modes for a modal spell or ability is facing a dilemma.
+        // Fired only once the cast/activation succeeded, so cancelled casts don't count. DARRELLBEST-FORK.
+        if (getModes().size() > 1 && !getModes().getSelectedModes().isEmpty()) {
+            game.fireEvent(new GameEvent(GameEvent.EventType.FACED_DILEMMA, getId(), this, getControllerId()));
+        }
         activated = true;
         return true;
     }
