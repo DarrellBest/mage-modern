@@ -276,6 +276,8 @@ public final class StarTrekCommander extends ExpansionSet {
         cards.add(new SetCardInfo("Last Gasp", 580, Rarity.COMMON, mage.cards.l.LastGasp.class));
         cards.add(new SetCardInfo("Lieutenant Hikaru Sulu", 305, Rarity.RARE, mage.cards.l.LieutenantHikaruSulu.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Lieutenant Hikaru Sulu", 80, Rarity.RARE, mage.cards.l.LieutenantHikaruSulu.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Lieutenant Nyota Uhura", 46, Rarity.RARE, mage.cards.l.LieutenantNyotaUhura.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Lieutenant Nyota Uhura", 260, Rarity.RARE, mage.cards.l.LieutenantNyotaUhura.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Lightning Greaves", 496, Rarity.UNCOMMON, mage.cards.l.LightningGreaves.class));
         cards.add(new SetCardInfo("Locutus of Borg", 209, Rarity.MYTHIC, mage.cards.l.LocutusOfBorg.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Locutus of Borg", 97, Rarity.MYTHIC, mage.cards.l.LocutusOfBorg.class, NON_FULL_USE_VARIOUS));
@@ -283,6 +285,8 @@ public final class StarTrekCommander extends ExpansionSet {
         cards.add(new SetCardInfo("Loran of the Third Path", 424, Rarity.RARE, mage.cards.l.LoranOfTheThirdPath.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Lotus Cobra", 306, Rarity.RARE, mage.cards.l.LotusCobra.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Lotus Cobra", 466, Rarity.RARE, mage.cards.l.LotusCobra.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Lt. Arex, Ever-Adapting", 98, Rarity.RARE, mage.cards.l.LtArexEverAdapting.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Lt. Arex, Ever-Adapting", 323, Rarity.RARE, mage.cards.l.LtArexEverAdapting.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("M'Ress, Crew Coordinator", 233, Rarity.RARE, mage.cards.m.MRessCrewCoordinator.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("M'Ress, Crew Coordinator", 26, Rarity.RARE, mage.cards.m.MRessCrewCoordinator.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Martok, Hero of the Empire", 23, Rarity.RARE, mage.cards.m.MartokHeroOfTheEmpire.class, NON_FULL_USE_VARIOUS));
@@ -351,6 +355,8 @@ public final class StarTrekCommander extends ExpansionSet {
         cards.add(new SetCardInfo("Reconnaissance Partition", 119, Rarity.RARE, mage.cards.r.ReconnaissancePartition.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Reconnaissance Partition", 353, Rarity.RARE, mage.cards.r.ReconnaissancePartition.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Refute", 579, Rarity.COMMON, mage.cards.r.Refute.class));
+        cards.add(new SetCardInfo("Reg Barclay, Fidgety Fantasist", 102, Rarity.RARE, mage.cards.r.RegBarclayFidgetyFantasist.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Reg Barclay, Fidgety Fantasist", 327, Rarity.RARE, mage.cards.r.RegBarclayFidgetyFantasist.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Reliquary Tower", 551, Rarity.UNCOMMON, mage.cards.r.ReliquaryTower.class));
         cards.add(new SetCardInfo("Return to Dust", 427, Rarity.UNCOMMON, mage.cards.r.ReturnToDust.class));
         cards.add(new SetCardInfo("Right of Vengeance", 27, Rarity.RARE, mage.cards.r.RightOfVengeance.class, NON_FULL_USE_VARIOUS));
@@ -388,6 +394,8 @@ public final class StarTrekCommander extends ExpansionSet {
         cards.add(new SetCardInfo("Shattered Landscape", 557, Rarity.COMMON, mage.cards.s.ShatteredLandscape.class));
         cards.add(new SetCardInfo("Shineshadow Snarl", 400, Rarity.RARE, mage.cards.s.ShineshadowSnarl.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Shineshadow Snarl", 558, Rarity.RARE, mage.cards.s.ShineshadowSnarl.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Shore Leave Planet", 130, Rarity.RARE, mage.cards.s.ShoreLeavePlanet.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Shore Leave Planet", 401, Rarity.RARE, mage.cards.s.ShoreLeavePlanet.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Shuttle Crew", 137, Rarity.UNCOMMON, mage.cards.s.ShuttleCrew.class));
         cards.add(new SetCardInfo("Shuttlecraft Galileo", 236, Rarity.RARE, mage.cards.s.ShuttlecraftGalileo.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Shuttlecraft Galileo", 28, Rarity.RARE, mage.cards.s.ShuttlecraftGalileo.class, NON_FULL_USE_VARIOUS));

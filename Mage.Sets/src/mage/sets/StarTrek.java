@@ -53,6 +53,8 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("Blood Crypt", 394, Rarity.RARE, mage.cards.b.BloodCrypt.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Blood Crypt", 489, Rarity.RARE, mage.cards.b.BloodCrypt.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Boarding Action", 139, Rarity.COMMON, mage.cards.b.BoardingAction.class));
+        cards.add(new SetCardInfo("Branching Timeline", 185, Rarity.RARE, mage.cards.b.BranchingTimeline.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Branching Timeline", 466, Rarity.RARE, mage.cards.b.BranchingTimeline.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Breeding Pool", 279, Rarity.RARE, mage.cards.b.BreedingPool.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Breeding Pool", 401, Rarity.RARE, mage.cards.b.BreedingPool.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Breeding Pool", 496, Rarity.RARE, mage.cards.b.BreedingPool.class, NON_FULL_USE_VARIOUS));
@@ -114,10 +116,17 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("D-7 Battle Cruiser", 553, Rarity.RARE, mage.cards.d.D7BattleCruiser.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("D'Ghor Bloodletter", 101, Rarity.UNCOMMON, mage.cards.d.DGhorBloodletter.class));
         cards.add(new SetCardInfo("D'Vana Tendi, Optimistic Ensign", 236, Rarity.UNCOMMON, mage.cards.d.DVanaTendiOptimisticEnsign.class));
+        cards.add(new SetCardInfo("Dathon, His Heart Open", 233, Rarity.RARE, mage.cards.d.DathonHisHeartOpen.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Dathon, His Heart Open", 388, Rarity.RARE, mage.cards.d.DathonHisHeartOpen.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Dathon, His Heart Open", 522, Rarity.RARE, mage.cards.d.DathonHisHeartOpen.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Death Is Irrelevant", 102, Rarity.MYTHIC, mage.cards.d.DeathIsIrrelevant.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Death Is Irrelevant", 362, Rarity.MYTHIC, mage.cards.d.DeathIsIrrelevant.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Death Is Irrelevant", 375, Rarity.MYTHIC, mage.cards.d.DeathIsIrrelevant.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Death Is Irrelevant", 509, Rarity.MYTHIC, mage.cards.d.DeathIsIrrelevant.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Dominion Infiltration", 147, Rarity.RARE, mage.cards.d.DominionInfiltration.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Dominion Infiltration", 349, Rarity.RARE, mage.cards.d.DominionInfiltration.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Dominion Infiltration", 380, Rarity.RARE, mage.cards.d.DominionInfiltration.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Dominion Infiltration", 514, Rarity.RARE, mage.cards.d.DominionInfiltration.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("DOT-7 Repair Squad", 12, Rarity.COMMON, mage.cards.d.DOT7RepairSquad.class));
         cards.add(new SetCardInfo("Dahar Master", 146, Rarity.COMMON, mage.cards.d.DaharMaster.class));
         cards.add(new SetCardInfo("Dal R'El, Augment Orphan", 231, Rarity.UNCOMMON, mage.cards.d.DalRElAugmentOrphan.class));
@@ -165,6 +174,7 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("Excalbian Gamemaster", 16, Rarity.MYTHIC, mage.cards.e.ExcalbianGamemaster.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Excalbian Gamemaster", 403, Rarity.MYTHIC, mage.cards.e.ExcalbianGamemaster.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Excalbian Gamemaster", 527, Rarity.MYTHIC, mage.cards.e.ExcalbianGamemaster.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Exploratory Mission", 150, Rarity.UNCOMMON, mage.cards.e.ExploratoryMission.class));
         cards.add(new SetCardInfo("Federation Field Medic", 17, Rarity.COMMON, mage.cards.f.FederationFieldMedic.class));
         cards.add(new SetCardInfo("Federation Outpost", 282, Rarity.RARE, mage.cards.f.FederationOutpost.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Federation Outpost", 332, Rarity.RARE, mage.cards.f.FederationOutpost.class, NON_FULL_USE_VARIOUS));
@@ -206,6 +216,7 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("Gowron, Eager for Battle", 443, Rarity.RARE, mage.cards.g.GowronEagerForBattle.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Grand Nagus Zek", 112, Rarity.RARE, mage.cards.g.GrandNagusZek.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Grand Nagus Zek", 458, Rarity.RARE, mage.cards.g.GrandNagusZek.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Gray and Adira, Forever Joined", 238, Rarity.UNCOMMON, mage.cards.g.GrayAndAdiraForeverJoined.class));
         cards.add(new SetCardInfo("Guidance Failure", 60, Rarity.COMMON, mage.cards.g.GuidanceFailure.class));
         cards.add(new SetCardInfo("Gul Dukat, Colonial Prefect", 113, Rarity.MYTHIC, mage.cards.g.GulDukatColonialPrefect.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Gul Dukat, Colonial Prefect", 459, Rarity.MYTHIC, mage.cards.g.GulDukatColonialPrefect.class, NON_FULL_USE_VARIOUS));
@@ -286,6 +297,10 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("Melkotian Adjudicator", 73, Rarity.COMMON, mage.cards.m.MelkotianAdjudicator.class));
         cards.add(new SetCardInfo("Miles O'Brien, Transporter Ops", 24, Rarity.RARE, mage.cards.m.MilesOBrienTransporterOps.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Miles O'Brien, Transporter Ops", 447, Rarity.RARE, mage.cards.m.MilesOBrienTransporterOps.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Mirror Universe Intrusion", 248, Rarity.RARE, mage.cards.m.MirrorUniverseIntrusion.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Mirror Universe Intrusion", 354, Rarity.RARE, mage.cards.m.MirrorUniverseIntrusion.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Mirror Universe Intrusion", 424, Rarity.RARE, mage.cards.m.MirrorUniverseIntrusion.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Mirror Universe Intrusion", 548, Rarity.RARE, mage.cards.m.MirrorUniverseIntrusion.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Moopsy", 207, Rarity.COMMON, mage.cards.m.Moopsy.class));
         cards.add(new SetCardInfo("Mountain", 310, Rarity.LAND, mage.cards.basiclands.Mountain.class, FULL_ART_BFZ_VARIOUS));
         cards.add(new SetCardInfo("Mountain", 315, Rarity.LAND, mage.cards.basiclands.Mountain.class, FULL_ART_BFZ_VARIOUS));
