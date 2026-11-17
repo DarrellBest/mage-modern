@@ -117,6 +117,8 @@ public final class StarTrekCommander extends ExpansionSet {
         cards.add(new SetCardInfo("Data, Exploring Humanity", 40, Rarity.RARE, mage.cards.d.DataExploringHumanity.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Data, Professor of Humanities", 189, Rarity.RARE, mage.cards.d.DataProfessorOfHumanities.class));
         cards.add(new SetCardInfo("Defense Force Aggressor", 161, Rarity.COMMON, mage.cards.d.DefenseForceAggressor.class));
+        cards.add(new SetCardInfo("Deliver from Chaos", 93, Rarity.RARE, mage.cards.d.DeliverFromChaos.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Deliver from Chaos", 318, Rarity.RARE, mage.cards.d.DeliverFromChaos.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Desolate Lighthouse", 374, Rarity.RARE, mage.cards.d.DesolateLighthouse.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Desolate Lighthouse", 523, Rarity.RARE, mage.cards.d.DesolateLighthouse.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Direct Hit", 162, Rarity.COMMON, mage.cards.d.DirectHit.class));
@@ -326,6 +328,8 @@ public final class StarTrekCommander extends ExpansionSet {
         cards.add(new SetCardInfo("Refute", 579, Rarity.COMMON, mage.cards.r.Refute.class));
         cards.add(new SetCardInfo("Reliquary Tower", 551, Rarity.UNCOMMON, mage.cards.r.ReliquaryTower.class));
         cards.add(new SetCardInfo("Return to Dust", 427, Rarity.UNCOMMON, mage.cards.r.ReturnToDust.class));
+        cards.add(new SetCardInfo("Right of Vengeance", 27, Rarity.RARE, mage.cards.r.RightOfVengeance.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Right of Vengeance", 235, Rarity.RARE, mage.cards.r.RightOfVengeance.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Rite of Ascension", 103, Rarity.RARE, mage.cards.r.RiteOfAscension.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Rite of Ascension", 328, Rarity.RARE, mage.cards.r.RiteOfAscension.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Rite of Oblivion", 478, Rarity.UNCOMMON, mage.cards.r.RiteOfOblivion.class));
@@ -424,6 +428,8 @@ public final class StarTrekCommander extends ExpansionSet {
         cards.add(new SetCardInfo("Terramorphic Expanse", 571, Rarity.COMMON, mage.cards.t.TerramorphicExpanse.class));
         cards.add(new SetCardInfo("The Beacon of Kahless", 279, Rarity.RARE, mage.cards.t.TheBeaconOfKahless.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("The Beacon of Kahless", 64, Rarity.RARE, mage.cards.t.TheBeaconOfKahless.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("The Guardian of Forever", 112, Rarity.RARE, mage.cards.t.TheGuardianOfForever.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("The Guardian of Forever", 344, Rarity.RARE, mage.cards.t.TheGuardianOfForever.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("The Immortal Sun", 347, Rarity.MYTHIC, mage.cards.t.TheImmortalSun.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("The Immortal Sun", 495, Rarity.MYTHIC, mage.cards.t.TheImmortalSun.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("The Sword of Kahless", 123, Rarity.RARE, mage.cards.t.TheSwordOfKahless.class, NON_FULL_USE_VARIOUS));

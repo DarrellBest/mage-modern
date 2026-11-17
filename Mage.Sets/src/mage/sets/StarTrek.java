@@ -182,6 +182,9 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("Godless Shrine", 285, Rarity.RARE, mage.cards.g.GodlessShrine.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Godless Shrine", 397, Rarity.RARE, mage.cards.g.GodlessShrine.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Godless Shrine", 492, Rarity.RARE, mage.cards.g.GodlessShrine.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Gowron, Eager for Battle", 237, Rarity.RARE, mage.cards.g.GowronEagerForBattle.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Gowron, Eager for Battle", 433, Rarity.RARE, mage.cards.g.GowronEagerForBattle.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Gowron, Eager for Battle", 443, Rarity.RARE, mage.cards.g.GowronEagerForBattle.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Grand Nagus Zek", 112, Rarity.RARE, mage.cards.g.GrandNagusZek.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Grand Nagus Zek", 458, Rarity.RARE, mage.cards.g.GrandNagusZek.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Guidance Failure", 60, Rarity.COMMON, mage.cards.g.GuidanceFailure.class));
@@ -213,6 +216,7 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("Island", 320, Rarity.LAND, mage.cards.basiclands.Island.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Island", 561, Rarity.LAND, mage.cards.basiclands.Island.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Island", 562, Rarity.LAND, mage.cards.basiclands.Island.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Isolinear Processor", 266, Rarity.UNCOMMON, mage.cards.i.IsolinearProcessor.class));
         cards.add(new SetCardInfo("Jake Sisko, War Correspondent", 205, Rarity.UNCOMMON, mage.cards.j.JakeSiskoWarCorrespondent.class));
         cards.add(new SetCardInfo("Khaaaaaaaaaaaannn!", 154, Rarity.UNCOMMON, mage.cards.k.Khaaaaaaaaaaaannn.class));
         cards.add(new SetCardInfo("Khan, Despot by Design", 155, Rarity.UNCOMMON, mage.cards.k.KhanDespotByDesign.class, NON_FULL_USE_VARIOUS));
@@ -393,6 +397,7 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("Temple Garden", 301, Rarity.RARE, mage.cards.t.TempleGarden.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Temple Garden", 396, Rarity.RARE, mage.cards.t.TempleGarden.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Temple Garden", 491, Rarity.RARE, mage.cards.t.TempleGarden.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Temporal Conqueror", 219, Rarity.COMMON, mage.cards.t.TemporalConqueror.class));
         cards.add(new SetCardInfo("Tenacious Drone", 133, Rarity.COMMON, mage.cards.t.TenaciousDrone.class));
         cards.add(new SetCardInfo("Temporal Anomaly", 302, Rarity.UNCOMMON, mage.cards.t.TemporalAnomaly.class));
         cards.add(new SetCardInfo("Test of Conviction", 39, Rarity.UNCOMMON, mage.cards.t.TestOfConviction.class));
