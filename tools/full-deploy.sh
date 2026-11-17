@@ -49,6 +49,18 @@ say "[1/5] Sync upstream (magefree/mage) into the fork"
 git fetch upstream --no-tags
 behind=$(git rev-list --count ${MAIN_BRANCH}..upstream/${MAIN_BRANCH})
 echo "    ${MAIN_BRANCH} is $behind commit(s) behind upstream/${MAIN_BRANCH}"
+
+# Cards this fork wrote that upstream has now written too. Stop here, before any merge or push:
+# each one needs a human decision (owner's policy: take upstream's unless ours is clearly better).
+overlaps=$("$REPO_DIR/tools/fork-card-overlaps.sh" "upstream/${MAIN_BRANCH}")
+if [ -n "$overlaps" ]; then
+  echo "    upstream now has its own version of card(s) this fork wrote:"
+  echo "$overlaps" | awk -F'\t' '{printf "      %-34s %s (%s)\n", $1, $2, $3}'
+  echo "    compare each:  git diff HEAD upstream/${MAIN_BRANCH} -- <card file>   (or the upstream class shown)"
+  echo "    take theirs:   tools/take-upstream-card.sh <CardClass> ...   (keeps our test to run against theirs)"
+  echo "    keep ours:     resolve the conflict by hand during the merge, and note why"
+  die "fork/upstream card overlap — decide per card, then re-run"
+fi
 git checkout "$MAIN_BRANCH"
 git merge --ff-only "upstream/${MAIN_BRANCH}"
 git push origin "$MAIN_BRANCH"
