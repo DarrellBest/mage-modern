@@ -254,6 +254,7 @@ public final class StarTrekCommander extends ExpansionSet {
         cards.add(new SetCardInfo("Janice Rand, Essential Aide", 304, Rarity.RARE, mage.cards.j.JaniceRandEssentialAide.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Jean-Luc Picard, Luminary", 3, Rarity.MYTHIC, mage.cards.j.JeanLucPicardLuminary.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Jean-Luc Picard, Luminary", 7, Rarity.MYTHIC, mage.cards.j.JeanLucPicardLuminary.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Jean-Luc, Mon Capitaine", 190, Rarity.RARE, mage.cards.j.JeanLucMonCapitaine.class));
         cards.add(new SetCardInfo("Jefferies Tube", 114, Rarity.RARE, mage.cards.j.JefferiesTube.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Jefferies Tube", 348, Rarity.RARE, mage.cards.j.JefferiesTube.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Join the Collective", 20, Rarity.RARE, mage.cards.j.JoinTheCollective.class, NON_FULL_USE_VARIOUS));
@@ -436,6 +437,7 @@ public final class StarTrekCommander extends ExpansionSet {
         cards.add(new SetCardInfo("Stratagem Emulator", 30, Rarity.RARE, mage.cards.s.StratagemEmulator.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Sulfur Falls", 406, Rarity.RARE, mage.cards.s.SulfurFalls.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Sulfur Falls", 563, Rarity.RARE, mage.cards.s.SulfurFalls.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Sulu, Heroic Helmsman", 185, Rarity.RARE, mage.cards.s.SuluHeroicHelmsman.class));
         cards.add(new SetCardInfo("Sun Titan", 239, Rarity.MYTHIC, mage.cards.s.SunTitan.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Sun Titan", 428, Rarity.MYTHIC, mage.cards.s.SunTitan.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Sunken Hollow", 407, Rarity.RARE, mage.cards.s.SunkenHollow.class, NON_FULL_USE_VARIOUS));

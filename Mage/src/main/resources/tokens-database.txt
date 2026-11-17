@@ -3154,7 +3154,7 @@
 |TOK:TRK|Klingon Warrior|2|KlingonWarriorToken|
 |TOK:TRK|Klingon Warrior|3|KlingonWarriorToken|
 |TOK:TRK|Murf||MurfToken|
-#|TOK:TRK|Neuroflux Heirloom||NeurofluxHeirloomToken|
+|TOK:TRK|Neuroflux Heirloom||NeurofluxHeirloomToken|
 |TOK:TRK|New Planet||NewPlanetToken|
 |TOK:TRK|Officer|1|OfficerToken|
 |TOK:TRK|Officer|10|OfficerToken|

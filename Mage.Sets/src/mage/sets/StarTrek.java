@@ -53,6 +53,7 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("Blood Crypt", 394, Rarity.RARE, mage.cards.b.BloodCrypt.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Blood Crypt", 489, Rarity.RARE, mage.cards.b.BloodCrypt.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Boarding Action", 139, Rarity.COMMON, mage.cards.b.BoardingAction.class));
+        cards.add(new SetCardInfo("Brad Boimler, Eager Ensign", 5, Rarity.UNCOMMON, mage.cards.b.BradBoimlerEagerEnsign.class));
         cards.add(new SetCardInfo("Branching Timeline", 185, Rarity.RARE, mage.cards.b.BranchingTimeline.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Branching Timeline", 466, Rarity.RARE, mage.cards.b.BranchingTimeline.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Breeding Pool", 279, Rarity.RARE, mage.cards.b.BreedingPool.class, NON_FULL_USE_VARIOUS));
@@ -171,6 +172,9 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("Energize", 56, Rarity.UNCOMMON, mage.cards.e.Energize.class));
         cards.add(new SetCardInfo("Engineered Explosives", 264, Rarity.RARE, mage.cards.e.EngineeredExplosives.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Engineered Explosives", 480, Rarity.RARE, mage.cards.e.EngineeredExplosives.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Ensign Pavel Chekov", 57, Rarity.UNCOMMON, mage.cards.e.EnsignPavelChekov.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Ensign Pavel Chekov", 409, Rarity.UNCOMMON, mage.cards.e.EnsignPavelChekov.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Ensign Pavel Chekov", 533, Rarity.UNCOMMON, mage.cards.e.EnsignPavelChekov.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Enterprise NX-01", 58, Rarity.UNCOMMON, mage.cards.e.EnterpriseNX01.class));
         cards.add(new SetCardInfo("Erica Ortegas, Plucky Pilot", 149, Rarity.UNCOMMON, mage.cards.e.EricaOrtegasPluckyPilot.class));
         cards.add(new SetCardInfo("Excalbian Gamemaster", 16, Rarity.MYTHIC, mage.cards.e.ExcalbianGamemaster.class, NON_FULL_USE_VARIOUS));
@@ -222,6 +226,8 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("Guidance Failure", 60, Rarity.COMMON, mage.cards.g.GuidanceFailure.class));
         cards.add(new SetCardInfo("Gul Dukat, Colonial Prefect", 113, Rarity.MYTHIC, mage.cards.g.GulDukatColonialPrefect.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Gul Dukat, Colonial Prefect", 459, Rarity.MYTHIC, mage.cards.g.GulDukatColonialPrefect.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Gwyndala, the Progeny", 61, Rarity.RARE, mage.cards.g.GwyndalaTheProgeny.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Gwyndala, the Progeny", 450, Rarity.RARE, mage.cards.g.GwyndalaTheProgeny.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("H.M.S. Bounty, Unlikely Timeship", 63, Rarity.RARE, mage.cards.h.HMSBountyUnlikelyTimeship.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("H.M.S. Bounty, Unlikely Timeship", 451, Rarity.RARE, mage.cards.h.HMSBountyUnlikelyTimeship.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("H.M.S. Bounty, Unlikely Timeship", 551, Rarity.RARE, mage.cards.h.HMSBountyUnlikelyTimeship.class, NON_FULL_USE_VARIOUS));
@@ -338,6 +344,9 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("Organic Avulsion Unit", 376, Rarity.UNCOMMON, mage.cards.o.OrganicAvulsionUnit.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Organic Avulsion Unit", 510, Rarity.UNCOMMON, mage.cards.o.OrganicAvulsionUnit.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Orion", 288, Rarity.COMMON, mage.cards.o.Orion.class));
+        cards.add(new SetCardInfo("Overflow Submatrix", 122, Rarity.RARE, mage.cards.o.OverflowSubmatrix.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Overflow Submatrix", 377, Rarity.RARE, mage.cards.o.OverflowSubmatrix.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Overflow Submatrix", 511, Rarity.RARE, mage.cards.o.OverflowSubmatrix.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Overgrown Tomb", 289, Rarity.RARE, mage.cards.o.OvergrownTomb.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Overgrown Tomb", 399, Rarity.RARE, mage.cards.o.OvergrownTomb.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Overgrown Tomb", 494, Rarity.RARE, mage.cards.o.OvergrownTomb.class, NON_FULL_USE_VARIOUS));
@@ -540,6 +549,7 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("Vexing Drone", 45, Rarity.COMMON, mage.cards.v.VexingDrone.class));
         cards.add(new SetCardInfo("Vulcan", 305, Rarity.COMMON, mage.cards.v.Vulcan.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Vulcan", 579, Rarity.COMMON, mage.cards.v.Vulcan.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Vulcan Mind-Meld", 88, Rarity.UNCOMMON, mage.cards.v.VulcanMindMeld.class));
         cards.add(new SetCardInfo("Warp Core", 274, Rarity.COMMON, mage.cards.w.WarpCore.class));
         cards.add(new SetCardInfo("Warp Speed", 223, Rarity.UNCOMMON, mage.cards.w.WarpSpeed.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Warp Speed", 387, Rarity.UNCOMMON, mage.cards.w.WarpSpeed.class, NON_FULL_USE_VARIOUS));
@@ -564,6 +574,7 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("Xenobotanist", 224, Rarity.COMMON, mage.cards.x.Xenobotanist.class));
         cards.add(new SetCardInfo("Xindi Surveyors", 225, Rarity.COMMON, mage.cards.x.XindiSurveyors.class));
         cards.add(new SetCardInfo("Year of Hell", 257, Rarity.RARE, mage.cards.y.YearOfHell.class));
+        cards.add(new SetCardInfo("Zefram Cochrane, Warp Pioneer", 90, Rarity.UNCOMMON, mage.cards.z.ZeframCochraneWarpPioneer.class));
         cards.add(new SetCardInfo("Zero, Incorporeal Sensate", 258, Rarity.UNCOMMON, mage.cards.z.ZeroIncorporealSensate.class));
     }
 }

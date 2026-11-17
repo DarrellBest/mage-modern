@@ -3123,7 +3123,7 @@ public class ScryfallImageSupportTokens {
             put("TRK/Klingon Warrior/2", "https://api.scryfall.com/cards/ttrk/4?format=image");
             put("TRK/Klingon Warrior/3", "https://api.scryfall.com/cards/ttrk/5?format=image");
             put("TRK/Murf", "https://api.scryfall.com/cards/ttrk/16?format=image");
-            // put("TRK/Neuroflux Heirloom", "https://api.scryfall.com/cards/ttrk/25?format=image");
+            put("TRK/Neuroflux Heirloom", "https://api.scryfall.com/cards/ttrk/25?format=image");
             put("TRK/New Planet", "https://api.scryfall.com/cards/ttrk/27?format=image");
             put("TRK/Officer/1", "https://api.scryfall.com/cards/ttrk/6?format=image");
             put("TRK/Officer/10", "https://api.scryfall.com/cards/ttrk/15?format=image");

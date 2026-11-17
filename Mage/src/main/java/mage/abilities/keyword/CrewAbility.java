@@ -216,6 +216,9 @@ class CrewCost extends CostImpl {
         if (permanent.hasAbility(CrewWithToughnessAbility.getInstance(), game)
                 || permanent.hasAbility(CrewSaddleWithToughnessAbility.getInstance(), game)) {
             return permanent.getToughness().getValue();
+        } else if (permanent.getAbilities(game).containsClass(mage.abilities.common.CrewsAsThoughPowerTripledAbility.class)) {
+            // DARRELLBEST-FORK: Sulu, Heroic Helmsman
+            return permanent.getPower().getValue() * 3;
         } else if (permanent.getAbilities(game).containsClass(CrewIncreasedPowerAbility.class)
                 || permanent.getAbilities(game).containsClass(CrewSaddleIncreasedPowerAbility.class)) {
             return permanent.getPower().getValue() + 2;
