@@ -8,10 +8,15 @@ Mage.Client/.../ScryfallImageSupportCards.java), so a wrong number means a missi
 image in the download tab. Run it for every set a fork-written card is added to.
 Exits 1 if any line doesn't match.
 """
-import json, re, sys, time, urllib.request
+import json, re, sys, time, unicodedata, urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+
+
+def plain(name):
+    """XMage strips accents from card names (Jotun Grunt, Lim-Dul): compare without them."""
+    return "".join(c for c in unicodedata.normalize("NFKD", name or "") if not unicodedata.combining(c))
 
 
 def scryfall_prints(code):
@@ -38,7 +43,7 @@ def main(sets):
         for card, num in lines:
             card = card.replace('\\"', '"')
             sf = prints.get(num)
-            if sf != card and not (sf or "").startswith(card.split(" //")[0]):
+            if plain(sf) != plain(card) and not plain(sf).startswith(plain(card.split(" //")[0])):
                 bad.append((card, num, sf))
         print(f"{name} ({code}): {len(lines)} lines, {len(bad)} mismatched")
         for card, num, sf in bad:

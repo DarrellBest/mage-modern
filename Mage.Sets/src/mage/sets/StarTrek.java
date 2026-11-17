@@ -53,9 +53,14 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("Blood Crypt", 394, Rarity.RARE, mage.cards.b.BloodCrypt.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Blood Crypt", 489, Rarity.RARE, mage.cards.b.BloodCrypt.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Boarding Action", 139, Rarity.COMMON, mage.cards.b.BoardingAction.class));
+        cards.add(new SetCardInfo("Borg Cube", 227, Rarity.MYTHIC, mage.cards.b.BorgCube.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Borg Cube", 475, Rarity.MYTHIC, mage.cards.b.BorgCube.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Borg Cube", 555, Rarity.MYTHIC, mage.cards.b.BorgCube.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Brad Boimler, Eager Ensign", 5, Rarity.UNCOMMON, mage.cards.b.BradBoimlerEagerEnsign.class));
         cards.add(new SetCardInfo("Branching Timeline", 185, Rarity.RARE, mage.cards.b.BranchingTimeline.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Branching Timeline", 466, Rarity.RARE, mage.cards.b.BranchingTimeline.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Brazen Bluff", 140, Rarity.RARE, mage.cards.b.BrazenBluff.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Brazen Bluff", 462, Rarity.RARE, mage.cards.b.BrazenBluff.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Breeding Pool", 279, Rarity.RARE, mage.cards.b.BreedingPool.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Breeding Pool", 401, Rarity.RARE, mage.cards.b.BreedingPool.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Breeding Pool", 496, Rarity.RARE, mage.cards.b.BreedingPool.class, NON_FULL_USE_VARIOUS));
@@ -256,6 +261,10 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("I'm a Doctor, Not a . . .", 203, Rarity.COMMON, mage.cards.i.ImADoctorNotA.class));
         cards.add(new SetCardInfo("Impossible Choice", 116, Rarity.UNCOMMON, mage.cards.i.ImpossibleChoice.class));
         cards.add(new SetCardInfo("In the Pale Moonlight", 117, Rarity.UNCOMMON, mage.cards.i.InThePaleMoonlight.class));
+        cards.add(new SetCardInfo("Infinite Diversity", 153, Rarity.MYTHIC, mage.cards.i.InfiniteDiversity.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Infinite Diversity", 361, Rarity.MYTHIC, mage.cards.i.InfiniteDiversity.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Infinite Diversity", 382, Rarity.MYTHIC, mage.cards.i.InfiniteDiversity.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Infinite Diversity", 516, Rarity.MYTHIC, mage.cards.i.InfiniteDiversity.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Interstellar Effigy", 66, Rarity.COMMON, mage.cards.i.InterstellarEffigy.class));
         cards.add(new SetCardInfo("Island", 308, Rarity.LAND, mage.cards.basiclands.Island.class, FULL_ART_BFZ_VARIOUS));
         cards.add(new SetCardInfo("Island", 313, Rarity.LAND, mage.cards.basiclands.Island.class, FULL_ART_BFZ_VARIOUS));
@@ -307,6 +316,8 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("Lt. Cmdr. Geordi La Forge", 372, Rarity.RARE, mage.cards.l.LtCmdrGeordiLaForge.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Lt. Cmdr. Geordi La Forge", 506, Rarity.RARE, mage.cards.l.LtCmdrGeordiLaForge.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Lt. Cmdr. Geordi La Forge", 1706, Rarity.MYTHIC, mage.cards.l.LtCmdrGeordiLaForge.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Lwaxana Troi, Charming Guest", 157, Rarity.RARE, mage.cards.l.LwaxanaTroiCharmingGuest.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Lwaxana Troi, Charming Guest", 464, Rarity.RARE, mage.cards.l.LwaxanaTroiCharmingGuest.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("MACO Strike Team", 206, Rarity.RARE, mage.cards.m.MACOStrikeTeam.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("MACO Strike Team", 471, Rarity.RARE, mage.cards.m.MACOStrikeTeam.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Make It So", 71, Rarity.COMMON, mage.cards.m.MakeItSo.class));
@@ -384,6 +395,9 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("Pure Energy", 31, Rarity.COMMON, mage.cards.p.PureEnergy.class));
         cards.add(new SetCardInfo("Q Continuum", 290, Rarity.RARE, mage.cards.q.QContinuum.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Q Continuum", 334, Rarity.RARE, mage.cards.q.QContinuum.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Q, Stacking the Deck", 165, Rarity.MYTHIC, mage.cards.q.QStackingTheDeck.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Q, Stacking the Deck", 383, Rarity.MYTHIC, mage.cards.q.QStackingTheDeck.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Q, Stacking the Deck", 517, Rarity.MYTHIC, mage.cards.q.QStackingTheDeck.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Qo'noS", 291, Rarity.COMMON, mage.cards.q.QonoS.class));
         cards.add(new SetCardInfo("Quark's Bar", 292, Rarity.RARE, mage.cards.q.QuarksBar.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Quark's Bar", 335, Rarity.RARE, mage.cards.q.QuarksBar.class, NON_FULL_USE_VARIOUS));
@@ -426,6 +440,9 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("Saru, Unthreatened", 212, Rarity.UNCOMMON, mage.cards.s.SaruUnthreatened.class));
         cards.add(new SetCardInfo("Saurian Explorer", 213, Rarity.COMMON, mage.cards.s.SaurianExplorer.class));
         cards.add(new SetCardInfo("Savvy Profiteer", 171, Rarity.COMMON, mage.cards.s.SavvyProfiteer.class));
+        cards.add(new SetCardInfo("Scotty, Miracle Worker", 79, Rarity.MYTHIC, mage.cards.s.ScottyMiracleWorker.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Scotty, Miracle Worker", 413, Rarity.MYTHIC, mage.cards.s.ScottyMiracleWorker.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Scotty, Miracle Worker", 537, Rarity.MYTHIC, mage.cards.s.ScottyMiracleWorker.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Sela, Tal Shiar Paradox", 128, Rarity.RARE, mage.cards.s.SelaTalShiarParadox.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Sela, Tal Shiar Paradox", 379, Rarity.RARE, mage.cards.s.SelaTalShiarParadox.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Sela, Tal Shiar Paradox", 513, Rarity.RARE, mage.cards.s.SelaTalShiarParadox.class, NON_FULL_USE_VARIOUS));
@@ -510,6 +527,8 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("The Duras Sisters", 235, Rarity.UNCOMMON, mage.cards.t.TheDurasSisters.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("The Duras Sisters", 432, Rarity.UNCOMMON, mage.cards.t.TheDurasSisters.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("The Duras Sisters", 442, Rarity.UNCOMMON, mage.cards.t.TheDurasSisters.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("The Holodeck", 265, Rarity.RARE, mage.cards.t.TheHolodeck.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("The Holodeck", 346, Rarity.RARE, mage.cards.t.TheHolodeck.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("The Inner Light", 241, Rarity.RARE, mage.cards.t.TheInnerLight.class));
         cards.add(new SetCardInfo("The Measure of a Man", 23, Rarity.UNCOMMON, mage.cards.t.TheMeasureOfAMan.class));
         cards.add(new SetCardInfo("The Naked Time", 159, Rarity.UNCOMMON, mage.cards.t.TheNakedTime.class));

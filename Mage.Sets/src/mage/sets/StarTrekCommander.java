@@ -460,6 +460,8 @@ public final class StarTrekCommander extends ExpansionSet {
         cards.add(new SetCardInfo("Sword of Light and Shadow", 502, Rarity.MYTHIC, mage.cards.s.SwordOfLightAndShadow.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Swords to Plowshares", 429, Rarity.UNCOMMON, mage.cards.s.SwordsToPlowshares.class));
         cards.add(new SetCardInfo("T'Pol, Vulcan Representative", 151, Rarity.UNCOMMON, mage.cards.t.TPolVulcanRepresentative.class));
+        cards.add(new SetCardInfo("T'Pring, Never Parted", 106, Rarity.RARE, mage.cards.t.TPringNeverParted.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("T'Pring, Never Parted", 332, Rarity.RARE, mage.cards.t.TPringNeverParted.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Talarian Hook Spider", 175, Rarity.COMMON, mage.cards.t.TalarianHookSpider.class));
         cards.add(new SetCardInfo("Talisman of Conviction", 503, Rarity.UNCOMMON, mage.cards.t.TalismanOfConviction.class));
         cards.add(new SetCardInfo("Talisman of Creativity", 504, Rarity.UNCOMMON, mage.cards.t.TalismanOfCreativity.class));
@@ -554,6 +556,8 @@ public final class StarTrekCommander extends ExpansionSet {
         cards.add(new SetCardInfo("Vineglimmer Snarl", 577, Rarity.RARE, mage.cards.v.VineglimmerSnarl.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Voq, Torchbearer", 63, Rarity.RARE, mage.cards.v.VoqTorchbearer.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Voq, Torchbearer", 278, Rarity.RARE, mage.cards.v.VoqTorchbearer.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Vox, Child of the Collective", 54, Rarity.RARE, mage.cards.v.VoxChildOfTheCollective.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Vox, Child of the Collective", 268, Rarity.RARE, mage.cards.v.VoxChildOfTheCollective.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Warleader's Call", 335, Rarity.RARE, mage.cards.w.WarleadersCall.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Warleader's Call", 483, Rarity.RARE, mage.cards.w.WarleadersCall.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Warship Flight Crew", 168, Rarity.COMMON, mage.cards.w.WarshipFlightCrew.class));
