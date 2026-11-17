@@ -48,6 +48,7 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("Bat'leth", 94, Rarity.UNCOMMON, mage.cards.b.Batleth.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Battle-Scarred Survivalist", 95, Rarity.COMMON, mage.cards.b.BattleScarredSurvivalist.class));
         cards.add(new SetCardInfo("Beckett Mariner, Impetuous Ensign", 138, Rarity.UNCOMMON, mage.cards.b.BeckettMarinerImpetuousEnsign.class));
+        cards.add(new SetCardInfo("Blastoneuron", 96, Rarity.UNCOMMON, mage.cards.b.Blastoneuron.class));
         cards.add(new SetCardInfo("Blood Crypt", 278, Rarity.RARE, mage.cards.b.BloodCrypt.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Blood Crypt", 394, Rarity.RARE, mage.cards.b.BloodCrypt.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Blood Crypt", 489, Rarity.RARE, mage.cards.b.BloodCrypt.class, NON_FULL_USE_VARIOUS));
@@ -143,6 +144,9 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("Dr. Beverly Crusher", 500, Rarity.MYTHIC, mage.cards.d.DrBeverlyCrusher.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Dr. Joseph M'Benga", 196, Rarity.MYTHIC, mage.cards.d.DrJosephMBenga.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Dr. Joseph M'Benga", 469, Rarity.MYTHIC, mage.cards.d.DrJosephMBenga.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Dr. McCoy, Surly Surgeon", 14, Rarity.UNCOMMON, mage.cards.d.DrMcCoySurlySurgeon.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Dr. McCoy, Surly Surgeon", 402, Rarity.UNCOMMON, mage.cards.d.DrMcCoySurlySurgeon.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Dr. McCoy, Surly Surgeon", 526, Rarity.UNCOMMON, mage.cards.d.DrMcCoySurlySurgeon.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Earth, Sector 001", 281, Rarity.COMMON, mage.cards.e.EarthSector001.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Earth, Sector 001", 577, Rarity.COMMON, mage.cards.e.EarthSector001.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Eject the Warp Core", 105, Rarity.COMMON, mage.cards.e.EjectTheWarpCore.class));
@@ -157,6 +161,7 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("Engineered Explosives", 264, Rarity.RARE, mage.cards.e.EngineeredExplosives.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Engineered Explosives", 480, Rarity.RARE, mage.cards.e.EngineeredExplosives.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Enterprise NX-01", 58, Rarity.UNCOMMON, mage.cards.e.EnterpriseNX01.class));
+        cards.add(new SetCardInfo("Erica Ortegas, Plucky Pilot", 149, Rarity.UNCOMMON, mage.cards.e.EricaOrtegasPluckyPilot.class));
         cards.add(new SetCardInfo("Excalbian Gamemaster", 16, Rarity.MYTHIC, mage.cards.e.ExcalbianGamemaster.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Excalbian Gamemaster", 403, Rarity.MYTHIC, mage.cards.e.ExcalbianGamemaster.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Excalbian Gamemaster", 527, Rarity.MYTHIC, mage.cards.e.ExcalbianGamemaster.class, NON_FULL_USE_VARIOUS));
@@ -277,7 +282,10 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("Make It So", 71, Rarity.COMMON, mage.cards.m.MakeItSo.class));
         cards.add(new SetCardInfo("Malfunctioning Holodeck", 22, Rarity.COMMON, mage.cards.m.MalfunctioningHolodeck.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Malfunctioning Holodeck", 571, Rarity.COMMON, mage.cards.m.MalfunctioningHolodeck.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Marooned", 72, Rarity.COMMON, mage.cards.m.Marooned.class));
         cards.add(new SetCardInfo("Melkotian Adjudicator", 73, Rarity.COMMON, mage.cards.m.MelkotianAdjudicator.class));
+        cards.add(new SetCardInfo("Miles O'Brien, Transporter Ops", 24, Rarity.RARE, mage.cards.m.MilesOBrienTransporterOps.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Miles O'Brien, Transporter Ops", 447, Rarity.RARE, mage.cards.m.MilesOBrienTransporterOps.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Moopsy", 207, Rarity.COMMON, mage.cards.m.Moopsy.class));
         cards.add(new SetCardInfo("Mountain", 310, Rarity.LAND, mage.cards.basiclands.Mountain.class, FULL_ART_BFZ_VARIOUS));
         cards.add(new SetCardInfo("Mountain", 315, Rarity.LAND, mage.cards.basiclands.Mountain.class, FULL_ART_BFZ_VARIOUS));
@@ -359,6 +367,8 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("Romulan Bird-of-Prey", 452, Rarity.RARE, mage.cards.r.RomulanBirdOfPrey.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Romulan Bird-of-Prey", 77, Rarity.RARE, mage.cards.r.RomulanBirdOfPrey.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Romulus", 294, Rarity.COMMON, mage.cards.r.Romulus.class));
+        cards.add(new SetCardInfo("Rules of Acquisition", 78, Rarity.UNCOMMON, mage.cards.r.RulesOfAcquisition.class));
+        cards.add(new SetCardInfo("Rutherford, Upgraded Ensign", 32, Rarity.UNCOMMON, mage.cards.r.RutherfordUpgradedEnsign.class));
         cards.add(new SetCardInfo("Saavik, Stoic Student", 33, Rarity.UNCOMMON, mage.cards.s.SaavikStoicStudent.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Saavik, Stoic Student", 406, Rarity.UNCOMMON, mage.cards.s.SaavikStoicStudent.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Saavik, Stoic Student", 530, Rarity.UNCOMMON, mage.cards.s.SaavikStoicStudent.class, NON_FULL_USE_VARIOUS));
@@ -410,6 +420,10 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("Subcommander T'Pol", 82, Rarity.RARE, mage.cards.s.SubcommanderTPol.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Subcommander T'Pol", 453, Rarity.RARE, mage.cards.s.SubcommanderTPol.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Subspace Anomaly", 300, Rarity.UNCOMMON, mage.cards.s.SubspaceAnomaly.class));
+        cards.add(new SetCardInfo("Sulu, Space Swashbuckler", 37, Rarity.RARE, mage.cards.s.SuluSpaceSwashbuckler.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Sulu, Space Swashbuckler", 356, Rarity.RARE, mage.cards.s.SuluSpaceSwashbuckler.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Sulu, Space Swashbuckler", 407, Rarity.RARE, mage.cards.s.SuluSpaceSwashbuckler.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Sulu, Space Swashbuckler", 531, Rarity.RARE, mage.cards.s.SuluSpaceSwashbuckler.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Support Mission", 216, Rarity.UNCOMMON, mage.cards.s.SupportMission.class));
         cards.add(new SetCardInfo("Suurok-Class Science Vessel", 83, Rarity.COMMON, mage.cards.s.SuurokClassScienceVessel.class));
         cards.add(new SetCardInfo("Suus Mahna Practitioner", 84, Rarity.COMMON, mage.cards.s.SuusMahnaPractitioner.class));
@@ -457,6 +471,9 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("The Inner Light", 241, Rarity.RARE, mage.cards.t.TheInnerLight.class));
         cards.add(new SetCardInfo("The Measure of a Man", 23, Rarity.UNCOMMON, mage.cards.t.TheMeasureOfAMan.class));
         cards.add(new SetCardInfo("The Naked Time", 159, Rarity.UNCOMMON, mage.cards.t.TheNakedTime.class));
+        cards.add(new SetCardInfo("The Needs of the Many", 25, Rarity.RARE, mage.cards.t.TheNeedsOfTheMany.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("The Needs of the Many", 405, Rarity.RARE, mage.cards.t.TheNeedsOfTheMany.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("The Needs of the Many", 529, Rarity.RARE, mage.cards.t.TheNeedsOfTheMany.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("The Traveler", 254, Rarity.UNCOMMON, mage.cards.t.TheTraveler.class));
         cards.add(new SetCardInfo("The Unicomplex", 304, Rarity.RARE, mage.cards.t.TheUnicomplex.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("The Unicomplex", 337, Rarity.RARE, mage.cards.t.TheUnicomplex.class, NON_FULL_USE_VARIOUS));
@@ -507,6 +524,9 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("Wesley Crusher, Starfleet Cadet", 89, Rarity.RARE, mage.cards.w.WesleyCrusherStarfleetCadet.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Wesley Crusher, Starfleet Cadet", 374, Rarity.RARE, mage.cards.w.WesleyCrusherStarfleetCadet.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Wesley Crusher, Starfleet Cadet", 508, Rarity.RARE, mage.cards.w.WesleyCrusherStarfleetCadet.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Will Riker, First in the Field", 179, Rarity.RARE, mage.cards.w.WillRikerFirstInTheField.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Will Riker, First in the Field", 385, Rarity.RARE, mage.cards.w.WillRikerFirstInTheField.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Will Riker, First in the Field", 519, Rarity.RARE, mage.cards.w.WillRikerFirstInTheField.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Worf, Honor-Bound Warrior", 256, Rarity.UNCOMMON, mage.cards.w.WorfHonorBoundWarrior.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Worf, Honor-Bound Warrior", 390, Rarity.UNCOMMON, mage.cards.w.WorfHonorBoundWarrior.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Worf, Honor-Bound Warrior", 435, Rarity.UNCOMMON, mage.cards.w.WorfHonorBoundWarrior.class, NON_FULL_USE_VARIOUS));
