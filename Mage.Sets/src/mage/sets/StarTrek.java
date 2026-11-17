@@ -213,6 +213,8 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("Hit It!", 476, Rarity.RARE, mage.cards.h.HitIt.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Hive Mind Coprocessor", 115, Rarity.UNCOMMON, mage.cards.h.HiveMindCoprocessor.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Hive Mind Coprocessor", 573, Rarity.UNCOMMON, mage.cards.h.HiveMindCoprocessor.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Holo-Engineer", 201, Rarity.RARE, mage.cards.h.HoloEngineer.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Holo-Engineer", 470, Rarity.RARE, mage.cards.h.HoloEngineer.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Hologram Janeway", 21, Rarity.UNCOMMON, mage.cards.h.HologramJaneway.class));
         cards.add(new SetCardInfo("Hologram Stalker", 202, Rarity.UNCOMMON, mage.cards.h.HologramStalker.class));
         cards.add(new SetCardInfo("Horta", 152, Rarity.COMMON, mage.cards.h.Horta.class));
@@ -236,6 +238,9 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("Khan, Despot by Design", 155, Rarity.UNCOMMON, mage.cards.k.KhanDespotByDesign.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Khan, Despot by Design", 419, Rarity.UNCOMMON, mage.cards.k.KhanDespotByDesign.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Khan, Despot by Design", 543, Rarity.UNCOMMON, mage.cards.k.KhanDespotByDesign.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Khan, Vengeful Heart", 119, Rarity.MYTHIC, mage.cards.k.KhanVengefulHeart.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Khan, Vengeful Heart", 416, Rarity.MYTHIC, mage.cards.k.KhanVengefulHeart.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Khan, Vengeful Heart", 540, Rarity.MYTHIC, mage.cards.k.KhanVengefulHeart.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Kira Nerys, Firebrand", 242, Rarity.RARE, mage.cards.k.KiraNerysFirebrand.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Kira Nerys, Firebrand", 477, Rarity.RARE, mage.cards.k.KiraNerysFirebrand.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Kirk, Commanding Officer", 243, Rarity.UNCOMMON, mage.cards.k.KirkCommandingOfficer.class, NON_FULL_USE_VARIOUS));
@@ -374,6 +379,7 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("Sickbay", 268, Rarity.UNCOMMON, mage.cards.s.Sickbay.class));
         cards.add(new SetCardInfo("Silicate Surveyor", 172, Rarity.COMMON, mage.cards.s.SilicateSurveyor.class));
         cards.add(new SetCardInfo("Spatial Anomaly", 296, Rarity.UNCOMMON, mage.cards.s.SpatialAnomaly.class));
+        cards.add(new SetCardInfo("Species 8472", 214, Rarity.UNCOMMON, mage.cards.s.Species8472.class));
         cards.add(new SetCardInfo("Spock, Always Your Friend", 253, Rarity.UNCOMMON, mage.cards.s.SpockAlwaysYourFriend.class));
         cards.add(new SetCardInfo("Stable Wormhole", 215, Rarity.RARE, mage.cards.s.StableWormhole.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Stable Wormhole", 473, Rarity.RARE, mage.cards.s.StableWormhole.class, NON_FULL_USE_VARIOUS));

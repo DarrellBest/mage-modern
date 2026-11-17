@@ -44,6 +44,8 @@ public final class StarTrekCommander extends ExpansionSet {
         cards.add(new SetCardInfo("Augur of Autumn", 458, Rarity.RARE, mage.cards.a.AugurOfAutumn.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Austere Command", 213, Rarity.RARE, mage.cards.a.AustereCommand.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Austere Command", 418, Rarity.RARE, mage.cards.a.AustereCommand.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("B'Elanna Torres, Scrapper", 82, Rarity.RARE, mage.cards.b.BElannaTorresScrapper.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("B'Elanna Torres, Scrapper", 311, Rarity.RARE, mage.cards.b.BElannaTorresScrapper.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Badgey, Malicious Glitch", 152, Rarity.UNCOMMON, mage.cards.b.BadgeyMaliciousGlitch.class));
         cards.add(new SetCardInfo("Balance of Terror", 10, Rarity.RARE, mage.cards.b.BalanceOfTerror.class));
         cards.add(new SetCardInfo("Battle of Wolf 359", 203, Rarity.RARE, mage.cards.b.BattleOfWolf359.class, NON_FULL_USE_VARIOUS));
@@ -149,6 +151,8 @@ public final class StarTrekCommander extends ExpansionSet {
         cards.add(new SetCardInfo("Eclipsed Steppe", 526, Rarity.RARE, mage.cards.e.EclipsedSteppe.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Emergency Regeneration", 14, Rarity.RARE, mage.cards.e.EmergencyRegeneration.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Emergency Regeneration", 219, Rarity.RARE, mage.cards.e.EmergencyRegeneration.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Ensign Harry Kim, Operations", 15, Rarity.RARE, mage.cards.e.EnsignHarryKimOperations.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Ensign Harry Kim, Operations", 220, Rarity.RARE, mage.cards.e.EnsignHarryKimOperations.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Evasive Maneuvers", 132, Rarity.COMMON, mage.cards.e.EvasiveManeuvers.class));
         cards.add(new SetCardInfo("Everflowing Chalice", 490, Rarity.COMMON, mage.cards.e.EverflowingChalice.class));
         cards.add(new SetCardInfo("Evolving Wilds", 527, Rarity.COMMON, mage.cards.e.EvolvingWilds.class));
@@ -157,6 +161,8 @@ public final class StarTrekCommander extends ExpansionSet {
         cards.add(new SetCardInfo("Exotic Orchard", 528, Rarity.RARE, mage.cards.e.ExoticOrchard.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Exploration", 301, Rarity.RARE, mage.cards.e.Exploration.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Exploration", 461, Rarity.RARE, mage.cards.e.Exploration.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Extraction Integrant", 59, Rarity.RARE, mage.cards.e.ExtractionIntegrant.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Extraction Integrant", 272, Rarity.RARE, mage.cards.e.ExtractionIntegrant.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Fabled Passage", 379, Rarity.RARE, mage.cards.f.FabledPassage.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Fabled Passage", 529, Rarity.RARE, mage.cards.f.FabledPassage.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Faithful Mending", 473, Rarity.UNCOMMON, mage.cards.f.FaithfulMending.class));
@@ -203,6 +209,8 @@ public final class StarTrekCommander extends ExpansionSet {
         cards.add(new SetCardInfo("Gorn Captain", 172, Rarity.COMMON, mage.cards.g.GornCaptain.class));
         cards.add(new SetCardInfo("Grand Crescendo", 222, Rarity.RARE, mage.cards.g.GrandCrescendo.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Grand Crescendo", 423, Rarity.RARE, mage.cards.g.GrandCrescendo.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Grilka, Widowed Warrior", 70, Rarity.RARE, mage.cards.g.GrilkaWidowedWarrior.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Grilka, Widowed Warrior", 204, Rarity.RARE, mage.cards.g.GrilkaWidowedWarrior.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Growth Spiral", 476, Rarity.COMMON, mage.cards.g.GrowthSpiral.class));
         cards.add(new SetCardInfo("Guardian Project", 302, Rarity.RARE, mage.cards.g.GuardianProject.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Guardian Project", 463, Rarity.RARE, mage.cards.g.GuardianProject.class, NON_FULL_USE_VARIOUS));
@@ -235,6 +243,8 @@ public final class StarTrekCommander extends ExpansionSet {
         cards.add(new SetCardInfo("Jefferies Tube", 348, Rarity.RARE, mage.cards.j.JefferiesTube.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Join the Collective", 20, Rarity.RARE, mage.cards.j.JoinTheCollective.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Join the Collective", 226, Rarity.RARE, mage.cards.j.JoinTheCollective.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Julian Bashir, Frontier Doctor", 21, Rarity.RARE, mage.cards.j.JulianBashirFrontierDoctor.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Julian Bashir, Frontier Doctor", 227, Rarity.RARE, mage.cards.j.JulianBashirFrontierDoctor.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Jurati, Cordial Queen", 322, Rarity.RARE, mage.cards.j.JuratiCordialQueen.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Jurati, Cordial Queen", 95, Rarity.RARE, mage.cards.j.JuratiCordialQueen.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("K'Vort-Class Raider", 116, Rarity.RARE, mage.cards.k.KVortClassRaider.class, NON_FULL_USE_VARIOUS));
@@ -365,6 +375,8 @@ public final class StarTrekCommander extends ExpansionSet {
         cards.add(new SetCardInfo("Sea of Clouds", 399, Rarity.RARE, mage.cards.s.SeaOfClouds.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Sea of Clouds", 555, Rarity.RARE, mage.cards.s.SeaOfClouds.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Seaside Citadel", 556, Rarity.UNCOMMON, mage.cards.s.SeasideCitadel.class));
+        cards.add(new SetCardInfo("Seven of Nine, Tertiary Adjunct", 50, Rarity.RARE, mage.cards.s.SevenOfNineTertiaryAdjunct.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Seven of Nine, Tertiary Adjunct", 264, Rarity.RARE, mage.cards.s.SevenOfNineTertiaryAdjunct.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Shared Animosity", 295, Rarity.RARE, mage.cards.s.SharedAnimosity.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Shared Animosity", 454, Rarity.RARE, mage.cards.s.SharedAnimosity.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Shattered Landscape", 557, Rarity.COMMON, mage.cards.s.ShatteredLandscape.class));
@@ -447,6 +459,8 @@ public final class StarTrekCommander extends ExpansionSet {
         cards.add(new SetCardInfo("The Guardian of Forever", 344, Rarity.RARE, mage.cards.t.TheGuardianOfForever.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("The Immortal Sun", 347, Rarity.MYTHIC, mage.cards.t.TheImmortalSun.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("The Immortal Sun", 495, Rarity.MYTHIC, mage.cards.t.TheImmortalSun.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("The Promise of Kahless", 61, Rarity.RARE, mage.cards.t.ThePromiseOfKahless.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("The Promise of Kahless", 275, Rarity.RARE, mage.cards.t.ThePromiseOfKahless.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("The Sword of Kahless", 123, Rarity.RARE, mage.cards.t.TheSwordOfKahless.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("The Sword of Kahless", 357, Rarity.RARE, mage.cards.t.TheSwordOfKahless.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Thirst for Knowledge", 443, Rarity.UNCOMMON, mage.cards.t.ThirstForKnowledge.class));
