@@ -82,10 +82,13 @@ public final class StarTrekCommander extends ExpansionSet {
         cards.add(new SetCardInfo("Chain Reaction", 450, Rarity.RARE, mage.cards.c.ChainReaction.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Chancellor Gorkon", 312, Rarity.RARE, mage.cards.c.ChancellorGorkon.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Chancellor Gorkon", 86, Rarity.RARE, mage.cards.c.ChancellorGorkon.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Chekov and McCoy", 183, Rarity.RARE, mage.cards.c.ChekovAndMcCoy.class));
         cards.add(new SetCardInfo("Chief Kyle, Transporter Tech", 313, Rarity.RARE, mage.cards.c.ChiefKyleTransporterTech.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Chief Kyle, Transporter Tech", 87, Rarity.RARE, mage.cards.c.ChiefKyleTransporterTech.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Chief Miles O'Brien", 249, Rarity.RARE, mage.cards.c.ChiefMilesOBrien.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Chief Miles O'Brien", 37, Rarity.RARE, mage.cards.c.ChiefMilesOBrien.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Chief Montgomery Scott", 88, Rarity.RARE, mage.cards.c.ChiefMontgomeryScott.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Chief Montgomery Scott", 314, Rarity.RARE, mage.cards.c.ChiefMontgomeryScott.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Choked Estuary", 370, Rarity.RARE, mage.cards.c.ChokedEstuary.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Choked Estuary", 517, Rarity.RARE, mage.cards.c.ChokedEstuary.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Christine Chapel, Combat Medic", 300, Rarity.RARE, mage.cards.c.ChristineChapelCombatMedic.class, NON_FULL_USE_VARIOUS));
@@ -101,6 +104,8 @@ public final class StarTrekCommander extends ExpansionSet {
         cards.add(new SetCardInfo("Coastal Peak", 519, Rarity.RARE, mage.cards.c.CoastalPeak.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Collective Override", 316, Rarity.RARE, mage.cards.c.CollectiveOverride.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Collective Override", 90, Rarity.RARE, mage.cards.c.CollectiveOverride.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Colossal Clone Master", 38, Rarity.RARE, mage.cards.c.ColossalCloneMaster.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Colossal Clone Master", 250, Rarity.RARE, mage.cards.c.ColossalCloneMaster.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Combat Celebrant", 281, Rarity.MYTHIC, mage.cards.c.CombatCelebrant.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Combat Celebrant", 451, Rarity.MYTHIC, mage.cards.c.CombatCelebrant.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Command Beacon", 373, Rarity.RARE, mage.cards.c.CommandBeacon.class, NON_FULL_USE_VARIOUS));
@@ -167,6 +172,8 @@ public final class StarTrekCommander extends ExpansionSet {
         cards.add(new SetCardInfo("Exploration", 461, Rarity.RARE, mage.cards.e.Exploration.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Extraction Integrant", 59, Rarity.RARE, mage.cards.e.ExtractionIntegrant.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Extraction Integrant", 272, Rarity.RARE, mage.cards.e.ExtractionIntegrant.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Ezri Dax, Newly Joined", 16, Rarity.RARE, mage.cards.e.EzriDaxNewlyJoined.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Ezri Dax, Newly Joined", 221, Rarity.RARE, mage.cards.e.EzriDaxNewlyJoined.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Fabled Passage", 379, Rarity.RARE, mage.cards.f.FabledPassage.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Fabled Passage", 529, Rarity.RARE, mage.cards.f.FabledPassage.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Faithful Mending", 473, Rarity.UNCOMMON, mage.cards.f.FaithfulMending.class));
@@ -231,6 +238,8 @@ public final class StarTrekCommander extends ExpansionSet {
         cards.add(new SetCardInfo("Hinterland Harbor", 537, Rarity.RARE, mage.cards.h.HinterlandHarbor.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Howling Mine", 345, Rarity.RARE, mage.cards.h.HowlingMine.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Howling Mine", 494, Rarity.RARE, mage.cards.h.HowlingMine.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Hugh, First of Many", 94, Rarity.RARE, mage.cards.h.HughFirstOfMany.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Hugh, First of Many", 321, Rarity.RARE, mage.cards.h.HughFirstOfMany.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("I.K.S. Negh'Var, Imperial Flagship", 113, Rarity.RARE, mage.cards.i.IKSNeghVarImperialFlagship.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("I.K.S. Negh'Var, Imperial Flagship", 346, Rarity.RARE, mage.cards.i.IKSNeghVarImperialFlagship.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Imperial Hullbreachers", 18, Rarity.RARE, mage.cards.i.ImperialHullbreachers.class, NON_FULL_USE_VARIOUS));
@@ -273,6 +282,7 @@ public final class StarTrekCommander extends ExpansionSet {
         cards.add(new SetCardInfo("Kurn, Son of Mogh", 273, Rarity.RARE, mage.cards.k.KurnSonOfMogh.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Kurn, Son of Mogh", 60, Rarity.RARE, mage.cards.k.KurnSonOfMogh.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("La Forge, Perceptive Engineer", 147, Rarity.UNCOMMON, mage.cards.l.LaForgePerceptiveEngineer.class));
+        cards.add(new SetCardInfo("La Forge, Thoughtful as Ever", 188, Rarity.RARE, mage.cards.l.LaForgeThoughtfulAsEver.class));
         cards.add(new SetCardInfo("Last Gasp", 580, Rarity.COMMON, mage.cards.l.LastGasp.class));
         cards.add(new SetCardInfo("Lieutenant Hikaru Sulu", 305, Rarity.RARE, mage.cards.l.LieutenantHikaruSulu.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Lieutenant Hikaru Sulu", 80, Rarity.RARE, mage.cards.l.LieutenantHikaruSulu.class, NON_FULL_USE_VARIOUS));

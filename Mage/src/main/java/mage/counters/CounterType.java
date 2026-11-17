@@ -176,6 +176,7 @@ public enum CounterType {
     PAIN("pain"),
     PALLIATION("palliation"),
     PARALYZATION("paralyzation"),
+    PEACE("peace"), // DARRELLBEST-FORK: Peace in Our Time (TRK)
     PETAL("petal"),
     PETRIFICATION("petrification"),
     PHYLACTERY("phylactery"),

@@ -127,6 +127,8 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("Dominion Infiltration", 349, Rarity.RARE, mage.cards.d.DominionInfiltration.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Dominion Infiltration", 380, Rarity.RARE, mage.cards.d.DominionInfiltration.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Dominion Infiltration", 514, Rarity.RARE, mage.cards.d.DominionInfiltration.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Dominion Saboteur", 54, Rarity.UNCOMMON, mage.cards.d.DominionSaboteur.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Dominion Saboteur", 345, Rarity.UNCOMMON, mage.cards.d.DominionSaboteur.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("DOT-7 Repair Squad", 12, Rarity.COMMON, mage.cards.d.DOT7RepairSquad.class));
         cards.add(new SetCardInfo("Dahar Master", 146, Rarity.COMMON, mage.cards.d.DaharMaster.class));
         cards.add(new SetCardInfo("Dal R'El, Augment Orphan", 231, Rarity.UNCOMMON, mage.cards.d.DalRElAugmentOrphan.class));
@@ -256,6 +258,8 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("Jadzia Dax, Living Legacy", 352, Rarity.MYTHIC, mage.cards.j.JadziaDaxLivingLegacy.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Jake Sisko, War Correspondent", 205, Rarity.UNCOMMON, mage.cards.j.JakeSiskoWarCorrespondent.class));
         cards.add(new SetCardInfo("Jett Reno, Problem Solver", 67, Rarity.UNCOMMON, mage.cards.j.JettRenoProblemSolver.class));
+        cards.add(new SetCardInfo("Kai Winn, Faithless Leader", 118, Rarity.RARE, mage.cards.k.KaiWinnFaithlessLeader.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Kai Winn, Faithless Leader", 460, Rarity.RARE, mage.cards.k.KaiWinnFaithlessLeader.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Khaaaaaaaaaaaannn!", 154, Rarity.UNCOMMON, mage.cards.k.Khaaaaaaaaaaaannn.class));
         cards.add(new SetCardInfo("Khan, Despot by Design", 155, Rarity.UNCOMMON, mage.cards.k.KhanDespotByDesign.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Khan, Despot by Design", 419, Rarity.UNCOMMON, mage.cards.k.KhanDespotByDesign.class, NON_FULL_USE_VARIOUS));
@@ -288,6 +292,10 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("Locutus, the One Who Speaks", 523, Rarity.UNCOMMON, mage.cards.l.LocutusTheOneWhoSpeaks.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Locutus, the One Who Speaks", 576, Rarity.UNCOMMON, mage.cards.l.LocutusTheOneWhoSpeaks.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Lore, Positronic Provocateur", 246, Rarity.UNCOMMON, mage.cards.l.LorePositronicProvocateur.class));
+        cards.add(new SetCardInfo("Lt. Cmdr. Geordi La Forge", 70, Rarity.RARE, mage.cards.l.LtCmdrGeordiLaForge.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Lt. Cmdr. Geordi La Forge", 372, Rarity.RARE, mage.cards.l.LtCmdrGeordiLaForge.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Lt. Cmdr. Geordi La Forge", 506, Rarity.RARE, mage.cards.l.LtCmdrGeordiLaForge.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Lt. Cmdr. Geordi La Forge", 1706, Rarity.MYTHIC, mage.cards.l.LtCmdrGeordiLaForge.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("MACO Strike Team", 206, Rarity.RARE, mage.cards.m.MACOStrikeTeam.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("MACO Strike Team", 471, Rarity.RARE, mage.cards.m.MACOStrikeTeam.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Make It So", 71, Rarity.COMMON, mage.cards.m.MakeItSo.class));
@@ -336,6 +344,9 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("Pah-Wraith", 160, Rarity.RARE, mage.cards.p.PahWraith.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Pah-Wraith", 465, Rarity.RARE, mage.cards.p.PahWraith.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Pattern Buffer Preservation", 123, Rarity.COMMON, mage.cards.p.PatternBufferPreservation.class));
+        cards.add(new SetCardInfo("Peace in Our Time", 27, Rarity.RARE, mage.cards.p.PeaceInOurTime.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Peace in Our Time", 367, Rarity.RARE, mage.cards.p.PeaceInOurTime.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Peace in Our Time", 501, Rarity.RARE, mage.cards.p.PeaceInOurTime.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Perils of the Past", 161, Rarity.COMMON, mage.cards.p.PerilsOfThePast.class));
         cards.add(new SetCardInfo("Pet Sehlat", 28, Rarity.COMMON, mage.cards.p.PetSehlat.class));
         cards.add(new SetCardInfo("Phlox, Unorthodox Doctor", 250, Rarity.UNCOMMON, mage.cards.p.PhloxUnorthodoxDoctor.class));
