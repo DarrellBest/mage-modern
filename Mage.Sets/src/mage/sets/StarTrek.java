@@ -169,6 +169,7 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("Federation Resupply", 528, Rarity.RARE, mage.cards.f.FederationResupply.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Ferenginar", 283, Rarity.COMMON, mage.cards.f.Ferenginar.class));
         cards.add(new SetCardInfo("Final Frontier", 198, Rarity.COMMON, mage.cards.f.FinalFrontier.class));
+        cards.add(new SetCardInfo("First Contact", 199, Rarity.COMMON, mage.cards.f.FirstContact.class));
         cards.add(new SetCardInfo("Forest", 311, Rarity.LAND, mage.cards.basiclands.Forest.class, FULL_ART_BFZ_VARIOUS));
         cards.add(new SetCardInfo("Forest", 316, Rarity.LAND, mage.cards.basiclands.Forest.class, FULL_ART_BFZ_VARIOUS));
         cards.add(new SetCardInfo("Forest", 486, Rarity.LAND, mage.cards.basiclands.Forest.class, FULL_ART_BFZ_VARIOUS));
@@ -185,6 +186,9 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("General Chang, Cold Warrior", 427, Rarity.RARE, mage.cards.g.GeneralChangColdWarrior.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("General Chang, Cold Warrior", 437, Rarity.RARE, mage.cards.g.GeneralChangColdWarrior.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("General Chang, Cold Warrior", 539, Rarity.RARE, mage.cards.g.GeneralChangColdWarrior.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Genesis Device", 200, Rarity.RARE, mage.cards.g.GenesisDevice.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Genesis Device", 422, Rarity.RARE, mage.cards.g.GenesisDevice.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Genesis Device", 546, Rarity.RARE, mage.cards.g.GenesisDevice.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Genesis Effect", 151, Rarity.COMMON, mage.cards.g.GenesisEffect.class));
         cards.add(new SetCardInfo("Georgiou, Terran Emperor", 110, Rarity.MYTHIC, mage.cards.g.GeorgiouTerranEmperor.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Georgiou, Terran Emperor", 457, Rarity.MYTHIC, mage.cards.g.GeorgiouTerranEmperor.class, NON_FULL_USE_VARIOUS));
@@ -232,6 +236,8 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("Island", 561, Rarity.LAND, mage.cards.basiclands.Island.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Island", 562, Rarity.LAND, mage.cards.basiclands.Island.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Isolinear Processor", 266, Rarity.UNCOMMON, mage.cards.i.IsolinearProcessor.class));
+        cards.add(new SetCardInfo("Jadzia Dax, Living Legacy", 204, Rarity.MYTHIC, mage.cards.j.JadziaDaxLivingLegacy.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Jadzia Dax, Living Legacy", 352, Rarity.MYTHIC, mage.cards.j.JadziaDaxLivingLegacy.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Jake Sisko, War Correspondent", 205, Rarity.UNCOMMON, mage.cards.j.JakeSiskoWarCorrespondent.class));
         cards.add(new SetCardInfo("Jett Reno, Problem Solver", 67, Rarity.UNCOMMON, mage.cards.j.JettRenoProblemSolver.class));
         cards.add(new SetCardInfo("Khaaaaaaaaaaaannn!", 154, Rarity.UNCOMMON, mage.cards.k.Khaaaaaaaaaaaannn.class));
@@ -290,6 +296,10 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("Neelix, Moral Support", 209, Rarity.UNCOMMON, mage.cards.n.NeelixMoralSupport.class));
         cards.add(new SetCardInfo("Ni'Var Science Academy", 287, Rarity.RARE, mage.cards.n.NiVarScienceAcademy.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Ni'Var Science Academy", 333, Rarity.RARE, mage.cards.n.NiVarScienceAcademy.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Nyota Uhura, Communications", 75, Rarity.RARE, mage.cards.n.NyotaUhuraCommunications.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Nyota Uhura, Communications", 358, Rarity.RARE, mage.cards.n.NyotaUhuraCommunications.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Nyota Uhura, Communications", 412, Rarity.RARE, mage.cards.n.NyotaUhuraCommunications.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Nyota Uhura, Communications", 536, Rarity.RARE, mage.cards.n.NyotaUhuraCommunications.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Oberth-Class Starship", 26, Rarity.COMMON, mage.cards.o.OberthClassStarship.class));
         cards.add(new SetCardInfo("Obsidian Order Operative", 120, Rarity.COMMON, mage.cards.o.ObsidianOrderOperative.class));
         cards.add(new SetCardInfo("Open Communications", 76, Rarity.COMMON, mage.cards.o.OpenCommunications.class));
@@ -417,6 +427,9 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("Tal Shiar Analyst", 174, Rarity.COMMON, mage.cards.t.TalShiarAnalyst.class));
         cards.add(new SetCardInfo("Tal Shiar Operative", 131, Rarity.COMMON, mage.cards.t.TalShiarOperative.class));
         cards.add(new SetCardInfo("Targ Wrangler", 175, Rarity.UNCOMMON, mage.cards.t.TargWrangler.class));
+        cards.add(new SetCardInfo("Tasha Yar, Out of Time", 176, Rarity.RARE, mage.cards.t.TashaYarOutOfTime.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Tasha Yar, Out of Time", 384, Rarity.RARE, mage.cards.t.TashaYarOutOfTime.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Tasha Yar, Out of Time", 518, Rarity.RARE, mage.cards.t.TashaYarOutOfTime.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Tea, Earl Grey, Hot", 269, Rarity.COMMON, mage.cards.t.TeaEarlGreyHot.class));
         cards.add(new SetCardInfo("Tell Me What You See", 132, Rarity.UNCOMMON, mage.cards.t.TellMeWhatYouSee.class));
         cards.add(new SetCardInfo("Temple Garden", 301, Rarity.RARE, mage.cards.t.TempleGarden.class, NON_FULL_USE_VARIOUS));
@@ -499,6 +512,9 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("Worf, Honor-Bound Warrior", 435, Rarity.UNCOMMON, mage.cards.w.WorfHonorBoundWarrior.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Worf, Honor-Bound Warrior", 445, Rarity.UNCOMMON, mage.cards.w.WorfHonorBoundWarrior.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Worf, Honor-Bound Warrior", 524, Rarity.UNCOMMON, mage.cards.w.WorfHonorBoundWarrior.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Worf, Intelligence Contractor", 180, Rarity.RARE, mage.cards.w.WorfIntelligenceContractor.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Worf, Intelligence Contractor", 431, Rarity.RARE, mage.cards.w.WorfIntelligenceContractor.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Worf, Intelligence Contractor", 441, Rarity.RARE, mage.cards.w.WorfIntelligenceContractor.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Xenobotanist", 224, Rarity.COMMON, mage.cards.x.Xenobotanist.class));
         cards.add(new SetCardInfo("Xindi Surveyors", 225, Rarity.COMMON, mage.cards.x.XindiSurveyors.class));
         cards.add(new SetCardInfo("Year of Hell", 257, Rarity.RARE, mage.cards.y.YearOfHell.class));

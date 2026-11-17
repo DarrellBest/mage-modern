@@ -22,10 +22,14 @@ public final class StarTrekCommander extends ExpansionSet {
         cards.add(new SetCardInfo("Abrade", 449, Rarity.UNCOMMON, mage.cards.a.Abrade.class));
         cards.add(new SetCardInfo("Academy Ruins", 366, Rarity.RARE, mage.cards.a.AcademyRuins.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Academy Ruins", 512, Rarity.RARE, mage.cards.a.AcademyRuins.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Alexander, Ship's Fool", 81, Rarity.RARE, mage.cards.a.AlexanderShipsFool.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Alexander, Ship's Fool", 309, Rarity.RARE, mage.cards.a.AlexanderShipsFool.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Alhammarret's Archive", 337, Rarity.MYTHIC, mage.cards.a.AlhammarretsArchive.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Alhammarret's Archive", 484, Rarity.MYTHIC, mage.cards.a.AlhammarretsArchive.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Amanda Grayson, Logic's Link", 297, Rarity.RARE, mage.cards.a.AmandaGraysonLogicsLink.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Amanda Grayson, Logic's Link", 77, Rarity.RARE, mage.cards.a.AmandaGraysonLogicsLink.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Ambassador K'Ehleyr", 9, Rarity.RARE, mage.cards.a.AmbassadorKEhleyr.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Ambassador K'Ehleyr", 212, Rarity.RARE, mage.cards.a.AmbassadorKEhleyr.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Ambulatory Reactor", 247, Rarity.RARE, mage.cards.a.AmbulatoryReactor.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Ambulatory Reactor", 35, Rarity.RARE, mage.cards.a.AmbulatoryReactor.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Ancient Greenwarden", 298, Rarity.MYTHIC, mage.cards.a.AncientGreenwarden.class, NON_FULL_USE_VARIOUS));
@@ -237,6 +241,8 @@ public final class StarTrekCommander extends ExpansionSet {
         cards.add(new SetCardInfo("Irrigated Farmland", 538, Rarity.RARE, mage.cards.i.IrrigatedFarmland.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Isolated Chapel", 389, Rarity.RARE, mage.cards.i.IsolatedChapel.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Isolated Chapel", 539, Rarity.RARE, mage.cards.i.IsolatedChapel.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Janice Rand, Essential Aide", 79, Rarity.RARE, mage.cards.j.JaniceRandEssentialAide.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Janice Rand, Essential Aide", 304, Rarity.RARE, mage.cards.j.JaniceRandEssentialAide.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Jean-Luc Picard, Luminary", 3, Rarity.MYTHIC, mage.cards.j.JeanLucPicardLuminary.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Jean-Luc Picard, Luminary", 7, Rarity.MYTHIC, mage.cards.j.JeanLucPicardLuminary.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Jefferies Tube", 114, Rarity.RARE, mage.cards.j.JefferiesTube.class, NON_FULL_USE_VARIOUS));
