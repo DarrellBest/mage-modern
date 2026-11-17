@@ -374,6 +374,7 @@ public final class StarTrekCommander extends ExpansionSet {
         cards.add(new SetCardInfo("Shuttlecraft Galileo", 236, Rarity.RARE, mage.cards.s.ShuttlecraftGalileo.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Shuttlecraft Galileo", 28, Rarity.RARE, mage.cards.s.ShuttlecraftGalileo.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Sickbay Orderly", 138, Rarity.COMMON, mage.cards.s.SickbayOrderly.class));
+        cards.add(new SetCardInfo("Sins of the Father", 104, Rarity.RARE, mage.cards.s.SinsOfTheFather.class));
         cards.add(new SetCardInfo("Skullclamp", 354, Rarity.RARE, mage.cards.s.Skullclamp.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Skullclamp", 498, Rarity.RARE, mage.cards.s.Skullclamp.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Skycloud Expanse", 402, Rarity.RARE, mage.cards.s.SkycloudExpanse.class, NON_FULL_USE_VARIOUS));
@@ -488,6 +489,7 @@ public final class StarTrekCommander extends ExpansionSet {
         cards.add(new SetCardInfo("Umbral Expanse", 574, Rarity.RARE, mage.cards.u.UmbralExpanse.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Underground River", 415, Rarity.RARE, mage.cards.u.UndergroundRiver.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Underground River", 575, Rarity.RARE, mage.cards.u.UndergroundRiver.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Unification", 107, Rarity.RARE, mage.cards.u.Unification.class));
         cards.add(new SetCardInfo("Unwinding Clock", 359, Rarity.RARE, mage.cards.u.UnwindingClock.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Unwinding Clock", 510, Rarity.RARE, mage.cards.u.UnwindingClock.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Valorous Stance", 431, Rarity.UNCOMMON, mage.cards.v.ValorousStance.class));

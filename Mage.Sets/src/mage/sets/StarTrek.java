@@ -28,6 +28,7 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("A Good Day to Die", 438, Rarity.COMMON, mage.cards.a.AGoodDayToDie.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Academy Instructor", 137, Rarity.UNCOMMON, mage.cards.a.AcademyInstructor.class));
         cards.add(new SetCardInfo("Adversary by Algorithm", 182, Rarity.UNCOMMON, mage.cards.a.AdversaryByAlgorithm.class));
+        cards.add(new SetCardInfo("All Good Things...", 226, Rarity.RARE, mage.cards.a.AllGoodThings.class));
         cards.add(new SetCardInfo("Amok Time", 183, Rarity.UNCOMMON, mage.cards.a.AmokTime.class));
         cards.add(new SetCardInfo("Andoria", 275, Rarity.COMMON, mage.cards.a.Andoria.class));
         cards.add(new SetCardInfo("Andromedan Automatons", 2, Rarity.COMMON, mage.cards.a.AndromedanAutomatons.class));
@@ -434,13 +435,17 @@ public final class StarTrek extends ExpansionSet {
         cards.add(new SetCardInfo("The Duras Sisters", 235, Rarity.UNCOMMON, mage.cards.t.TheDurasSisters.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("The Duras Sisters", 432, Rarity.UNCOMMON, mage.cards.t.TheDurasSisters.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("The Duras Sisters", 442, Rarity.UNCOMMON, mage.cards.t.TheDurasSisters.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("The Inner Light", 241, Rarity.RARE, mage.cards.t.TheInnerLight.class));
+        cards.add(new SetCardInfo("The Measure of a Man", 23, Rarity.UNCOMMON, mage.cards.t.TheMeasureOfAMan.class));
         cards.add(new SetCardInfo("The Naked Time", 159, Rarity.UNCOMMON, mage.cards.t.TheNakedTime.class));
         cards.add(new SetCardInfo("The Traveler", 254, Rarity.UNCOMMON, mage.cards.t.TheTraveler.class));
         cards.add(new SetCardInfo("The Unicomplex", 304, Rarity.RARE, mage.cards.t.TheUnicomplex.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("The Unicomplex", 337, Rarity.RARE, mage.cards.t.TheUnicomplex.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("The Wrath of Khan", 181, Rarity.RARE, mage.cards.t.TheWrathOfKhan.class));
         cards.add(new SetCardInfo("There's Coffee in that Nebula", 40, Rarity.UNCOMMON, mage.cards.t.TheresCoffeeInThatNebula.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("There's Coffee in that Nebula", 369, Rarity.UNCOMMON, mage.cards.t.TheresCoffeeInThatNebula.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("There's Coffee in that Nebula", 503, Rarity.UNCOMMON, mage.cards.t.TheresCoffeeInThatNebula.class, NON_FULL_USE_VARIOUS));
+        cards.add(new SetCardInfo("Those Old Scientists", 86, Rarity.UNCOMMON, mage.cards.t.ThoseOldScientists.class));
         cards.add(new SetCardInfo("Transporter Malfunction", 178, Rarity.UNCOMMON, mage.cards.t.TransporterMalfunction.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Transporter Malfunction", 357, Rarity.UNCOMMON, mage.cards.t.TransporterMalfunction.class, NON_FULL_USE_VARIOUS));
         cards.add(new SetCardInfo("Tricorder", 270, Rarity.COMMON, mage.cards.t.Tricorder.class));
