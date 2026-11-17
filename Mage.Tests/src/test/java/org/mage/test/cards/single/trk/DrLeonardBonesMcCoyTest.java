@@ -30,7 +30,7 @@ public class DrLeonardBonesMcCoyTest extends CardTestPlayerBase {
     @Test
     public void test_ModeTwoReturnsWithCounter() {
         addCard(Zone.BATTLEFIELD, playerA, "Forest", 3);
-        addCard(Zone.BATTLEFIELD, playerA, "Mountain");
+        addCard(Zone.BATTLEFIELD, playerA, "Mountain", 2); // two: the {1} of Bones may be paid with one
         addCard(Zone.HAND, playerA, BONES);
         addCard(Zone.HAND, playerA, "Lightning Bolt");
         addCard(Zone.BATTLEFIELD, playerA, "Hill Giant");
